@@ -330,6 +330,26 @@ export const Canvas: React.FC = () => {
             setSelectedIds([])
           }
         }
+      } else if (activeTool === 'directSelection') {
+        const clickedElement = findElementAtPoint(point)
+        
+        if (clickedElement) {
+          if (e.ctrlKey || e.metaKey) {
+            if (selectedIds.includes(clickedElement.id)) {
+              setSelectedIds(selectedIds.filter(id => id !== clickedElement.id))
+            } else {
+              setSelectedIds([...selectedIds, clickedElement.id])
+            }
+          } else {
+            if (!selectedIds.includes(clickedElement.id)) {
+              setSelectedIds([clickedElement.id])
+            }
+          }
+        } else {
+          if (!e.ctrlKey && !e.metaKey) {
+            setSelectedIds([])
+          }
+        }
       } else if (activeTool === 'rectangle' || activeTool === 'line' || activeTool === 'trapezoid') {
         isMovingRef.current = false
         initialElementPositionsRef.current.clear()

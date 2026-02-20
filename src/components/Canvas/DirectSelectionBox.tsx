@@ -19,7 +19,7 @@ export interface DirectSelectionBoxProps {
 }
 
 const HANDLE_COLOR = '#0047AB'
-const HANDLE_SIZE = 6
+const HANDLE_SIZE = 12
 
 /**
  * Direct Selection Box with vertex handles
@@ -102,7 +102,7 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
                   y={p.y - halfHandle}
                   width={handleSize}
                   height={handleSize}
-                  rx={1.5}
+                  rx={2}
                   fill="none"
                   stroke={isSelected ? '#6B238E' : HANDLE_COLOR}
                   strokeWidth={0.5}
