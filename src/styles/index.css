@@ -1,0 +1,72 @@
+/**
+ * Global Styles
+ * 
+ * Tailwind CSS imports and custom CSS variables for the dark theme.
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Dark theme is default */
+    --bg-primary: #1e1e1e;
+    --bg-secondary: #252526;
+    --bg-tertiary: #2d2d30;
+    --text-primary: #cccccc;
+    --text-muted: #858585;
+    --border-color: #3e3e42;
+    --accent-color: #007acc;
+    --accent-hover: #0098ff;
+    
+    /* Canvas colors */
+    --canvas-bg: #121212;
+    --canvas-artboard: #ffffff;
+    --canvas-grid: #2d2d30;
+  }
+
+  * {
+    @apply box-border;
+  }
+
+  html, body, #root {
+    @apply h-full w-full overflow-hidden;
+  }
+
+  body {
+    @apply bg-dark-bg text-dark-text antialiased;
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  /* Custom scrollbar for dark theme */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-dark-bgSecondary;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-dark-border rounded-sm;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-dark-textMuted;
+  }
+
+  /* Disable text selection on UI elements */
+  .no-select {
+    @apply select-none;
+  }
+}
+
+@layer utilities {
+  /* Utility for screen-reader only content */
+  .sr-only {
+    @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
+    clip: rect(0, 0, 0, 0);
+  }
+}
