@@ -18,9 +18,6 @@ export const Layout: React.FC = () => {
       {/* Top toolbar area */}
       <div className="h-12 bg-dark-bgSecondary border-b border-dark-border flex items-center px-4 shrink-0">
         <h1 className="text-lg font-semibold text-dark-text">LaserSVG Editor</h1>
-        <div className="ml-8 text-sm text-dark-textMuted">
-          Phase 1: Project Skeleton & Canvas
-        </div>
       </div>
 
       {/* Main content area */}
