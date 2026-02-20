@@ -4,7 +4,7 @@
  * Right-side panel area with Layers and Properties panels.
  */
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useEditorStore } from '@store/index'
 import { UI_STRINGS } from '@constants/index'
 import { Square, Circle, Minus } from 'lucide-react'
@@ -14,7 +14,21 @@ import type { PointElement, SVGElement } from '@/types-app/index'
  * Right panel container with layers and properties
  */
 export const Panels: React.FC = () => {
-  const { elements, selectedIds, setSelectedIds, deleteElement, updateElement } = useEditorStore()
+  const { elements, selectedIds, setSelectedIds, updateElement } = useEditorStore()
+
+  const [localValues, setLocalValues] = useState<{
+    x: string
+    y: string
+    width: string
+    height: string
+    angle: string
+  }>({
+    x: '',
+    y: '',
+    width: '',
+    height: '',
+    angle: '',
+  })
 
   const bounds = useMemo(() => {
     if (selectedIds.length === 0) return null
@@ -68,16 +82,17 @@ export const Panels: React.FC = () => {
     }
   }
 
-  const handleDelete = (e: React.KeyboardEvent) => {
-    if (e.key === 'Delete' || e.key === 'Backspace') {
-      selectedIds.forEach(id => deleteElement(id))
-    }
+  const handleInputChange = (field: 'y' | 'x' | 'width' | 'height' | 'angle') => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalValues(prev => ({ ...prev, [field]: e.target.value }))
   }
 
-  const handleXChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleXBlur = () => {
     if (!bounds || selectedIds.length === 0) return
-    const value = parseFloat(e.target.value)
-    if (isNaN(value)) return
+    const value = parseFloat(localValues.x)
+    if (isNaN(value)) {
+      setLocalValues(prev => ({ ...prev, x: bounds.x.toFixed(1) }))
+      return
+    }
     
     const deltaX = value - bounds.x
     const selectedElement = elements.find(el => el.id === selectedIds[0])
@@ -89,12 +104,16 @@ export const Panels: React.FC = () => {
       y: p.y,
     }))
     updateElement(selectedElement.id, { points: newPoints } as Partial<SVGElement>)
+    setLocalValues(prev => ({ ...prev, x: value.toFixed(1) }))
   }
 
-  const handleYChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleYBlur = () => {
     if (!bounds || selectedIds.length === 0) return
-    const value = parseFloat(e.target.value)
-    if (isNaN(value)) return
+    const value = parseFloat(localValues.y)
+    if (isNaN(value)) {
+      setLocalValues(prev => ({ ...prev, y: bounds.y.toFixed(1) }))
+      return
+    }
     
     const deltaY = value - bounds.y
     const selectedElement = elements.find(el => el.id === selectedIds[0])
@@ -106,12 +125,16 @@ export const Panels: React.FC = () => {
       y: p.y + deltaY,
     }))
     updateElement(selectedElement.id, { points: newPoints } as Partial<SVGElement>)
+    setLocalValues(prev => ({ ...prev, y: value.toFixed(1) }))
   }
 
-  const handleWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleWidthBlur = () => {
     if (!bounds || selectedIds.length === 0 || bounds.width === 0) return
-    const value = parseFloat(e.target.value)
-    if (isNaN(value) || value <= 0) return
+    const value = parseFloat(localValues.width)
+    if (isNaN(value) || value <= 0) {
+      setLocalValues(prev => ({ ...prev, width: bounds.width.toFixed(1) }))
+      return
+    }
     
     const scaleX = value / bounds.width
     const selectedElement = elements.find(el => el.id === selectedIds[0])
@@ -123,12 +146,16 @@ export const Panels: React.FC = () => {
       y: p.y,
     }))
     updateElement(selectedElement.id, { points: newPoints } as Partial<SVGElement>)
+    setLocalValues(prev => ({ ...prev, width: value.toFixed(1) }))
   }
 
-  const handleHeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleHeightBlur = () => {
     if (!bounds || selectedIds.length === 0 || bounds.height === 0) return
-    const value = parseFloat(e.target.value)
-    if (isNaN(value) || value <= 0) return
+    const value = parseFloat(localValues.height)
+    if (isNaN(value) || value <= 0) {
+      setLocalValues(prev => ({ ...prev, height: bounds.height.toFixed(1) }))
+      return
+    }
     
     const scaleY = value / bounds.height
     const selectedElement = elements.find(el => el.id === selectedIds[0])
@@ -140,26 +167,37 @@ export const Panels: React.FC = () => {
       y: bounds.y + (p.y - bounds.y) * scaleY,
     }))
     updateElement(selectedElement.id, { points: newPoints } as Partial<SVGElement>)
+    setLocalValues(prev => ({ ...prev, height: value.toFixed(1) }))
   }
 
-  const handleAngleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAngleBlur = () => {
     if (selectedIds.length === 0) return
-    const value = parseFloat(e.target.value)
-    if (isNaN(value)) return
+    const value = parseFloat(localValues.angle)
+    if (isNaN(value)) {
+      const pointEl = selectedIds.length === 1 ? elements.find(el => el.id === selectedIds[0]) : null
+      const angle = pointEl && 'points' in pointEl ? (pointEl as PointElement).angle ?? 0 : 0
+      setLocalValues(prev => ({ ...prev, angle: angle.toString() }))
+      return
+    }
     
     selectedIds.forEach(id => {
       const element = elements.find(el => el.id === id)
       if (!element || !('points' in element)) return
       updateElement(id, { angle: value } as Partial<SVGElement>)
     })
+    setLocalValues(prev => ({ ...prev, angle: value.toString() }))
   }
 
   const selectedElement = selectedIds.length === 1 ? elements.find(el => el.id === selectedIds[0]) : null
   const pointElement = selectedElement && 'points' in selectedElement ? selectedElement as PointElement : null
   const currentAngle = pointElement?.angle ?? 0
 
+  const getInputValue = (field: 'x' | 'y' | 'width' | 'height' | 'angle', fallback: string) => {
+    return localValues[field] || fallback
+  }
+
   return (
-    <div className="flex flex-col h-full" onKeyDown={handleDelete} tabIndex={0}>
+    <div className="flex flex-col h-full" tabIndex={0}>
       {/* Properties Panel */}
       <div className="flex-1 border-b border-dark-border min-h-0 overflow-y-auto">
         <div className="px-3 py-2 bg-dark-bgTertiary text-sm font-medium text-dark-text border-b border-dark-border">
@@ -187,43 +225,41 @@ export const Panels: React.FC = () => {
                   <div>
                     <label className="text-xs text-dark-textMuted block mb-1">{UI_STRINGS.PROP_X}</label>
                     <input
-                      type="number"
-                      value={bounds.x.toFixed(1)}
-                      onChange={handleXChange}
+                      type="text"
+                      value={getInputValue('x', bounds.x.toFixed(1))}
+                      onChange={handleInputChange('x')}
+                      onBlur={handleXBlur}
                       className="w-full bg-dark-bgTertiary text-dark-text text-xs px-2 py-1 rounded border border-dark-border"
-                      step="0.1"
                     />
                   </div>
                   <div>
                     <label className="text-xs text-dark-textMuted block mb-1">{UI_STRINGS.PROP_Y}</label>
                     <input
-                      type="number"
-                      value={bounds.y.toFixed(1)}
-                      onChange={handleYChange}
+                      type="text"
+                      value={getInputValue('y', bounds.y.toFixed(1))}
+                      onChange={handleInputChange('y')}
+                      onBlur={handleYBlur}
                       className="w-full bg-dark-bgTertiary text-dark-text text-xs px-2 py-1 rounded border border-dark-border"
-                      step="0.1"
                     />
                   </div>
                   <div>
                     <label className="text-xs text-dark-textMuted block mb-1">{UI_STRINGS.PROP_WIDTH}</label>
                     <input
-                      type="number"
-                      value={bounds.width.toFixed(1)}
-                      onChange={handleWidthChange}
+                      type="text"
+                      value={getInputValue('width', bounds.width.toFixed(1))}
+                      onChange={handleInputChange('width')}
+                      onBlur={handleWidthBlur}
                       className="w-full bg-dark-bgTertiary text-dark-text text-xs px-2 py-1 rounded border border-dark-border"
-                      step="0.1"
-                      min="0.1"
                     />
                   </div>
                   <div>
                     <label className="text-xs text-dark-textMuted block mb-1">{UI_STRINGS.PROP_HEIGHT}</label>
                     <input
-                      type="number"
-                      value={bounds.height.toFixed(1)}
-                      onChange={handleHeightChange}
+                      type="text"
+                      value={getInputValue('height', bounds.height.toFixed(1))}
+                      onChange={handleInputChange('height')}
+                      onBlur={handleHeightBlur}
                       className="w-full bg-dark-bgTertiary text-dark-text text-xs px-2 py-1 rounded border border-dark-border"
-                      step="0.1"
-                      min="0.1"
                     />
                   </div>
                 </div>
@@ -233,11 +269,11 @@ export const Panels: React.FC = () => {
                 <div>
                   <label className="text-xs text-dark-textMuted block mb-1">{UI_STRINGS.PROP_ROTATION}</label>
                   <input
-                    type="number"
-                    value={currentAngle}
-                    onChange={handleAngleChange}
+                    type="text"
+                    value={getInputValue('angle', currentAngle.toString())}
+                    onChange={handleInputChange('angle')}
+                    onBlur={handleAngleBlur}
                     className="w-full bg-dark-bgTertiary text-dark-text text-xs px-2 py-1 rounded border border-dark-border"
-                    step="1"
                   />
                 </div>
               )}

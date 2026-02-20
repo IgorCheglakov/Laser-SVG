@@ -35,12 +35,24 @@ const useGlobalShortcuts = () => {
       const ctrl = e.ctrlKey || e.metaKey
       const shift = e.shiftKey
 
-      // Delete selected elements
-      if (key === 'delete' || key === 'backspace') {
+      // Delete selected elements (only when NOT in input)
+      if (key === 'delete') {
         if (selectedIds.length > 0) {
           e.preventDefault()
           selectedIds.forEach(id => deleteElement(id))
         }
+        return
+      }
+
+      // Backspace should not delete objects - let it work normally in inputs, do nothing otherwise
+      if (key === 'backspace') {
+        return
+      }
+
+      // ESC switches to selection tool
+      if (key === 'escape') {
+        setActiveTool('selection')
+        e.preventDefault()
         return
       }
 
