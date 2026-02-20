@@ -15,7 +15,7 @@ import { generateId } from '@/utils/id'
 import { DEFAULTS } from '@constants/index'
 import { BoundingBox } from './BoundingBox'
 import { FloatingPropertiesWidget } from './FloatingPropertiesWidget'
-import { transformPoints, parseHandle, type InitialSize } from '@/utils/transform'
+import { transformPoints, parseHandle, rotatePoints, type InitialSize } from '@/utils/transform'
 
 /**
  * Canvas component with artboard, zoom, and tool integration
@@ -37,6 +37,9 @@ export const Canvas: React.FC = () => {
   const moveStartRef = useRef<Point>({ x: 0, y: 0 })
   const initialElementPositionsRef = useRef<Map<string, Point[]>>(new Map())
   const isFirstMoveRef = useRef(true)
+  const isRotatingRef = useRef(false)
+  const rotationStartRef = useRef<Point>({ x: 0, y: 0 })
+  const rotationShiftRef = useRef(false)
   
   const { 
     view, 
@@ -242,6 +245,38 @@ export const Canvas: React.FC = () => {
   }, [elements, selectedIds, screenToCanvas, calculateBoundsForSelected])
 
   /**
+   * Handle rotation start from BoundingBox rotation handle
+   */
+  const handleRotateStart = useCallback((clientPoint: Point, shiftKey: boolean) => {
+    isRotatingRef.current = true
+    rotationStartRef.current = clientPoint
+    rotationShiftRef.current = shiftKey
+    
+    const box = calculateBoundsForSelected()
+    if (box) {
+      initialBoxRef.current = box
+    }
+    
+    initialElementPositionsRef.current.clear()
+    selectedIds.forEach(id => {
+      const el = elements.find(el => el.id === id)
+      if (el && 'points' in el) {
+        const pointEl = el as PointElement
+        initialElementPositionsRef.current.set(id, JSON.parse(JSON.stringify(pointEl.points)))
+      }
+    })
+    
+    saveToHistory()
+  }, [elements, selectedIds, calculateBoundsForSelected])
+
+  /**
+   * Calculate angle from center to point (in degrees)
+   */
+  const calculateAngle = useCallback((point: Point, center: Point): number => {
+    return Math.atan2(point.y - center.y, point.x - center.x) * 180 / Math.PI
+  }, [])
+
+  /**
    * Handle mouse down
    */
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -413,6 +448,40 @@ export const Canvas: React.FC = () => {
         updateElementNoHistory(id, { points: newPoints } as Partial<SVGElement>)
       })
     }
+
+    if (isRotatingRef.current && (e.buttons & 1)) {
+      const initialBox = initialBoxRef.current
+      if (!initialBox) return
+
+      const centerX = initialBox.x + initialBox.width / 2
+      const centerY = initialBox.y + initialBox.height / 2
+
+      const startPoint = screenToCanvas(rotationStartRef.current.x, rotationStartRef.current.y)
+      const currentPoint = screenToCanvas(e.clientX, e.clientY)
+
+      const startAngle = calculateAngle(startPoint, { x: centerX, y: centerY })
+      const currentAngle = calculateAngle(currentPoint, { x: centerX, y: centerY })
+
+      let angleDelta = currentAngle - startAngle
+
+      if (!rotationShiftRef.current) {
+        const snapStep = 45
+        angleDelta = Math.round(angleDelta / snapStep) * snapStep
+      }
+
+      selectedIds.forEach(id => {
+        const initialPoints = initialElementPositionsRef.current.get(id)
+        if (!initialPoints) return
+
+        const newPoints = rotatePoints(
+          initialPoints,
+          { x: centerX, y: centerY },
+          angleDelta
+        )
+
+        updateElementNoHistory(id, { points: newPoints } as Partial<SVGElement>)
+      })
+    }
     
     if (isDrawingRef.current && previewElement && (e.buttons & 1)) {
       const currentPoint = screenToCanvas(e.clientX, e.clientY)
@@ -472,7 +541,7 @@ export const Canvas: React.FC = () => {
     }
     
     tool.onMouseMove(e, toolContext)
-  }, [isPanning, panStart, pan, isResizingRef, isMovingRef, resizeHandleRef, resizeStartRef, initialBoxRef, selectedIds, previewElement, activeTool, tool, toolContext, screenToCanvas, snapToGrid, updateElementNoHistory, elements])
+  }, [isPanning, panStart, pan, isResizingRef, isMovingRef, isRotatingRef, rotationStartRef, rotationShiftRef, resizeHandleRef, resizeStartRef, initialBoxRef, selectedIds, previewElement, activeTool, tool, toolContext, screenToCanvas, snapToGrid, updateElementNoHistory, elements, calculateAngle])
 
   /**
    * Handle mouse up
@@ -493,6 +562,14 @@ export const Canvas: React.FC = () => {
       isResizingRef.current = false
       resizeHandleRef.current = ''
       resizeFromCenterRef.current = false
+      initialBoxRef.current = null
+      initialElementPositionsRef.current.clear()
+    }
+
+    if (isRotatingRef.current) {
+      isRotatingRef.current = false
+      rotationStartRef.current = { x: 0, y: 0 }
+      rotationShiftRef.current = false
       initialBoxRef.current = null
       initialElementPositionsRef.current.clear()
     }
@@ -539,6 +616,14 @@ export const Canvas: React.FC = () => {
         isResizingRef.current = false
         resizeHandleRef.current = ''
         resizeFromCenterRef.current = false
+        initialBoxRef.current = null
+        initialElementPositionsRef.current.clear()
+      }
+
+      if (isRotatingRef.current) {
+        isRotatingRef.current = false
+        rotationStartRef.current = { x: 0, y: 0 }
+        rotationShiftRef.current = false
         initialBoxRef.current = null
         initialElementPositionsRef.current.clear()
       }
@@ -672,6 +757,7 @@ export const Canvas: React.FC = () => {
             selectedIds={selectedIds}
             scale={view.scale}
             onHandleDragStart={handleResizeStart}
+            onRotateStart={handleRotateStart}
           />
         )}
 

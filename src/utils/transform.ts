@@ -265,3 +265,45 @@ export function flipPointsVertical(points: Point[], box: InitialSize): Point[] {
     return newPoint
   })
 }
+
+/**
+ * Rotate points around a center point by a given angle in degrees
+ */
+export function rotatePoints(
+  points: Point[],
+  center: Point,
+  angleDegrees: number
+): Point[] {
+  const angleRadians = (angleDegrees * Math.PI) / 180
+  const cos = Math.cos(angleRadians)
+  const sin = Math.sin(angleRadians)
+
+  return points.map(p => {
+    const dx = p.x - center.x
+    const dy = p.y - center.y
+    const newX = center.x + dx * cos - dy * sin
+    const newY = center.y + dx * sin + dy * cos
+
+    const newPoint: Point = { x: newX, y: newY }
+
+    if (p.cp1) {
+      const cp1dx = p.cp1.x - center.x
+      const cp1dy = p.cp1.y - center.y
+      newPoint.cp1 = {
+        x: center.x + cp1dx * cos - cp1dy * sin,
+        y: center.y + cp1dx * sin + cp1dy * cos,
+      }
+    }
+
+    if (p.cp2) {
+      const cp2dx = p.cp2.x - center.x
+      const cp2dy = p.cp2.y - center.y
+      newPoint.cp2 = {
+        x: center.x + cp2dx * cos - cp2dy * sin,
+        y: center.y + cp2dx * sin + cp2dy * cos,
+      }
+    }
+
+    return newPoint
+  })
+}

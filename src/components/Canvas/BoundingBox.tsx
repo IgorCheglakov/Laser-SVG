@@ -15,6 +15,7 @@ export interface BoundingBoxProps {
   selectedIds: string[]
   scale: number
   onHandleDragStart?: (handle: string, startPoint: Point, altKey: boolean) => void
+  onRotateStart?: (startPoint: Point, shiftKey: boolean) => void
 }
 
 const SELECTION_COLOR = '#007acc'
@@ -49,6 +50,7 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
   selectedIds, 
   scale,
   onHandleDragStart,
+  onRotateStart,
 }) => {
   const pointElements = useMemo(() => {
     return elements.filter(el => 'points' in el) as PointElement[]
@@ -89,14 +91,27 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
   const handleSize = 8 / Math.max(scale, 0.5)
   const halfHandle = handleSize / 2
 
-  const handles = [
-    { id: 'nw', x: x - halfHandle, y: y - halfHandle, cursor: 'nw-resize' },
+  const rotationHandleSize = 14 / Math.max(scale, 0.5)
+  const halfRotation = rotationHandleSize / 2
+
+  const cornerHandles = [
+    { id: 'nw', x: x - halfHandle, y: y - halfHandle },
+    { id: 'ne', x: x + width - halfHandle, y: y - halfHandle },
+    { id: 'se', x: x + width - halfHandle, y: y + height - halfHandle },
+    { id: 'sw', x: x - halfHandle, y: y + height - halfHandle },
+  ]
+
+  const rotationHandles = [
+    { id: 'nw', x: x - halfRotation, y: y - halfRotation },
+    { id: 'ne', x: x + width - halfRotation, y: y - halfRotation },
+    { id: 'se', x: x + width - halfRotation, y: y + height - halfRotation },
+    { id: 'sw', x: x - halfRotation, y: y + height - halfRotation },
+  ]
+
+  const edgeHandles = [
     { id: 'n', x: x + width / 2 - halfHandle, y: y - halfHandle, cursor: 'n-resize' },
-    { id: 'ne', x: x + width - halfHandle, y: y - halfHandle, cursor: 'ne-resize' },
     { id: 'e', x: x + width - halfHandle, y: y + height / 2 - halfHandle, cursor: 'e-resize' },
-    { id: 'se', x: x + width - halfHandle, y: y + height - halfHandle, cursor: 'se-resize' },
     { id: 's', x: x + width / 2 - halfHandle, y: y + height - halfHandle, cursor: 's-resize' },
-    { id: 'sw', x: x - halfHandle, y: y + height - halfHandle, cursor: 'sw-resize' },
     { id: 'w', x: x - halfHandle, y: y + height / 2 - halfHandle, cursor: 'w-resize' },
   ]
 
@@ -106,6 +121,11 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
   const handleMouseDown = (handleId: string) => (e: React.MouseEvent) => {
     e.stopPropagation()
     onHandleDragStart?.(handleId, { x: e.clientX, y: e.clientY }, e.altKey)
+  }
+
+  const handleRotateMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onRotateStart?.({ x: e.clientX, y: e.clientY }, e.shiftKey)
   }
 
   return (
@@ -124,7 +144,36 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
         onMouseDown={(e) => e.stopPropagation()}
       />
 
-      {handles.map(handle => (
+      {rotationHandles.map(handle => (
+        <rect
+          key={`rotation-${handle.id}`}
+          x={handle.x}
+          y={handle.y}
+          width={rotationHandleSize}
+          height={rotationHandleSize}
+          fill="transparent"
+          style={{ cursor: 'grab', pointerEvents: 'all' }}
+          onMouseDown={handleRotateMouseDown}
+        />
+      ))}
+
+      {cornerHandles.map(handle => (
+        <rect
+          key={handle.id}
+          x={handle.x}
+          y={handle.y}
+          width={handleSize}
+          height={handleSize}
+          fill="#ffffff"
+          stroke={SELECTION_COLOR}
+          strokeWidth={1}
+          vectorEffect="non-scaling-stroke"
+          style={{ cursor: `${handle.id}-resize`, pointerEvents: 'all' }}
+          onMouseDown={handleMouseDown(handle.id)}
+        />
+      ))}
+
+      {edgeHandles.map(handle => (
         <rect
           key={handle.id}
           x={handle.x}
