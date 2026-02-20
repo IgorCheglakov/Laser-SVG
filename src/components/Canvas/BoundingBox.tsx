@@ -174,26 +174,6 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
         />
         
         <rect
-          x={simpleLineEndpoints.x1 - halfRotation}
-          y={simpleLineEndpoints.y1 - halfRotation}
-          width={rotationHandleSize}
-          height={rotationHandleSize}
-          fill="transparent"
-          style={{ cursor: 'nwse-resize', pointerEvents: 'all' }}
-          onMouseDown={handleMouseDown('w')}
-        />
-        
-        <rect
-          x={simpleLineEndpoints.x2 - halfRotation}
-          y={simpleLineEndpoints.y2 - halfRotation}
-          width={rotationHandleSize}
-          height={rotationHandleSize}
-          fill="transparent"
-          style={{ cursor: 'nwse-resize', pointerEvents: 'all' }}
-          onMouseDown={handleMouseDown('e')}
-        />
-        
-        <rect
           x={simpleLineEndpoints.x1 - halfHandle}
           y={simpleLineEndpoints.y1 - halfHandle}
           width={handleSize}
@@ -218,23 +198,51 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
         />
         
         <rect
-          x={x - halfRotation}
-          y={y - halfRotation}
+          x={simpleLineEndpoints.x1 - halfRotation}
+          y={simpleLineEndpoints.y1 - halfRotation}
           width={rotationHandleSize}
           height={rotationHandleSize}
           fill="transparent"
+          stroke={SELECTION_COLOR}
+          strokeWidth={0.5}
+          strokeDasharray="2,2"
+          vectorEffect="non-scaling-stroke"
           style={{ cursor: 'grab', pointerEvents: 'all' }}
           onMouseDown={handleRotateMouseDown}
         />
         
         <rect
-          x={x + width - halfRotation}
-          y={y + height - halfRotation}
+          x={simpleLineEndpoints.x2 - halfRotation}
+          y={simpleLineEndpoints.y2 - halfRotation}
           width={rotationHandleSize}
           height={rotationHandleSize}
           fill="transparent"
+          stroke={SELECTION_COLOR}
+          strokeWidth={0.5}
+          strokeDasharray="2,2"
+          vectorEffect="non-scaling-stroke"
           style={{ cursor: 'grab', pointerEvents: 'all' }}
           onMouseDown={handleRotateMouseDown}
+        />
+        
+        <rect
+          x={simpleLineEndpoints.x1 - halfRotation}
+          y={simpleLineEndpoints.y1 - halfRotation}
+          width={rotationHandleSize}
+          height={rotationHandleSize}
+          fill="transparent"
+          style={{ cursor: 'nwse-resize', pointerEvents: 'all' }}
+          onMouseDown={handleMouseDown('w')}
+        />
+        
+        <rect
+          x={simpleLineEndpoints.x2 - halfRotation}
+          y={simpleLineEndpoints.y2 - halfRotation}
+          width={rotationHandleSize}
+          height={rotationHandleSize}
+          fill="transparent"
+          style={{ cursor: 'nwse-resize', pointerEvents: 'all' }}
+          onMouseDown={handleMouseDown('e')}
         />
         
         {selectionCenter && (
