@@ -1,5 +1,6 @@
 Below are the colors that should be used in the SVG editor project as colors of shapes. The numbers and letters at the start of the line represent indices of the colors (i.e. "01" for blue color, "02" for red color etc)
 
+00 #000000
 01 #0000FF
 02 #FF0000
 03 #00E000
