@@ -401,7 +401,12 @@ export const Canvas: React.FC = () => {
     }
     
     if (isMovingRef.current && (e.buttons & 1)) {
-      const point = screenToCanvas(e.clientX, e.clientY)
+      let point = screenToCanvas(e.clientX, e.clientY)
+      
+      if (settings.snapToGrid) {
+        point = snapToGrid(point)
+      }
+      
       const deltaX = point.x - moveStartRef.current.x
       const deltaY = point.y - moveStartRef.current.y
       
@@ -425,8 +430,15 @@ export const Canvas: React.FC = () => {
 
     if (isResizingRef.current && (e.buttons & 1)) {
       const currentPoint = screenToCanvas(e.clientX, e.clientY)
-      const dx = currentPoint.x - resizeStartRef.current.x
-      const dy = currentPoint.y - resizeStartRef.current.y
+      let dx = currentPoint.x - resizeStartRef.current.x
+      let dy = currentPoint.y - resizeStartRef.current.y
+      
+      if (settings.snapToGrid) {
+        const snappedPoint = snapToGrid(currentPoint)
+        const startSnapped = snapToGrid(resizeStartRef.current)
+        dx = snappedPoint.x - startSnapped.x
+        dy = snappedPoint.y - startSnapped.y
+      }
       
       const handle = parseHandle(resizeHandleRef.current)
       const initialBox = initialBoxRef.current
@@ -541,7 +553,7 @@ export const Canvas: React.FC = () => {
     }
     
     tool.onMouseMove(e, toolContext)
-  }, [isPanning, panStart, pan, isResizingRef, isMovingRef, isRotatingRef, rotationStartRef, rotationShiftRef, resizeHandleRef, resizeStartRef, initialBoxRef, selectedIds, previewElement, activeTool, tool, toolContext, screenToCanvas, snapToGrid, updateElementNoHistory, calculateAngle])
+  }, [isPanning, panStart, pan, isResizingRef, isMovingRef, isRotatingRef, rotationStartRef, rotationShiftRef, resizeHandleRef, resizeStartRef, initialBoxRef, selectedIds, previewElement, activeTool, tool, toolContext, screenToCanvas, snapToGrid, updateElementNoHistory, calculateAngle, settings])
 
   /**
    * Handle mouse up
