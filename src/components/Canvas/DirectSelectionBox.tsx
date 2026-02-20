@@ -102,7 +102,6 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
                   y={p.y - halfHandle}
                   width={handleSize}
                   height={handleSize}
-                  rx={1}
                   fill={isSelected ? '#6B238E' : HANDLE_COLOR}
                   style={{ pointerEvents: 'all', cursor: 'move' }}
                   onMouseDown={handleVertexMouseDown(element.id, index)}
