@@ -239,3 +239,29 @@ export function transformPoints(
     return newPoint
   })
 }
+
+/**
+ * Flip points horizontally relative to center of bounding box
+ */
+export function flipPointsHorizontal(points: Point[], box: InitialSize): Point[] {
+  const centerX = box.x + box.width / 2
+  return points.map(p => {
+    const newPoint: Point = { x: 2 * centerX - p.x, y: p.y }
+    if (p.cp1) newPoint.cp1 = { x: 2 * centerX - p.cp1.x, y: p.cp1.y }
+    if (p.cp2) newPoint.cp2 = { x: 2 * centerX - p.cp2.x, y: p.cp2.y }
+    return newPoint
+  })
+}
+
+/**
+ * Flip points vertically relative to center of bounding box
+ */
+export function flipPointsVertical(points: Point[], box: InitialSize): Point[] {
+  const centerY = box.y + box.height / 2
+  return points.map(p => {
+    const newPoint: Point = { x: p.x, y: 2 * centerY - p.y }
+    if (p.cp1) newPoint.cp1 = { x: p.cp1.x, y: 2 * centerY - p.cp1.y }
+    if (p.cp2) newPoint.cp2 = { x: p.cp2.x, y: 2 * centerY - p.cp2.y }
+    return newPoint
+  })
+}

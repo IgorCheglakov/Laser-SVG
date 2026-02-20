@@ -1,13 +1,16 @@
 /**
  * Floating Properties Widget
  * 
- * Minimal placeholder widget that appears near selected objects.
- * Display only - actual property editing is in the Properties panel.
+ * Widget that appears near selected objects with flip controls.
+ * Dark theme with 70% opacity.
  */
 
 import { useMemo } from 'react'
-import { useEditorStore } from '@store/index'
+import { useEditorStore, saveToHistory } from '@store/index'
 import { DEFAULTS } from '@constants/index'
+import { flipPointsHorizontal, flipPointsVertical } from '@/utils/transform'
+import { FlipHorizontal, FlipVertical } from 'lucide-react'
+import type { PointElement, SVGElement } from '@/types-app/index'
 
 interface FloatingPropertiesWidgetProps {
   scale: number
@@ -18,7 +21,7 @@ interface FloatingPropertiesWidgetProps {
 }
 
 /**
- * Floating Properties Widget - minimal placeholder
+ * Floating Properties Widget with flip controls
  */
 export const FloatingPropertiesWidget: React.FC<FloatingPropertiesWidgetProps> = ({
   scale,
@@ -27,10 +30,10 @@ export const FloatingPropertiesWidget: React.FC<FloatingPropertiesWidgetProps> =
   containerWidth,
   containerHeight,
 }) => {
-  const { elements, selectedIds } = useEditorStore()
+  const { elements, selectedIds, updateElement } = useEditorStore()
 
-  const screenPosition = useMemo(() => {
-    if (selectedIds.length === 0) return null
+  const { bounds, screenPosition } = useMemo(() => {
+    if (selectedIds.length === 0) return { bounds: null, screenPosition: null }
     
     let minX = Infinity
     let minY = Infinity
@@ -49,21 +52,31 @@ export const FloatingPropertiesWidget: React.FC<FloatingPropertiesWidgetProps> =
       }
     })
     
-    if (minX === Infinity) return null
+    if (minX === Infinity) return { bounds: null, screenPosition: null }
+    
+    const boundsVal = {
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY,
+    }
     
     const left = minX * DEFAULTS.MM_TO_PX * scale + offsetX
     const top = minY * DEFAULTS.MM_TO_PX * scale + offsetY
     const width = (maxX - minX) * DEFAULTS.MM_TO_PX * scale
     const height = (maxY - minY) * DEFAULTS.MM_TO_PX * scale
     
-    return { left, top, width, height }
+    return { 
+      bounds: boundsVal, 
+      screenPosition: { left, top, width, height } 
+    }
   }, [elements, selectedIds, scale, offsetX, offsetY])
 
   const positionedStyle = useMemo(() => {
     if (!screenPosition) return null
     
-    const widgetWidth = 40
-    const widgetHeight = 20
+    const widgetWidth = 70
+    const widgetHeight = 28
     const padding = 10
     
     let left = screenPosition.left + screenPosition.width + padding
@@ -94,19 +107,61 @@ export const FloatingPropertiesWidget: React.FC<FloatingPropertiesWidgetProps> =
     }
   }, [screenPosition, containerWidth, containerHeight])
 
+  const handleFlipHorizontal = () => {
+    if (!bounds || selectedIds.length === 0) return
+    saveToHistory()
+    
+    selectedIds.forEach(id => {
+      const element = elements.find(el => el.id === id)
+      if (!element || !('points' in element)) return
+      
+      const pointEl = element as PointElement
+      const newPoints = flipPointsHorizontal(pointEl.points, bounds)
+      updateElement(id, { points: newPoints } as Partial<SVGElement>)
+    })
+  }
+
+  const handleFlipVertical = () => {
+    if (!bounds || selectedIds.length === 0) return
+    saveToHistory()
+    
+    selectedIds.forEach(id => {
+      const element = elements.find(el => el.id === id)
+      if (!element || !('points' in element)) return
+      
+      const pointEl = element as PointElement
+      const newPoints = flipPointsVertical(pointEl.points, bounds)
+      updateElement(id, { points: newPoints } as Partial<SVGElement>)
+    })
+  }
+
   if (selectedIds.length === 0 || !positionedStyle) return null
 
   return (
     <div 
-      className="absolute bg-dark-accent/30 border border-dark-accent rounded z-40"
+      className="absolute flex gap-1 items-center justify-center px-2 py-1 bg-dark-bgSecondary border border-dark-border rounded shadow-lg z-40"
       style={{
         left: positionedStyle.left,
         top: positionedStyle.top,
-        minWidth: '40px',
-        minHeight: '20px',
-        width: '40px',
-        height: '20px',
+        minWidth: '70px',
+        minHeight: '28px',
+        opacity: 0.7,
       }}
-    />
+    >
+      <button
+        onClick={handleFlipHorizontal}
+        className="p-1 hover:bg-dark-bgTertiary rounded text-dark-textMuted hover:text-dark-text transition-colors"
+        title="Flip Horizontal"
+      >
+        <FlipHorizontal size={14} />
+      </button>
+      <button
+        onClick={handleFlipVertical}
+        className="p-1 hover:bg-dark-bgTertiary rounded text-dark-textMuted hover:text-dark-text transition-colors"
+        title="Flip Vertical"
+      >
+        <FlipVertical size={14} />
+      </button>
+    </div>
   )
 }
