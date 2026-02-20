@@ -75,6 +75,7 @@ export const useEditorStore = create<EditorState>()(
     // Initial state
     elements: [],
     selectedIds: [],
+    selectedVertices: new Set<string>(),
     view: initialView,
     settings: initialSettings,
     activeTool: 'selection',
@@ -192,6 +193,9 @@ export const useEditorStore = create<EditorState>()(
 
     // Tool actions
     setActiveTool: (tool) => set({ activeTool: tool }),
+    
+    // Vertex selection actions
+    setSelectedVertices: (vertices: Set<string>) => set({ selectedVertices: vertices }),
   }))
 )
 

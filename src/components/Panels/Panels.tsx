@@ -11,10 +11,182 @@ import { Square, Circle, Minus } from 'lucide-react'
 import type { PointElement, SVGElement } from '@/types-app/index'
 
 /**
+ * Vertex Properties Panel for Direct Selection tool
+ */
+const VertexPropertiesPanel: React.FC<{
+  selectedVertices: Set<string>
+  elements: PointElement[]
+}> = ({ selectedVertices, elements }) => {
+  const { updateElement } = useEditorStore()
+
+  const [localValues, setLocalValues] = useState<{
+    x: string
+    y: string
+    width: string
+    height: string
+  }>({
+    x: '',
+    y: '',
+    width: '',
+    height: '',
+  })
+
+  const selectedPoints = useMemo(() => {
+    const points: { x: number; y: number }[] = []
+    selectedVertices.forEach(key => {
+      const [elementId, vertexIndexStr] = key.split(':')
+      const vertexIndex = parseInt(vertexIndexStr, 10)
+      const element = elements.find(el => el.id === elementId)
+      if (element && element.points[vertexIndex]) {
+        points.push(element.points[vertexIndex])
+      }
+    })
+    return points
+  }, [selectedVertices, elements])
+
+  const pointCount = selectedPoints.length
+  const isMultiPoint = pointCount > 1
+  const isActive = pointCount > 0
+
+  const bounds = useMemo(() => {
+    if (selectedPoints.length === 0) return null
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+    for (const p of selectedPoints) {
+      minX = Math.min(minX, p.x)
+      minY = Math.min(minY, p.y)
+      maxX = Math.max(maxX, p.x)
+      maxY = Math.max(maxY, p.y)
+    }
+    if (minX === Infinity) return null
+    return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
+  }, [selectedPoints])
+
+  const handleInputChange = (field: 'x' | 'y' | 'width' | 'height') => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalValues(prev => ({ ...prev, [field]: e.target.value }))
+  }
+
+  const handleBlur = (field: 'x' | 'y' | 'width' | 'height') => () => {
+    const value = parseFloat(localValues[field])
+    if (isNaN(value)) return
+
+    if (field === 'x' && !isMultiPoint && bounds) {
+      const deltaX = value - bounds.x
+      selectedVertices.forEach(key => {
+        const [elementId, vertexIndexStr] = key.split(':')
+        const vertexIndex = parseInt(vertexIndexStr, 10)
+        const element = elements.find(el => el.id === elementId)
+        if (element) {
+          const newPoints = [...element.points]
+          newPoints[vertexIndex] = { ...newPoints[vertexIndex], x: newPoints[vertexIndex].x + deltaX }
+          updateElement(elementId, { points: newPoints } as Partial<SVGElement>)
+        }
+      })
+    } else if (field === 'y' && !isMultiPoint && bounds) {
+      const deltaY = value - bounds.y
+      selectedVertices.forEach(key => {
+        const [elementId, vertexIndexStr] = key.split(':')
+        const vertexIndex = parseInt(vertexIndexStr, 10)
+        const element = elements.find(el => el.id === elementId)
+        if (element) {
+          const newPoints = [...element.points]
+          newPoints[vertexIndex] = { ...newPoints[vertexIndex], y: newPoints[vertexIndex].y + deltaY }
+          updateElement(elementId, { points: newPoints } as Partial<SVGElement>)
+        }
+      })
+    } else if ((field === 'width' || field === 'height') && isMultiPoint && bounds) {
+      const isWidth = field === 'width'
+      const newValue = value
+      const oldValue = isWidth ? bounds.width : bounds.height
+      if (oldValue === 0) return
+
+      const scale = newValue / oldValue
+
+      selectedVertices.forEach(key => {
+        const [elementId, vertexIndexStr] = key.split(':')
+        const vertexIndex = parseInt(vertexIndexStr, 10)
+        const element = elements.find(el => el.id === elementId)
+        if (element) {
+          const newPoints = [...element.points]
+          const p = newPoints[vertexIndex]
+          if (isWidth) {
+            newPoints[vertexIndex] = { ...p, x: bounds.x + (p.x - bounds.x) * scale }
+          } else {
+            newPoints[vertexIndex] = { ...p, y: bounds.y + (p.y - bounds.y) * scale }
+          }
+          updateElement(elementId, { points: newPoints } as Partial<SVGElement>)
+        }
+      })
+    }
+  }
+
+  const getInputValue = (field: 'x' | 'y' | 'width' | 'height', fallback: string) => {
+    return localValues[field] || fallback
+  }
+
+  const displayX = bounds ? bounds.x.toFixed(1) : '0'
+  const displayY = bounds ? bounds.y.toFixed(1) : '0'
+  const displayW = bounds ? bounds.width.toFixed(1) : '0'
+  const displayH = bounds ? bounds.height.toFixed(1) : '0'
+
+  return (
+    <div className="p-4 space-y-3">
+      <div className="text-sm text-dark-text font-medium">Vertex Properties</div>
+      
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-xs text-dark-textMuted block mb-1">{UI_STRINGS.PROP_X}</label>
+          <input
+            type="text"
+            value={getInputValue('x', displayX)}
+            onChange={handleInputChange('x')}
+            onBlur={handleBlur('x')}
+            disabled={!isActive || isMultiPoint}
+            className="w-full bg-dark-bgTertiary text-dark-text text-xs px-2 py-1 rounded border border-dark-border disabled:opacity-50"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-dark-textMuted block mb-1">{UI_STRINGS.PROP_Y}</label>
+          <input
+            type="text"
+            value={getInputValue('y', displayY)}
+            onChange={handleInputChange('y')}
+            onBlur={handleBlur('y')}
+            disabled={!isActive || isMultiPoint}
+            className="w-full bg-dark-bgTertiary text-dark-text text-xs px-2 py-1 rounded border border-dark-border disabled:opacity-50"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-dark-textMuted block mb-1">{UI_STRINGS.PROP_WIDTH}</label>
+          <input
+            type="text"
+            value={getInputValue('width', displayW)}
+            onChange={handleInputChange('width')}
+            onBlur={handleBlur('width')}
+            disabled={!isActive || !isMultiPoint}
+            className="w-full bg-dark-bgTertiary text-dark-text text-xs px-2 py-1 rounded border border-dark-border disabled:opacity-50"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-dark-textMuted block mb-1">{UI_STRINGS.PROP_HEIGHT}</label>
+          <input
+            type="text"
+            value={getInputValue('height', displayH)}
+            onChange={handleInputChange('height')}
+            onBlur={handleBlur('height')}
+            disabled={!isActive || !isMultiPoint}
+            className="w-full bg-dark-bgTertiary text-dark-text text-xs px-2 py-1 rounded border border-dark-border disabled:opacity-50"
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
  * Right panel container with layers and properties
  */
 export const Panels: React.FC = () => {
-  const { elements, selectedIds, setSelectedIds, updateElement } = useEditorStore()
+  const { elements, selectedIds, setSelectedIds, updateElement, activeTool, selectedVertices } = useEditorStore()
 
   const [localValues, setLocalValues] = useState<{
     x: string
@@ -210,7 +382,14 @@ export const Panels: React.FC = () => {
         <div className="px-3 py-2 bg-dark-bgTertiary text-sm font-medium text-dark-text border-b border-dark-border">
           {UI_STRINGS.PANEL_PROPERTIES}
         </div>
-        <div className="p-4">
+        
+        {activeTool === 'directSelection' ? (
+          <VertexPropertiesPanel
+            selectedVertices={selectedVertices}
+            elements={elements.filter(el => selectedIds.includes(el.id) && 'points' in el) as PointElement[]}
+          />
+        ) : (
+          <div className="p-4">
           {selectedIds.length === 0 ? (
             <div className="text-sm text-dark-textMuted italic">
               {UI_STRINGS.PANEL_NO_SELECTION}
@@ -322,6 +501,7 @@ export const Panels: React.FC = () => {
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* Layers Panel */}

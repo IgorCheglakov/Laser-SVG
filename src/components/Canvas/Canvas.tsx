@@ -58,6 +58,8 @@ export const Canvas: React.FC = () => {
     addElement,
     updateElementNoHistory,
     activeTool,
+    selectedVertices,
+    setSelectedVertices,
   } = useEditorStore()
 
   const tool = useMemo(() => getTool(activeTool), [activeTool])
@@ -278,25 +280,22 @@ export const Canvas: React.FC = () => {
   /**
    * Handle vertex selection for direct selection tool
    */
-  const [selectedVertices, setSelectedVertices] = useState<Set<string>>(new Set())
-
   const handleVertexSelect = useCallback((elementId: string, vertexIndex: number, addToSelection: boolean) => {
     const key = `${elementId}:${vertexIndex}`
-    setSelectedVertices(prev => {
-      const next = new Set(prev)
-      if (addToSelection) {
-        if (next.has(key)) {
-          next.delete(key)
-        } else {
-          next.add(key)
-        }
+    const current = selectedVertices
+    const next = new Set(current)
+    if (addToSelection) {
+      if (next.has(key)) {
+        next.delete(key)
       } else {
-        next.clear()
         next.add(key)
       }
-      return next
-    })
-  }, [])
+    } else {
+      next.clear()
+      next.add(key)
+    }
+    setSelectedVertices(next)
+  }, [selectedVertices, setSelectedVertices])
 
   /**
    * Handle vertex drag start

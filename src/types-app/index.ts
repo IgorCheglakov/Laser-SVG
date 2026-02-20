@@ -137,6 +137,7 @@ export interface EditorState {
   // Elements
   elements: SVGElement[]
   selectedIds: string[]
+  selectedVertices: Set<string>
   
   // View
   view: ViewState
@@ -169,6 +170,9 @@ export interface EditorState {
   
   // Tool actions
   setActiveTool: (tool: ToolType) => void
+  
+  // Vertex selection
+  setSelectedVertices: (vertices: Set<string>) => void
 }
 
 /**
