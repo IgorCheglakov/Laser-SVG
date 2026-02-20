@@ -2,7 +2,7 @@
  * Bounding Box Component
  * 
  * Renders selection bounds with resize handles for selected elements.
- * All elements are represented as PointElement with array of points.
+ * Also renders rotation center indicators: point for each element and crosshair for selection.
  */
 
 import { useMemo } from 'react'
@@ -17,8 +17,32 @@ export interface BoundingBoxProps {
   onHandleDragStart?: (handle: string, startPoint: Point, altKey: boolean) => void
 }
 
+const SELECTION_COLOR = '#007acc'
+
 /**
- * Bounding Box with resize handles
+ * Calculate center point of a single element's bounding box
+ */
+function calculateElementCenter(element: PointElement): { x: number; y: number } {
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  
+  for (const p of element.points) {
+    minX = Math.min(minX, p.x)
+    minY = Math.min(minY, p.y)
+    maxX = Math.max(maxX, p.x)
+    maxY = Math.max(maxY, p.y)
+  }
+  
+  return {
+    x: (minX + maxX) / 2,
+    y: (minY + maxY) / 2,
+  }
+}
+
+/**
+ * Bounding Box with resize handles and rotation center indicators
  */
 export const BoundingBox: React.FC<BoundingBoxProps> = ({ 
   elements, 
@@ -31,6 +55,29 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
   }, [elements])
 
   const box = useMemo(() => calculateBoundingBox(pointElements, selectedIds), [pointElements, selectedIds])
+
+  const elementCenters = useMemo(() => {
+    return selectedIds.map(id => {
+      const element = elements.find(el => el.id === id)
+      if (!element || !('points' in element)) return null
+      const pointEl = element as PointElement
+      const center = calculateElementCenter(pointEl)
+      return {
+        id,
+        center,
+        screenX: center.x * DEFAULTS.MM_TO_PX,
+        screenY: center.y * DEFAULTS.MM_TO_PX,
+      }
+    }).filter(Boolean) as { id: string; center: Point; screenX: number; screenY: number }[]
+  }, [elements, selectedIds])
+
+  const selectionCenter = useMemo(() => {
+    if (!box) return null
+    return {
+      x: (box.x + box.width / 2) * DEFAULTS.MM_TO_PX,
+      y: (box.y + box.height / 2) * DEFAULTS.MM_TO_PX,
+    }
+  }, [box])
 
   if (!box) return null
 
@@ -53,6 +100,9 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
     { id: 'w', x: x - halfHandle, y: y + height / 2 - halfHandle, cursor: 'w-resize' },
   ]
 
+  const crosshairLength = 7 * DEFAULTS.MM_TO_PX
+  const crosshairThickness = 1
+
   const handleMouseDown = (handleId: string) => (e: React.MouseEvent) => {
     e.stopPropagation()
     onHandleDragStart?.(handleId, { x: e.clientX, y: e.clientY }, e.altKey)
@@ -66,7 +116,7 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
         width={width}
         height={height}
         fill="none"
-        stroke="#007acc"
+        stroke={SELECTION_COLOR}
         strokeWidth={1}
         strokeDasharray="4,4"
         vectorEffect="non-scaling-stroke"
@@ -82,13 +132,46 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
           width={handleSize}
           height={handleSize}
           fill="#ffffff"
-          stroke="#007acc"
+          stroke={SELECTION_COLOR}
           strokeWidth={1}
           vectorEffect="non-scaling-stroke"
           style={{ cursor: handle.cursor, pointerEvents: 'all' }}
           onMouseDown={handleMouseDown(handle.id)}
         />
       ))}
+
+      {elementCenters.map(({ id, screenX, screenY }) => (
+        <circle
+          key={`center-${id}`}
+          cx={screenX}
+          cy={screenY}
+          r={2.5}
+          fill={SELECTION_COLOR}
+        />
+      ))}
+
+      {selectionCenter && (
+        <>
+          <line
+            x1={selectionCenter.x - crosshairLength / 2}
+            y1={selectionCenter.y}
+            x2={selectionCenter.x + crosshairLength / 2}
+            y2={selectionCenter.y}
+            stroke={SELECTION_COLOR}
+            strokeWidth={crosshairThickness}
+            strokeLinecap="round"
+          />
+          <line
+            x1={selectionCenter.x}
+            y1={selectionCenter.y - crosshairLength / 2}
+            x2={selectionCenter.x}
+            y2={selectionCenter.y + crosshairLength / 2}
+            stroke={SELECTION_COLOR}
+            strokeWidth={crosshairThickness}
+            strokeLinecap="round"
+          />
+        </>
+      )}
     </g>
   )
 }

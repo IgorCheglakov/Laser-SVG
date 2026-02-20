@@ -53,6 +53,7 @@ export interface PointElement extends BaseElement {
   stroke: string
   strokeWidth: number
   isClosedShape: boolean
+  rotationCenter?: Point
 }
 
 /**
