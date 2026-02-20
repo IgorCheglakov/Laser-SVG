@@ -86,6 +86,13 @@ export const Panels: React.FC = () => {
     setLocalValues(prev => ({ ...prev, [field]: e.target.value }))
   }
 
+  const handleInputKeyDown = (handler: () => void) => (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handler()
+    }
+  }
+
   const handleXBlur = () => {
     if (!bounds || selectedIds.length === 0) return
     const value = parseFloat(localValues.x)
@@ -229,6 +236,7 @@ export const Panels: React.FC = () => {
                       value={getInputValue('x', bounds.x.toFixed(1))}
                       onChange={handleInputChange('x')}
                       onBlur={handleXBlur}
+                      onKeyDown={handleInputKeyDown(handleXBlur)}
                       className="w-full bg-dark-bgTertiary text-dark-text text-xs px-2 py-1 rounded border border-dark-border"
                     />
                   </div>
@@ -239,6 +247,7 @@ export const Panels: React.FC = () => {
                       value={getInputValue('y', bounds.y.toFixed(1))}
                       onChange={handleInputChange('y')}
                       onBlur={handleYBlur}
+                      onKeyDown={handleInputKeyDown(handleYBlur)}
                       className="w-full bg-dark-bgTertiary text-dark-text text-xs px-2 py-1 rounded border border-dark-border"
                     />
                   </div>
@@ -249,6 +258,7 @@ export const Panels: React.FC = () => {
                       value={getInputValue('width', bounds.width.toFixed(1))}
                       onChange={handleInputChange('width')}
                       onBlur={handleWidthBlur}
+                      onKeyDown={handleInputKeyDown(handleWidthBlur)}
                       className="w-full bg-dark-bgTertiary text-dark-text text-xs px-2 py-1 rounded border border-dark-border"
                     />
                   </div>
@@ -259,6 +269,7 @@ export const Panels: React.FC = () => {
                       value={getInputValue('height', bounds.height.toFixed(1))}
                       onChange={handleInputChange('height')}
                       onBlur={handleHeightBlur}
+                      onKeyDown={handleInputKeyDown(handleHeightBlur)}
                       className="w-full bg-dark-bgTertiary text-dark-text text-xs px-2 py-1 rounded border border-dark-border"
                     />
                   </div>
@@ -273,6 +284,7 @@ export const Panels: React.FC = () => {
                     value={getInputValue('angle', currentAngle.toString())}
                     onChange={handleInputChange('angle')}
                     onBlur={handleAngleBlur}
+                    onKeyDown={handleInputKeyDown(handleAngleBlur)}
                     className="w-full bg-dark-bgTertiary text-dark-text text-xs px-2 py-1 rounded border border-dark-border"
                   />
                 </div>

@@ -151,14 +151,14 @@ export const FloatingPropertiesWidget: React.FC<FloatingPropertiesWidgetProps> =
     >
       <button
         onClick={handleFlipHorizontal}
-        className="p-1 hover:bg-dark-bgTertiary rounded text-dark-textMuted hover:text-dark-text transition-colors"
+        className="p-1 hover:bg-dark-bgTertiary rounded text-dark-textMuted hover:text-dark-text transition-colors focus:outline-none"
         title="Flip Horizontal"
       >
         <FlipHorizontal size={14} />
       </button>
       <button
         onClick={handleFlipVertical}
-        className="p-1 hover:bg-dark-bgTertiary rounded text-dark-textMuted hover:text-dark-text transition-colors"
+        className="p-1 hover:bg-dark-bgTertiary rounded text-dark-textMuted hover:text-dark-text transition-colors focus:outline-none"
         title="Flip Vertical"
       >
         <FlipVertical size={14} />
