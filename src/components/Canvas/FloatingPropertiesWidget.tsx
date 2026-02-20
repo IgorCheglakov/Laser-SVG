@@ -147,6 +147,7 @@ export const FloatingPropertiesWidget: React.FC<FloatingPropertiesWidgetProps> =
         minHeight: '28px',
         opacity: 0.7,
       }}
+      onMouseDown={(e) => e.stopPropagation()}
     >
       <button
         onClick={handleFlipHorizontal}
