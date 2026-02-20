@@ -699,7 +699,7 @@ export const Canvas: React.FC = () => {
             <path
               d={`M ${DEFAULTS.MM_TO_PX} 0 L 0 0 0 ${DEFAULTS.MM_TO_PX}`}
               fill="none"
-              stroke="#3a3a3a"
+              stroke="#555555"
               strokeWidth={0.3 / view.scale}
               vectorEffect="non-scaling-stroke"
             />
@@ -714,7 +714,7 @@ export const Canvas: React.FC = () => {
             <path
               d={`M ${DEFAULTS.MM_TO_PX * 10} 0 L 0 0 0 ${DEFAULTS.MM_TO_PX * 10}`}
               fill="none"
-              stroke="#4a4a4a"
+              stroke="#777777"
               strokeWidth={2 / view.scale}
               vectorEffect="non-scaling-stroke"
             />
@@ -729,7 +729,7 @@ export const Canvas: React.FC = () => {
               width={20000}
               height={20000}
               fill="url(#grid)"
-              opacity={0.5}
+              opacity={0.7}
             />
             <rect
               x={-10000}
@@ -737,7 +737,7 @@ export const Canvas: React.FC = () => {
               width={20000}
               height={20000}
               fill="url(#gridBold)"
-              opacity={0.3}
+              opacity={0.5}
             />
           </>
         )}
@@ -748,9 +748,7 @@ export const Canvas: React.FC = () => {
           width={artboardWidthPx}
           height={artboardHeightPx}
           fill="#ffffff"
-          stroke="#333333"
-          strokeWidth={1 / view.scale}
-          vectorEffect="non-scaling-stroke"
+          className="artboard-border"
         />
 
         {settings.showGrid && (

@@ -69,4 +69,21 @@
     @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
     clip: rect(0, 0, 0, 0);
   }
+
+  /* Artboard border animation */
+  .artboard-border {
+    stroke: #555555;
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+    animation: borderPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes borderPulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
 }
