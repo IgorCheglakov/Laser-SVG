@@ -100,7 +100,7 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
     { id: 'w', x: x - halfHandle, y: y + height / 2 - halfHandle, cursor: 'w-resize' },
   ]
 
-  const crosshairLength = 7 * DEFAULTS.MM_TO_PX
+  const crosshairLength = 3.5 * DEFAULTS.MM_TO_PX
   const crosshairThickness = 1
 
   const handleMouseDown = (handleId: string) => (e: React.MouseEvent) => {
