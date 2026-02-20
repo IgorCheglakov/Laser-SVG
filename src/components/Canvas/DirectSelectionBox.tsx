@@ -19,7 +19,7 @@ export interface DirectSelectionBoxProps {
 }
 
 const HANDLE_COLOR = '#0047AB'
-const HANDLE_SIZE = 8
+const HANDLE_SIZE = 20
 
 /**
  * Direct Selection Box with vertex handles
