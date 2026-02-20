@@ -14,6 +14,7 @@ import { snapPoint } from '@/utils/snap'
 import { generateId } from '@/utils/id'
 import { DEFAULTS } from '@constants/index'
 import { BoundingBox } from './BoundingBox'
+import { DirectSelectionBox } from './DirectSelectionBox'
 import { FloatingPropertiesWidget } from './FloatingPropertiesWidget'
 import { transformPoints, parseHandle, rotatePoints, type InitialSize } from '@/utils/transform'
 
@@ -847,6 +848,14 @@ export const Canvas: React.FC = () => {
             scale={view.scale}
             onHandleDragStart={handleResizeStart}
             onRotateStart={handleRotateStart}
+          />
+        )}
+
+        {selectedIds.length > 0 && activeTool === 'directSelection' && (
+          <DirectSelectionBox 
+            elements={elements} 
+            selectedIds={selectedIds}
+            scale={view.scale}
           />
         )}
 
