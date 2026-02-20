@@ -200,8 +200,18 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
         />
         
         <rect
-          x={x - halfRotation}
-          y={y - halfRotation}
+          x={simpleLineEndpoints.x1 - halfRotation}
+          y={simpleLineEndpoints.y1 - halfRotation}
+          width={rotationHandleSize}
+          height={rotationHandleSize}
+          fill="transparent"
+          style={{ cursor: 'grab', pointerEvents: 'all' }}
+          onMouseDown={handleRotateMouseDown}
+        />
+        
+        <rect
+          x={simpleLineEndpoints.x2 - halfRotation}
+          y={simpleLineEndpoints.y2 - halfRotation}
           width={rotationHandleSize}
           height={rotationHandleSize}
           fill="transparent"

@@ -452,20 +452,48 @@ export const Canvas: React.FC = () => {
       
       if (!initialBox) return
       
-      selectedIds.forEach(id => {
-        const initialPoints = initialElementPositionsRef.current.get(id)
-        if (!initialPoints) return
+      const isSimpleLine = selectedIds.length === 1 && (() => {
+        const el = elements.find(el => el.id === selectedIds[0])
+        const pointEl = el as PointElement | undefined
+        return pointEl && 'points' in pointEl && pointEl.points.length === 2 && pointEl.isSimpleLine === true
+      })()
+
+      if (isSimpleLine) {
+        const initialPoints = initialElementPositionsRef.current.get(selectedIds[0])
+        if (!initialPoints || initialPoints.length !== 2) return
+
+        const pointIndex = resizeHandleRef.current === 'w' ? 0 : 1
+        const newPoints = [...initialPoints]
         
-        const newPoints = transformPoints(
-          initialPoints,
-          initialBox,
-          { dx, dy },
-          handle,
-          resizeFromCenterRef.current
-        )
+        if (settings.snapToGrid) {
+          newPoints[pointIndex] = {
+            x: Math.round(initialPoints[pointIndex].x / settings.gridSize) * settings.gridSize + dx,
+            y: Math.round(initialPoints[pointIndex].y / settings.gridSize) * settings.gridSize + dy,
+          }
+        } else {
+          newPoints[pointIndex] = {
+            x: initialPoints[pointIndex].x + dx,
+            y: initialPoints[pointIndex].y + dy,
+          }
+        }
         
-        updateElementNoHistory(id, { points: newPoints } as Partial<SVGElement>)
-      })
+        updateElementNoHistory(selectedIds[0], { points: newPoints } as Partial<SVGElement>)
+      } else {
+        selectedIds.forEach(id => {
+          const initialPoints = initialElementPositionsRef.current.get(id)
+          if (!initialPoints) return
+          
+          const newPoints = transformPoints(
+            initialPoints,
+            initialBox,
+            { dx, dy },
+            handle,
+            resizeFromCenterRef.current
+          )
+          
+          updateElementNoHistory(id, { points: newPoints } as Partial<SVGElement>)
+        })
+      }
     }
 
     if (isRotatingRef.current && (e.buttons & 1)) {
@@ -560,7 +588,7 @@ export const Canvas: React.FC = () => {
     }
     
     tool.onMouseMove(e, toolContext)
-  }, [isPanning, panStart, pan, isResizingRef, isMovingRef, isRotatingRef, rotationStartRef, rotationShiftRef, resizeHandleRef, resizeStartRef, initialBoxRef, selectedIds, previewElement, activeTool, tool, toolContext, screenToCanvas, snapToGrid, updateElementNoHistory, calculateAngle, settings])
+  }, [isPanning, panStart, pan, isResizingRef, isMovingRef, isRotatingRef, rotationStartRef, rotationShiftRef, resizeHandleRef, resizeStartRef, initialBoxRef, selectedIds, elements, previewElement, activeTool, tool, toolContext, screenToCanvas, snapToGrid, updateElementNoHistory, calculateAngle, settings])
 
   /**
    * Handle mouse up
