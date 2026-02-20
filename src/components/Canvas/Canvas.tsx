@@ -727,14 +727,16 @@ export const Canvas: React.FC = () => {
 
         {settings.showGrid && (
           <>
-            <rect
-              x={-10000}
-              y={-10000}
-              width={20000}
-              height={20000}
-              fill="url(#grid)"
-              opacity={0.94}
-            />
+            {view.scale >= 2.5 && (
+              <rect
+                x={-10000}
+                y={-10000}
+                width={20000}
+                height={20000}
+                fill="url(#grid)"
+                opacity={0.94}
+              />
+            )}
             <rect
               x={-10000}
               y={-10000}
@@ -759,15 +761,17 @@ export const Canvas: React.FC = () => {
 
         {settings.showGrid && (
           <>
-            <rect
-              x={0}
-              y={0}
-              width={artboardWidthPx}
-              height={artboardHeightPx}
-              fill="url(#grid)"
-              opacity={0.9}
-              pointerEvents="none"
-            />
+            {view.scale >= 2.5 && (
+              <rect
+                x={0}
+                y={0}
+                width={artboardWidthPx}
+                height={artboardHeightPx}
+                fill="url(#grid)"
+                opacity={0.9}
+                pointerEvents="none"
+              />
+            )}
             <rect
               x={0}
               y={0}
