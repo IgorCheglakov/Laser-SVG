@@ -1,5 +1,8 @@
 # Project Specification: LaserSVG Editor
 
+## Development Rules
+- **Commits:** All commits are made only at user request.
+
 ## 1. General Information
 - **Project Type:** Desktop Application (Windows).
 - **Tech Stack:** Electron, React, TypeScript, Vite.

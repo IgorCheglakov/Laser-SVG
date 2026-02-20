@@ -137,7 +137,7 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
         height={height}
         fill="none"
         stroke={SELECTION_COLOR}
-        strokeWidth={1}
+        strokeWidth={0.5}
         vectorEffect="non-scaling-stroke"
         style={{ pointerEvents: 'all', animation: 'selectionPulse 2s ease-in-out infinite' }}
         onMouseDown={(e) => e.stopPropagation()}

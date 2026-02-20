@@ -699,7 +699,7 @@ export const Canvas: React.FC = () => {
             <path
               d={`M ${DEFAULTS.MM_TO_PX} 0 L 0 0 0 ${DEFAULTS.MM_TO_PX}`}
               fill="none"
-              stroke="#555555"
+              stroke="#222222"
               strokeWidth={0.3 / view.scale}
               vectorEffect="non-scaling-stroke"
             />
@@ -714,7 +714,7 @@ export const Canvas: React.FC = () => {
             <path
               d={`M ${DEFAULTS.MM_TO_PX * 10} 0 L 0 0 0 ${DEFAULTS.MM_TO_PX * 10}`}
               fill="none"
-              stroke="#777777"
+              stroke="#444444"
               strokeWidth={2 / view.scale}
               vectorEffect="non-scaling-stroke"
             />
