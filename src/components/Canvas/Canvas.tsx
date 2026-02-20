@@ -729,7 +729,7 @@ export const Canvas: React.FC = () => {
               width={20000}
               height={20000}
               fill="url(#grid)"
-              opacity={0.9}
+              opacity={0.94}
             />
             <rect
               x={-10000}
