@@ -125,6 +125,9 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
   const rotationHandleSize = 42 / Math.max(scale, 0.5)
   const halfRotation = rotationHandleSize / 2
 
+  const lineRotationSize = 60 / Math.max(scale, 0.5)
+  const halfLineRotation = lineRotationSize / 2
+
   const cornerHandles = [
     { id: 'nw', x: x - halfHandle, y: y - halfHandle },
     { id: 'ne', x: x + width - halfHandle, y: y - halfHandle },
@@ -174,34 +177,10 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
         />
         
         <rect
-          x={simpleLineEndpoints.x1 - halfHandle}
-          y={simpleLineEndpoints.y1 - halfHandle}
-          width={handleSize}
-          height={handleSize}
-          fill="#ffffff"
-          stroke={SELECTION_COLOR}
-          strokeWidth={1}
-          vectorEffect="non-scaling-stroke"
-          style={{ pointerEvents: 'none' }}
-        />
-        
-        <rect
-          x={simpleLineEndpoints.x2 - halfHandle}
-          y={simpleLineEndpoints.y2 - halfHandle}
-          width={handleSize}
-          height={handleSize}
-          fill="#ffffff"
-          stroke={SELECTION_COLOR}
-          strokeWidth={1}
-          vectorEffect="non-scaling-stroke"
-          style={{ pointerEvents: 'none' }}
-        />
-        
-        <rect
-          x={simpleLineEndpoints.x1 - halfRotation}
-          y={simpleLineEndpoints.y1 - halfRotation}
-          width={rotationHandleSize}
-          height={rotationHandleSize}
+          x={simpleLineEndpoints.x1 - halfLineRotation}
+          y={simpleLineEndpoints.y1 - halfLineRotation}
+          width={lineRotationSize}
+          height={lineRotationSize}
           fill="transparent"
           stroke={SELECTION_COLOR}
           strokeWidth={0.5}
@@ -212,10 +191,10 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
         />
         
         <rect
-          x={simpleLineEndpoints.x2 - halfRotation}
-          y={simpleLineEndpoints.y2 - halfRotation}
-          width={rotationHandleSize}
-          height={rotationHandleSize}
+          x={simpleLineEndpoints.x2 - halfLineRotation}
+          y={simpleLineEndpoints.y2 - halfLineRotation}
+          width={lineRotationSize}
+          height={lineRotationSize}
           fill="transparent"
           stroke={SELECTION_COLOR}
           strokeWidth={0.5}
@@ -243,6 +222,30 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
           fill="transparent"
           style={{ cursor: 'nwse-resize', pointerEvents: 'all' }}
           onMouseDown={handleMouseDown('e')}
+        />
+        
+        <rect
+          x={simpleLineEndpoints.x1 - halfHandle}
+          y={simpleLineEndpoints.y1 - halfHandle}
+          width={handleSize}
+          height={handleSize}
+          fill="#ffffff"
+          stroke={SELECTION_COLOR}
+          strokeWidth={1}
+          vectorEffect="non-scaling-stroke"
+          style={{ pointerEvents: 'none' }}
+        />
+        
+        <rect
+          x={simpleLineEndpoints.x2 - halfHandle}
+          y={simpleLineEndpoints.y2 - halfHandle}
+          width={handleSize}
+          height={handleSize}
+          fill="#ffffff"
+          stroke={SELECTION_COLOR}
+          strokeWidth={1}
+          vectorEffect="non-scaling-stroke"
+          style={{ pointerEvents: 'none' }}
         />
         
         {selectionCenter && (
