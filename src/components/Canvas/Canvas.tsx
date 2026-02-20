@@ -759,8 +759,8 @@ export const Canvas: React.FC = () => {
             y={0}
             width={artboardWidthPx}
             height={artboardHeightPx}
-            fill="url(#grid)"
-            opacity={0.1}
+            fill="url(#gridBold)"
+            opacity={0.4}
             pointerEvents="none"
           />
         )}

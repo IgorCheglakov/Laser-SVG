@@ -116,7 +116,7 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
   ]
 
   const crosshairLength = 3.5 * DEFAULTS.MM_TO_PX
-  const crosshairThickness = 1
+  const crosshairThickness = 0.5
 
   const handleMouseDown = (handleId: string) => (e: React.MouseEvent) => {
     e.stopPropagation()
