@@ -541,7 +541,7 @@ export const Canvas: React.FC = () => {
     }
     
     tool.onMouseMove(e, toolContext)
-  }, [isPanning, panStart, pan, isResizingRef, isMovingRef, isRotatingRef, rotationStartRef, rotationShiftRef, resizeHandleRef, resizeStartRef, initialBoxRef, selectedIds, previewElement, activeTool, tool, toolContext, screenToCanvas, snapToGrid, updateElementNoHistory, elements, calculateAngle])
+  }, [isPanning, panStart, pan, isResizingRef, isMovingRef, isRotatingRef, rotationStartRef, rotationShiftRef, resizeHandleRef, resizeStartRef, initialBoxRef, selectedIds, previewElement, activeTool, tool, toolContext, screenToCanvas, snapToGrid, updateElementNoHistory, calculateAngle])
 
   /**
    * Handle mouse up
