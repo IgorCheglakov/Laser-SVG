@@ -41,6 +41,11 @@ export const Canvas: React.FC = () => {
   const isRotatingRef = useRef(false)
   const rotationStartRef = useRef<Point>({ x: 0, y: 0 })
   const rotationShiftRef = useRef(false)
+  const isVertexMovingRef = useRef(false)
+  const vertexMoveStartRef = useRef<Point>({ x: 0, y: 0 })
+  const vertexMoveElementIdRef = useRef<string>('')
+  const vertexMoveIndicesRef = useRef<number[]>([])
+  const initialVertexPositionsRef = useRef<Map<string, Point[]>>(new Map())
   
   const { 
     view, 
@@ -271,6 +276,47 @@ export const Canvas: React.FC = () => {
   }, [elements, selectedIds, calculateBoundsForSelected])
 
   /**
+   * Handle vertex selection for direct selection tool
+   */
+  const [selectedVertices, setSelectedVertices] = useState<Set<string>>(new Set())
+
+  const handleVertexSelect = useCallback((elementId: string, vertexIndex: number, addToSelection: boolean) => {
+    const key = `${elementId}:${vertexIndex}`
+    setSelectedVertices(prev => {
+      const next = new Set(prev)
+      if (addToSelection) {
+        if (next.has(key)) {
+          next.delete(key)
+        } else {
+          next.add(key)
+        }
+      } else {
+        next.clear()
+        next.add(key)
+      }
+      return next
+    })
+  }, [])
+
+  /**
+   * Handle vertex drag start
+   */
+  const handleVertexDragStart = useCallback((elementId: string, vertexIndices: number[], clientPoint: Point) => {
+    isVertexMovingRef.current = true
+    vertexMoveElementIdRef.current = elementId
+    vertexMoveIndicesRef.current = vertexIndices
+    vertexMoveStartRef.current = clientPoint
+    
+    const el = elements.find(el => el.id === elementId)
+    if (el && 'points' in el) {
+      const pointEl = el as PointElement
+      initialVertexPositionsRef.current.set(elementId, JSON.parse(JSON.stringify(pointEl.points)))
+    }
+    
+    saveToHistory()
+  }, [elements])
+
+  /**
    * Calculate angle from center to point (in degrees)
    */
   const calculateAngle = useCallback((point: Point, center: Point): number => {
@@ -454,6 +500,43 @@ export const Canvas: React.FC = () => {
         
         updateElementNoHistory(id, { points: newPoints } as Partial<SVGElement>)
       })
+    }
+
+    if (isVertexMovingRef.current && (e.buttons & 1)) {
+      const currentPoint = screenToCanvas(e.clientX, e.clientY)
+      let dx = currentPoint.x - screenToCanvas(vertexMoveStartRef.current.x, vertexMoveStartRef.current.y).x
+      let dy = currentPoint.y - screenToCanvas(vertexMoveStartRef.current.x, vertexMoveStartRef.current.y).y
+      
+      if (settings.snapToGrid) {
+        const startPoint = screenToCanvas(vertexMoveStartRef.current.x, vertexMoveStartRef.current.y)
+        const snappedStart = snapToGrid(startPoint)
+        const snappedCurrent = snapToGrid(currentPoint)
+        dx = snappedCurrent.x - snappedStart.x
+        dy = snappedCurrent.y - snappedStart.y
+      }
+      
+      const elementId = vertexMoveElementIdRef.current
+      const indices = vertexMoveIndicesRef.current
+      const initialPositions = initialVertexPositionsRef.current.get(elementId)
+      
+      if (!initialPositions) return
+      
+      const el = elements.find(el => el.id === elementId)
+      if (!el || !('points' in el)) return
+      
+      const pointEl = el as PointElement
+      const newPoints = [...pointEl.points]
+      
+      for (const index of indices) {
+        if (index >= 0 && index < newPoints.length) {
+          newPoints[index] = {
+            x: initialPositions[index].x + dx,
+            y: initialPositions[index].y + dy,
+          }
+        }
+      }
+      
+      updateElementNoHistory(elementId, { points: newPoints } as Partial<SVGElement>)
     }
 
     if (isResizingRef.current && (e.buttons & 1)) {
@@ -654,6 +737,14 @@ export const Canvas: React.FC = () => {
       initialBoxRef.current = null
       initialElementPositionsRef.current.clear()
     }
+
+    if (isVertexMovingRef.current) {
+      isVertexMovingRef.current = false
+      vertexMoveElementIdRef.current = ''
+      vertexMoveIndicesRef.current = []
+      vertexMoveStartRef.current = { x: 0, y: 0 }
+      initialVertexPositionsRef.current.clear()
+    }
     
     if (isDrawingRef.current && previewElement) {
       isDrawingRef.current = false
@@ -707,6 +798,14 @@ export const Canvas: React.FC = () => {
         rotationShiftRef.current = false
         initialBoxRef.current = null
         initialElementPositionsRef.current.clear()
+      }
+
+      if (isVertexMovingRef.current) {
+        isVertexMovingRef.current = false
+        vertexMoveElementIdRef.current = ''
+        vertexMoveIndicesRef.current = []
+        vertexMoveStartRef.current = { x: 0, y: 0 }
+        initialVertexPositionsRef.current.clear()
       }
       
       if (isDrawingRef.current && previewElement) {
@@ -876,6 +975,9 @@ export const Canvas: React.FC = () => {
             elements={elements} 
             selectedIds={selectedIds}
             scale={view.scale}
+            selectedVertices={selectedVertices}
+            onVertexSelect={handleVertexSelect}
+            onVertexDragStart={handleVertexDragStart}
           />
         )}
 
