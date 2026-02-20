@@ -748,7 +748,9 @@ export const Canvas: React.FC = () => {
           width={artboardWidthPx}
           height={artboardHeightPx}
           fill="#ffffff"
-          className="artboard-border"
+          stroke="#555555"
+          strokeWidth={1}
+          vectorEffect="non-scaling-stroke"
         />
 
         {settings.showGrid && (

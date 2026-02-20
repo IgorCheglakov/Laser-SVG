@@ -70,15 +70,8 @@
     clip: rect(0, 0, 0, 0);
   }
 
-  /* Artboard border animation */
-  .artboard-border {
-    stroke: #555555;
-    stroke-width: 1;
-    vector-effect: non-scaling-stroke;
-    animation: borderPulse 2s ease-in-out infinite;
-  }
-
-  @keyframes borderPulse {
+  /* Selection bounding box pulse animation */
+  @keyframes selectionPulse {
     0%, 100% {
       opacity: 1;
     }
