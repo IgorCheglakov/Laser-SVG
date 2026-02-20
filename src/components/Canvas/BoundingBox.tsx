@@ -174,6 +174,26 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
         />
         
         <rect
+          x={simpleLineEndpoints.x1 - halfRotation}
+          y={simpleLineEndpoints.y1 - halfRotation}
+          width={rotationHandleSize}
+          height={rotationHandleSize}
+          fill="transparent"
+          style={{ cursor: 'nwse-resize', pointerEvents: 'all' }}
+          onMouseDown={handleMouseDown('w')}
+        />
+        
+        <rect
+          x={simpleLineEndpoints.x2 - halfRotation}
+          y={simpleLineEndpoints.y2 - halfRotation}
+          width={rotationHandleSize}
+          height={rotationHandleSize}
+          fill="transparent"
+          style={{ cursor: 'nwse-resize', pointerEvents: 'all' }}
+          onMouseDown={handleMouseDown('e')}
+        />
+        
+        <rect
           x={simpleLineEndpoints.x1 - halfHandle}
           y={simpleLineEndpoints.y1 - halfHandle}
           width={handleSize}
@@ -182,8 +202,7 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
           stroke={SELECTION_COLOR}
           strokeWidth={1}
           vectorEffect="non-scaling-stroke"
-          style={{ cursor: 'nwse-resize', pointerEvents: 'all' }}
-          onMouseDown={handleMouseDown('w')}
+          style={{ pointerEvents: 'none' }}
         />
         
         <rect
@@ -195,13 +214,12 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
           stroke={SELECTION_COLOR}
           strokeWidth={1}
           vectorEffect="non-scaling-stroke"
-          style={{ cursor: 'nwse-resize', pointerEvents: 'all' }}
-          onMouseDown={handleMouseDown('e')}
+          style={{ pointerEvents: 'none' }}
         />
         
         <rect
-          x={simpleLineEndpoints.x1 - halfRotation}
-          y={simpleLineEndpoints.y1 - halfRotation}
+          x={x - halfRotation}
+          y={y - halfRotation}
           width={rotationHandleSize}
           height={rotationHandleSize}
           fill="transparent"
@@ -210,8 +228,8 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
         />
         
         <rect
-          x={simpleLineEndpoints.x2 - halfRotation}
-          y={simpleLineEndpoints.y2 - halfRotation}
+          x={x + width - halfRotation}
+          y={y + height - halfRotation}
           width={rotationHandleSize}
           height={rotationHandleSize}
           fill="transparent"
