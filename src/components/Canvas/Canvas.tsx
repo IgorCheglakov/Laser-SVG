@@ -288,6 +288,12 @@ export const Canvas: React.FC = () => {
     }
     
     if (e.button === 0) {
+      const target = e.target as HTMLElement
+      if (target.tagName !== 'INPUT') {
+        const active = document.activeElement as HTMLElement
+        if (active) active.blur()
+      }
+
       const point = screenToCanvas(e.clientX, e.clientY)
       
       if (activeTool === 'selection') {
@@ -686,6 +692,21 @@ export const Canvas: React.FC = () => {
         <defs>
           <pattern
             id="grid"
+            width={DEFAULTS.MM_TO_PX}
+            height={DEFAULTS.MM_TO_PX}
+            patternUnits="userSpaceOnUse"
+          >
+            <path
+              d={`M ${DEFAULTS.MM_TO_PX} 0 L 0 0 0 ${DEFAULTS.MM_TO_PX}`}
+              fill="none"
+              stroke="#3a3a3a"
+              strokeWidth={1 / view.scale}
+              vectorEffect="non-scaling-stroke"
+            />
+          </pattern>
+          
+          <pattern
+            id="gridBold"
             width={DEFAULTS.MM_TO_PX * 10}
             height={DEFAULTS.MM_TO_PX * 10}
             patternUnits="userSpaceOnUse"
@@ -693,37 +714,32 @@ export const Canvas: React.FC = () => {
             <path
               d={`M ${DEFAULTS.MM_TO_PX * 10} 0 L 0 0 0 ${DEFAULTS.MM_TO_PX * 10}`}
               fill="none"
-              stroke="#2a2a2a"
-              strokeWidth={1 / view.scale}
+              stroke="#4a4a4a"
+              strokeWidth={1.5 / view.scale}
               vectorEffect="non-scaling-stroke"
-            />
-          </pattern>
-          
-          <pattern
-            id="dots"
-            width={DEFAULTS.MM_TO_PX}
-            height={DEFAULTS.MM_TO_PX}
-            patternUnits="userSpaceOnUse"
-          >
-            <circle
-              cx={0.5}
-              cy={0.5}
-              r={0.5}
-              fill="#3a3a3a"
-              opacity={0.5}
             />
           </pattern>
         </defs>
 
         {settings.showGrid && (
-          <rect
-            x={-10000}
-            y={-10000}
-            width={20000}
-            height={20000}
-            fill="url(#dots)"
-            opacity={0.3}
-          />
+          <>
+            <rect
+              x={-10000}
+              y={-10000}
+              width={20000}
+              height={20000}
+              fill="url(#grid)"
+              opacity={0.5}
+            />
+            <rect
+              x={-10000}
+              y={-10000}
+              width={20000}
+              height={20000}
+              fill="url(#gridBold)"
+              opacity={0.3}
+            />
+          </>
         )}
 
         <rect
