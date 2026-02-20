@@ -46,6 +46,12 @@ export const Canvas: React.FC = () => {
   const vertexMoveElementIdRef = useRef<string>('')
   const vertexMoveIndicesRef = useRef<number[]>([])
   const initialVertexPositionsRef = useRef<Map<string, Point[]>>(new Map())
+  const isControlMovingRef = useRef(false)
+  const controlMoveElementIdRef = useRef<string>('')
+  const controlMoveVertexIndexRef = useRef<number>(0)
+  const controlMoveTypeRef = useRef<'cp1' | 'cp2'>('cp1')
+  const controlMoveStartRef = useRef<Point>({ x: 0, y: 0 })
+  const initialControlPositionsRef = useRef<Map<string, Point[]>>(new Map())
   
   const { 
     view, 
@@ -316,6 +322,25 @@ export const Canvas: React.FC = () => {
   }, [elements])
 
   /**
+   * Handle control point drag start
+   */
+  const handleControlDragStart = useCallback((elementId: string, vertexIndex: number, controlType: 'cp1' | 'cp2', clientPoint: Point) => {
+    isControlMovingRef.current = true
+    controlMoveElementIdRef.current = elementId
+    controlMoveVertexIndexRef.current = vertexIndex
+    controlMoveTypeRef.current = controlType
+    controlMoveStartRef.current = clientPoint
+    
+    const el = elements.find(el => el.id === elementId)
+    if (el && 'points' in el) {
+      const pointEl = el as PointElement
+      initialControlPositionsRef.current.set(elementId, JSON.parse(JSON.stringify(pointEl.points)))
+    }
+    
+    saveToHistory()
+  }, [elements])
+
+  /**
    * Calculate angle from center to point (in degrees)
    */
   const calculateAngle = useCallback((point: Point, center: Point): number => {
@@ -538,6 +563,60 @@ export const Canvas: React.FC = () => {
       updateElementNoHistory(elementId, { points: newPoints } as Partial<SVGElement>)
     }
 
+    if (isControlMovingRef.current && (e.buttons & 1)) {
+      const currentPoint = screenToCanvas(e.clientX, e.clientY)
+      let dx = currentPoint.x - screenToCanvas(controlMoveStartRef.current.x, controlMoveStartRef.current.y).x
+      let dy = currentPoint.y - screenToCanvas(controlMoveStartRef.current.x, controlMoveStartRef.current.y).y
+      
+      if (settings.snapToGrid) {
+        const startPoint = screenToCanvas(controlMoveStartRef.current.x, controlMoveStartRef.current.y)
+        const snappedStart = snapToGrid(startPoint)
+        const snappedCurrent = snapToGrid(currentPoint)
+        dx = snappedCurrent.x - snappedStart.x
+        dy = snappedCurrent.y - snappedStart.y
+      }
+      
+      const elementId = controlMoveElementIdRef.current
+      const vertexIndex = controlMoveVertexIndexRef.current
+      const controlType = controlMoveTypeRef.current
+      const initialPositions = initialControlPositionsRef.current.get(elementId)
+      
+      if (!initialPositions) return
+      
+      const el = elements.find(el => el.id === elementId)
+      if (!el || !('points' in el)) return
+      
+      const pointEl = el as PointElement
+      const newPoints = [...pointEl.points]
+      
+      if (vertexIndex >= 0 && vertexIndex < newPoints.length) {
+        const initialPoint = initialPositions[vertexIndex]
+        const targetCp = controlType === 'cp1' ? initialPoint.cp1 : initialPoint.cp2
+        
+        if (targetCp) {
+          if (controlType === 'cp1') {
+            newPoints[vertexIndex] = {
+              ...newPoints[vertexIndex],
+              cp1: {
+                x: targetCp.x + dx,
+                y: targetCp.y + dy,
+              }
+            }
+          } else {
+            newPoints[vertexIndex] = {
+              ...newPoints[vertexIndex],
+              cp2: {
+                x: targetCp.x + dx,
+                y: targetCp.y + dy,
+              }
+            }
+          }
+        }
+      }
+      
+      updateElementNoHistory(elementId, { points: newPoints } as Partial<SVGElement>)
+    }
+
     if (isResizingRef.current && (e.buttons & 1)) {
       const currentPoint = screenToCanvas(e.clientX, e.clientY)
       let dx = currentPoint.x - resizeStartRef.current.x
@@ -744,6 +823,15 @@ export const Canvas: React.FC = () => {
       vertexMoveStartRef.current = { x: 0, y: 0 }
       initialVertexPositionsRef.current.clear()
     }
+
+    if (isControlMovingRef.current) {
+      isControlMovingRef.current = false
+      controlMoveElementIdRef.current = ''
+      controlMoveVertexIndexRef.current = 0
+      controlMoveTypeRef.current = 'cp1'
+      controlMoveStartRef.current = { x: 0, y: 0 }
+      initialControlPositionsRef.current.clear()
+    }
     
     if (isDrawingRef.current && previewElement) {
       isDrawingRef.current = false
@@ -805,6 +893,15 @@ export const Canvas: React.FC = () => {
         vertexMoveIndicesRef.current = []
         vertexMoveStartRef.current = { x: 0, y: 0 }
         initialVertexPositionsRef.current.clear()
+      }
+
+      if (isControlMovingRef.current) {
+        isControlMovingRef.current = false
+        controlMoveElementIdRef.current = ''
+        controlMoveVertexIndexRef.current = 0
+        controlMoveTypeRef.current = 'cp1'
+        controlMoveStartRef.current = { x: 0, y: 0 }
+        initialControlPositionsRef.current.clear()
       }
       
       if (isDrawingRef.current && previewElement) {
@@ -977,6 +1074,7 @@ export const Canvas: React.FC = () => {
             selectedVertices={selectedVertices}
             onVertexSelect={handleVertexSelect}
             onVertexDragStart={handleVertexDragStart}
+            onControlDragStart={handleControlDragStart}
           />
         )}
 

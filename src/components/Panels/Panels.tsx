@@ -128,6 +128,47 @@ const VertexPropertiesPanel: React.FC<{
   const displayW = bounds ? bounds.width.toFixed(1) : '0'
   const displayH = bounds ? bounds.height.toFixed(1) : '0'
 
+  const currentVertexType = useMemo(() => {
+    const firstKey = Array.from(selectedVertices)[0]
+    if (!firstKey) return 'straight'
+    const [elementId, vertexIndexStr] = firstKey.split(':')
+    const vertexIndex = parseInt(vertexIndexStr, 10)
+    const element = elements.find(el => el.id === elementId)
+    if (element && element.points[vertexIndex]) {
+      return element.points[vertexIndex].vertexType || 'straight'
+    }
+    return 'straight'
+  }, [selectedVertices, elements])
+
+  const hasControlPoints = useMemo(() => {
+    let hasCp = false
+    selectedVertices.forEach(key => {
+      const [elementId, vertexIndexStr] = key.split(':')
+      const vertexIndex = parseInt(vertexIndexStr, 10)
+      const element = elements.find(el => el.id === elementId)
+      if (element && element.points[vertexIndex]) {
+        if (element.points[vertexIndex].cp1 || element.points[vertexIndex].cp2) {
+          hasCp = true
+        }
+      }
+    })
+    return hasCp
+  }, [selectedVertices, elements])
+
+  const handleVertexTypeChange = (newType: 'straight' | 'smooth' | 'corner') => {
+    selectedVertices.forEach(key => {
+      const [elementId, vertexIndexStr] = key.split(':')
+      const vertexIndex = parseInt(vertexIndexStr, 10)
+      const element = elements.find(el => el.id === elementId)
+      if (element) {
+        const newPoints = [...element.points]
+        const p = newPoints[vertexIndex]
+        newPoints[vertexIndex] = { ...p, vertexType: newType }
+        updateElement(elementId, { points: newPoints } as Partial<SVGElement>)
+      }
+    })
+  }
+
   return (
     <div className="p-4 space-y-3">
       <div className="text-sm text-dark-text font-medium">Vertex Properties</div>
@@ -176,6 +217,48 @@ const VertexPropertiesPanel: React.FC<{
             disabled={!isActive || !isMultiPoint}
             className="w-full bg-dark-bgTertiary text-dark-text text-xs px-2 py-1 rounded border border-dark-border disabled:opacity-50"
           />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-xs text-dark-textMuted block">Vertex Type</label>
+        <div className="flex gap-1">
+          <button
+            onClick={() => handleVertexTypeChange('straight')}
+            disabled={!isActive}
+            className={`flex-1 px-2 py-1.5 text-xs rounded border ${
+              currentVertexType === 'straight'
+                ? 'bg-dark-accent text-white border-dark-accent'
+                : 'bg-dark-bgTertiary text-dark-text border-dark-border hover:bg-dark-border'
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
+            title="Straight (no curve)"
+          >
+            Straight
+          </button>
+          <button
+            onClick={() => handleVertexTypeChange('smooth')}
+            disabled={!isActive || !hasControlPoints}
+            className={`flex-1 px-2 py-1.5 text-xs rounded border ${
+              currentVertexType === 'smooth'
+                ? 'bg-dark-accent text-white border-dark-accent'
+                : 'bg-dark-bgTertiary text-dark-text border-dark-border hover:bg-dark-border'
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
+            title="Smooth (linked handles)"
+          >
+            Smooth
+          </button>
+          <button
+            onClick={() => handleVertexTypeChange('corner')}
+            disabled={!isActive || !hasControlPoints}
+            className={`flex-1 px-2 py-1.5 text-xs rounded border ${
+              currentVertexType === 'corner'
+                ? 'bg-dark-accent text-white border-dark-accent'
+                : 'bg-dark-bgTertiary text-dark-text border-dark-border hover:bg-dark-border'
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
+            title="Corner (independent handles)"
+          >
+            Corner
+          </button>
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@
  * Vertices are shown as squares with dark blue fill.
  * Selected vertices change to dark purple.
  * Supports multiple vertex selection via Ctrl+Click.
+ * Shows Bezier control handles for curve vertices.
  */
 
 import { useMemo, useState, useEffect } from 'react'
@@ -17,12 +18,15 @@ export interface DirectSelectionBoxProps {
   selectedIds: string[]
   scale: number
   onVertexDragStart?: (elementId: string, vertexIndices: number[], startPoint: Point) => void
+  onControlDragStart?: (elementId: string, vertexIndex: number, controlType: 'cp1' | 'cp2', startPoint: Point) => void
   selectedVertices?: Set<string>
   onVertexSelect?: (elementId: string, vertexIndex: number, addToSelection: boolean) => void
 }
 
 const HANDLE_COLOR = '#0047AB'
+const BEZIER_HANDLE_COLOR = '#FF6B35'
 const HANDLE_SIZE = 10
+const CONTROL_HANDLE_SIZE = 8
 
 /**
  * Generate a unique key for a vertex
@@ -39,6 +43,7 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
   selectedIds,
   scale,
   onVertexDragStart,
+  onControlDragStart,
   selectedVertices,
   onVertexSelect,
 }) => {
@@ -49,6 +54,8 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
   
   const handleSize = HANDLE_SIZE / Math.max(scale, 0.5)
   const halfHandle = handleSize / 2
+  const controlHandleSize = CONTROL_HANDLE_SIZE / Math.max(scale, 0.5)
+  const halfControlHandle = controlHandleSize / 2
 
   const selectedElements = useMemo(() => {
     return elements.filter(el => selectedIds.includes(el.id) && 'points' in el) as PointElement[]
@@ -95,12 +102,18 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
     if (currentSelectedVertices.has(key)) {
       indices = Array.from(currentSelectedVertices)
         .filter(k => k.startsWith(elementId + ':'))
+        .filter(k => !k.includes(':cp'))
         .map(k => parseInt(k.split(':')[1], 10))
     } else {
       indices = [vertexIndex]
     }
     
     onVertexDragStart?.(elementId, indices, { x: e.clientX, y: e.clientY })
+  }
+
+  const handleControlMouseDown = (elementId: string, vertexIndex: number, controlType: 'cp1' | 'cp2') => (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onControlDragStart?.(elementId, vertexIndex, controlType, { x: e.clientX, y: e.clientY })
   }
 
   const isVertexSelected = (elementId: string, vertexIndex: number) => {
@@ -115,6 +128,8 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
         const pathPoints = points.map(p => ({
           x: p.x * DEFAULTS.MM_TO_PX,
           y: p.y * DEFAULTS.MM_TO_PX,
+          cp1: p.cp1 ? { x: p.cp1.x * DEFAULTS.MM_TO_PX, y: p.cp1.y * DEFAULTS.MM_TO_PX } : undefined,
+          cp2: p.cp2 ? { x: p.cp2.x * DEFAULTS.MM_TO_PX, y: p.cp2.y * DEFAULTS.MM_TO_PX } : undefined,
         }))
         
         let pathD = ''
@@ -152,18 +167,68 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
             
             {pathPoints.map((p, index) => {
               const isSelected = isVertexSelected(element.id, index)
+              
               return (
-                <rect
-                  key={`vertex-${index}`}
-                  x={p.x - halfHandle}
-                  y={p.y - halfHandle}
-                  width={handleSize}
-                  height={handleSize}
-                  fill={isSelected ? '#6B238E' : HANDLE_COLOR}
-                  style={{ pointerEvents: 'all', cursor: 'move' }}
-                  onClick={handleVertexClick(element.id, index)}
-                  onMouseDown={handleVertexMouseDown(element.id, index)}
-                />
+                <g key={`vertex-${index}`}>
+                  {p.cp1 && (
+                    <>
+                      <line
+                        x1={p.x}
+                        y1={p.y}
+                        x2={p.cp1.x}
+                        y2={p.cp1.y}
+                        stroke={BEZIER_HANDLE_COLOR}
+                        strokeWidth={0.3}
+                        vectorEffect="non-scaling-stroke"
+                        style={{ pointerEvents: 'none' }}
+                      />
+                      <rect
+                        x={p.cp1.x - halfControlHandle}
+                        y={p.cp1.y - halfControlHandle}
+                        width={controlHandleSize}
+                        height={controlHandleSize}
+                        fill={BEZIER_HANDLE_COLOR}
+                        style={{ pointerEvents: 'all', cursor: 'move' }}
+                        onMouseDown={handleControlMouseDown(element.id, index, 'cp1')}
+                      />
+                    </>
+                  )}
+                  
+                  {p.cp2 && (
+                    <>
+                      <line
+                        x1={p.x}
+                        y1={p.y}
+                        x2={p.cp2.x}
+                        y2={p.cp2.y}
+                        stroke={BEZIER_HANDLE_COLOR}
+                        strokeWidth={0.3}
+                        vectorEffect="non-scaling-stroke"
+                        style={{ pointerEvents: 'none' }}
+                      />
+                      <rect
+                        x={p.cp2.x - halfControlHandle}
+                        y={p.cp2.y - halfControlHandle}
+                        width={controlHandleSize}
+                        height={controlHandleSize}
+                        fill={BEZIER_HANDLE_COLOR}
+                        style={{ pointerEvents: 'all', cursor: 'move' }}
+                        onMouseDown={handleControlMouseDown(element.id, index, 'cp2')}
+                      />
+                    </>
+                  )}
+                  
+                  <rect
+                    x={p.x - halfHandle}
+                    y={p.y - halfHandle}
+                    width={handleSize}
+                    height={handleSize}
+                    fill={isSelected ? '#6B238E' : HANDLE_COLOR}
+                    style={{ pointerEvents: 'all', cursor: 'move' }}
+                    onClick={handleVertexClick(element.id, index)}
+                    onMouseDown={handleVertexMouseDown(element.id, index)}
+                  />
+                </g>
               )
             })}
           </g>
