@@ -511,9 +511,22 @@ export const Canvas: React.FC = () => {
 
       let angleDelta = currentAngle - startAngle
 
-      if (!rotationShiftRef.current) {
-        const snapStep = 45
-        angleDelta = Math.round(angleDelta / snapStep) * snapStep
+      const isSimpleLineRotation = selectedIds.length === 1 && (() => {
+        const el = elements.find(el => el.id === selectedIds[0])
+        const pointEl = el as PointElement | undefined
+        return pointEl && 'points' in pointEl && pointEl.points.length === 2 && pointEl.isSimpleLine === true
+      })()
+
+      if (isSimpleLineRotation) {
+        if (rotationShiftRef.current) {
+          const snapStep = 45
+          angleDelta = Math.round(angleDelta / snapStep) * snapStep
+        }
+      } else {
+        if (!rotationShiftRef.current) {
+          const snapStep = 45
+          angleDelta = Math.round(angleDelta / snapStep) * snapStep
+        }
       }
 
       selectedIds.forEach(id => {

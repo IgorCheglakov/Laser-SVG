@@ -182,10 +182,6 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
           width={lineRotationSize}
           height={lineRotationSize}
           fill="transparent"
-          stroke={SELECTION_COLOR}
-          strokeWidth={0.5}
-          strokeDasharray="2,2"
-          vectorEffect="non-scaling-stroke"
           style={{ cursor: 'grab', pointerEvents: 'all' }}
           onMouseDown={handleRotateMouseDown}
         />
@@ -196,10 +192,6 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
           width={lineRotationSize}
           height={lineRotationSize}
           fill="transparent"
-          stroke={SELECTION_COLOR}
-          strokeWidth={0.5}
-          strokeDasharray="2,2"
-          vectorEffect="non-scaling-stroke"
           style={{ cursor: 'grab', pointerEvents: 'all' }}
           onMouseDown={handleRotateMouseDown}
         />
