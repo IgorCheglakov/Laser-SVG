@@ -692,6 +692,8 @@ export const Canvas: React.FC = () => {
         <defs>
           <pattern
             id="grid"
+            x={0}
+            y={0}
             width={DEFAULTS.MM_TO_PX}
             height={DEFAULTS.MM_TO_PX}
             patternUnits="userSpaceOnUse"
@@ -707,6 +709,8 @@ export const Canvas: React.FC = () => {
           
           <pattern
             id="gridBold"
+            x={0}
+            y={0}
             width={DEFAULTS.MM_TO_PX * 10}
             height={DEFAULTS.MM_TO_PX * 10}
             patternUnits="userSpaceOnUse"
