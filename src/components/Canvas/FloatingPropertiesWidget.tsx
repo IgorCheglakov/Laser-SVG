@@ -1,22 +1,35 @@
 /**
  * Floating Properties Widget
  * 
- * Widget that appears near selected objects for quick property editing.
- * All elements are now represented as PointElement with array of points.
+ * Minimal placeholder widget that appears near selected objects.
+ * Display only - actual property editing is in the Properties panel.
  */
 
 import { useMemo } from 'react'
 import { useEditorStore } from '@store/index'
-import { UI_STRINGS } from '@constants/index'
-import type { PointElement, SVGElement } from '@/types-app/index'
+import { DEFAULTS } from '@constants/index'
+
+interface FloatingPropertiesWidgetProps {
+  scale: number
+  offsetX: number
+  offsetY: number
+  containerWidth: number
+  containerHeight: number
+}
 
 /**
- * Floating Properties Widget
+ * Floating Properties Widget - minimal placeholder
  */
-export const FloatingPropertiesWidget: React.FC = () => {
-  const { elements, selectedIds, updateElement } = useEditorStore()
+export const FloatingPropertiesWidget: React.FC<FloatingPropertiesWidgetProps> = ({
+  scale,
+  offsetX,
+  offsetY,
+  containerWidth,
+  containerHeight,
+}) => {
+  const { elements, selectedIds } = useEditorStore()
 
-  const bounds = useMemo(() => {
+  const screenPosition = useMemo(() => {
     if (selectedIds.length === 0) return null
     
     let minX = Infinity
@@ -28,8 +41,7 @@ export const FloatingPropertiesWidget: React.FC = () => {
       const element = elements.find(el => el.id === id)
       if (!element || !('points' in element)) return
       
-      const pointEl = element as PointElement
-      for (const p of pointEl.points) {
+      for (const p of element.points) {
         minX = Math.min(minX, p.x)
         minY = Math.min(minY, p.y)
         maxX = Math.max(maxX, p.x)
@@ -39,126 +51,62 @@ export const FloatingPropertiesWidget: React.FC = () => {
     
     if (minX === Infinity) return null
     
-    return {
-      x: minX,
-      y: minY,
-      width: maxX - minX,
-      height: maxY - minY,
+    const left = minX * DEFAULTS.MM_TO_PX * scale + offsetX
+    const top = minY * DEFAULTS.MM_TO_PX * scale + offsetY
+    const width = (maxX - minX) * DEFAULTS.MM_TO_PX * scale
+    const height = (maxY - minY) * DEFAULTS.MM_TO_PX * scale
+    
+    return { left, top, width, height }
+  }, [elements, selectedIds, scale, offsetX, offsetY])
+
+  const positionedStyle = useMemo(() => {
+    if (!screenPosition) return null
+    
+    const widgetWidth = 40
+    const widgetHeight = 20
+    const padding = 10
+    
+    let left = screenPosition.left + screenPosition.width + padding
+    let top = screenPosition.top
+    
+    const rightEdge = left + widgetWidth
+    const bottomEdge = top + widgetHeight
+    
+    if (rightEdge > containerWidth) {
+      left = screenPosition.left - widgetWidth - padding
     }
-  }, [elements, selectedIds])
-
-  if (selectedIds.length === 0 || !bounds) return null
-
-  const selectedElement = elements.find(el => el.id === selectedIds[0])
-  if (!selectedElement || !('points' in selectedElement)) return null
-
-  const pointEl = selectedElement as PointElement
-
-  const handleXChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value)
-    if (isNaN(value)) return
     
-    const deltaX = value - bounds.x
-    const newPoints = pointEl.points.map(p => ({
-      x: p.x + deltaX,
-      y: p.y,
-    }))
-    updateElement(selectedElement.id, { points: newPoints } as Partial<SVGElement>)
-  }
-
-  const handleYChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value)
-    if (isNaN(value)) return
+    if (bottomEdge > containerHeight) {
+      top = containerHeight - widgetHeight - padding
+    }
     
-    const deltaY = value - bounds.y
-    const newPoints = pointEl.points.map(p => ({
-      x: p.x,
-      y: p.y + deltaY,
-    }))
-    updateElement(selectedElement.id, { points: newPoints } as Partial<SVGElement>)
-  }
-
-  const handleWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value)
-    if (isNaN(value) || value <= 0 || bounds.width === 0) return
+    if (left < padding) {
+      left = screenPosition.left + screenPosition.width / 2 - widgetWidth / 2
+    }
     
-    const scaleX = value / bounds.width
-    const newPoints = pointEl.points.map(p => ({
-      x: bounds.x + (p.x - bounds.x) * scaleX,
-      y: p.y,
-    }))
-    updateElement(selectedElement.id, { points: newPoints } as Partial<SVGElement>)
-  }
-
-  const handleHeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value)
-    if (isNaN(value) || value <= 0 || bounds.height === 0) return
+    if (top < padding) {
+      top = padding
+    }
     
-    const scaleY = value / bounds.height
-    const newPoints = pointEl.points.map(p => ({
-      x: p.x,
-      y: bounds.y + (p.y - bounds.y) * scaleY,
-    }))
-    updateElement(selectedElement.id, { points: newPoints } as Partial<SVGElement>)
-  }
+    return {
+      left: Math.max(padding, left),
+      top: Math.max(padding, top),
+    }
+  }, [screenPosition, containerWidth, containerHeight])
+
+  if (selectedIds.length === 0 || !positionedStyle) return null
 
   return (
     <div 
-      className="absolute bg-dark-bgSecondary border border-dark-border rounded shadow-lg p-3 z-50"
+      className="absolute bg-dark-accent/30 border border-dark-accent rounded z-40"
       style={{
-        left: '20px',
-        top: '20px',
-        minWidth: '180px',
+        left: positionedStyle.left,
+        top: positionedStyle.top,
+        minWidth: '40px',
+        minHeight: '20px',
+        width: '40px',
+        height: '20px',
       }}
-    >
-      <div className="text-xs font-semibold text-dark-text mb-2">
-        {selectedIds.length > 1 ? `${selectedIds.length} items selected` : 'Properties'}
-      </div>
-      
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="text-xs text-dark-textMuted block mb-1">{UI_STRINGS.PROP_X}</label>
-          <input
-            type="number"
-            value={bounds.x.toFixed(1)}
-            onChange={handleXChange}
-            className="w-full bg-dark-bgTertiary text-dark-text text-xs px-2 py-1 rounded border border-dark-border"
-            step="0.1"
-          />
-        </div>
-        <div>
-          <label className="text-xs text-dark-textMuted block mb-1">{UI_STRINGS.PROP_Y}</label>
-          <input
-            type="number"
-            value={bounds.y.toFixed(1)}
-            onChange={handleYChange}
-            className="w-full bg-dark-bgTertiary text-dark-text text-xs px-2 py-1 rounded border border-dark-border"
-            step="0.1"
-          />
-        </div>
-        <div>
-          <label className="text-xs text-dark-textMuted block mb-1">{UI_STRINGS.PROP_WIDTH}</label>
-          <input
-            type="number"
-            value={bounds.width.toFixed(1)}
-            onChange={handleWidthChange}
-            className="w-full bg-dark-bgTertiary text-dark-text text-xs px-2 py-1 rounded border border-dark-border"
-            step="0.1"
-            min="0.1"
-          />
-        </div>
-        <div>
-          <label className="text-xs text-dark-textMuted block mb-1">{UI_STRINGS.PROP_HEIGHT}</label>
-          <input
-            type="number"
-            value={bounds.height.toFixed(1)}
-            onChange={handleHeightChange}
-            className="w-full bg-dark-bgTertiary text-dark-text text-xs px-2 py-1 rounded border border-dark-border"
-            step="0.1"
-            min="0.1"
-          />
-        </div>
-      </div>
-    </div>
+    />
   )
 }

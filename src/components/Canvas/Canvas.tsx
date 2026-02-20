@@ -14,6 +14,7 @@ import { snapPoint } from '@/utils/snap'
 import { generateId } from '@/utils/id'
 import { DEFAULTS } from '@constants/index'
 import { BoundingBox } from './BoundingBox'
+import { FloatingPropertiesWidget } from './FloatingPropertiesWidget'
 import { transformPoints, parseHandle, type InitialSize } from '@/utils/transform'
 
 /**
@@ -689,6 +690,16 @@ export const Canvas: React.FC = () => {
           Middle drag to pan | Scroll to zoom
         </div>
       </div>
+
+      {selectedIds.length > 0 && activeTool === 'selection' && containerRef.current && (
+        <FloatingPropertiesWidget
+          scale={view.scale}
+          offsetX={view.offsetX}
+          offsetY={view.offsetY}
+          containerWidth={containerRef.current.clientWidth}
+          containerHeight={containerRef.current.clientHeight}
+        />
+      )}
     </div>
   )
 }
