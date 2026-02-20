@@ -6,7 +6,7 @@
 
 import { useMemo, useState } from 'react'
 import { useEditorStore } from '@store/index'
-import { UI_STRINGS } from '@constants/index'
+import { UI_STRINGS, COLOR_PALETTE } from '@constants/index'
 import { Square, Circle, Minus } from 'lucide-react'
 import type { PointElement, SVGElement } from '@/types-app/index'
 
@@ -287,6 +287,31 @@ export const Panels: React.FC = () => {
                     onKeyDown={handleInputKeyDown(handleAngleBlur)}
                     className="w-full bg-dark-bgTertiary text-dark-text text-xs px-2 py-1 rounded border border-dark-border"
                   />
+                </div>
+              )}
+
+              {selectedIds.length === 1 && pointElement && (
+                <div>
+                  <label className="text-xs text-dark-textMuted block mb-1">{UI_STRINGS.PROP_COLOR}</label>
+                  <div className="flex flex-wrap gap-1 max-w-[180px]">
+                    {COLOR_PALETTE.map((c) => (
+                      <button
+                        key={c.index}
+                        onClick={() => {
+                          updateElement(selectedIds[0], { stroke: c.color } as Partial<SVGElement>)
+                        }}
+                        className={`
+                          w-6 h-6 rounded border-2 transition-all
+                          ${pointElement.stroke === c.color 
+                            ? 'border-white scale-110' 
+                            : 'border-transparent hover:border-dark-border'
+                          }
+                        `}
+                        style={{ backgroundColor: c.color }}
+                        title={`${c.index}: ${c.color}`}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
