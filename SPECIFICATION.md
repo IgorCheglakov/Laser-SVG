@@ -26,7 +26,40 @@
 
 ## 3. Core Architecture & Modules
 
-### 3.1. State Management & History (Undo/Redo)
+### 3.1. Unified Element Model (PointElement)
+All visible elements that are exported to SVG file MUST inherit from PointElement.
+This ensures consistent behavior for transformation, rotation, and node manipulation.
+
+```typescript
+interface Point {
+  x: number
+  y: number
+  cp1?: { x: number; y: number }  // Bezier curve control point 1
+  cp2?: { x: number; y: number }  // Bezier curve control point 2
+}
+
+interface PointElement {
+  id: string
+  type: 'point'
+  name: string
+  visible: boolean
+  locked: boolean
+  points: Point[]
+  stroke: string
+  strokeWidth: number
+  isClosedShape: boolean  // true for closed shapes (rect, circle), false for open (line, polyline)
+}
+```
+
+**Shape Examples:**
+- Line: 2 points, isClosedShape = false
+- Rectangle: 4 points (corners), isClosedShape = true
+- Trapezoid: 4 points, isClosedShape = true
+- Polygon: N points, isClosedShape = true/false
+- Polyline: N points, isClosedShape = false
+- Circle/Ellipse: Represented as 4+ points with Bezier control points (cp1, cp2)
+
+### 3.2. State Management & History (Undo/Redo)
 - **Store:** Zustand.
 - **History:** Implement Undo/Redo functionality using `zustand/middleware` (temporal) or a custom history stack.
 - **Requirement:** Every action that changes the shape data (create, move, resize, color change) must be pushable to history stack.
@@ -64,8 +97,9 @@ Palette Datails are presented in the APPENDIX-COLOR.md file.
     V: Selection Tool
     A: Direct Selection Tool
     R: Rectangle Tool
-    E: Ellipse Tool
     L: Line Tool
+    T: Trapezoid Tool
+    P: Polygon Tool
     Ctrl+Z/Y: Undo/Redo
     Ctrl+S: Save
     Ctrl+O: Open
@@ -87,9 +121,11 @@ RULE FOR AI:
 - Setup Zustand store for SVG elements.
 - Implement Undo/Redo system integrated with the store.
 - Implement "Create Rectangle" tool (Click+Drag).
-- Implement "Create Ellipse" tool (Click+Drag).
-- Render shapes on canvas based on store.
-Deliverable: Ability to draw rects and ellipses. Undo/Redo must work for these actions.
+- Implement "Create Line" tool (Click+Drag).
+- Implement "Create Trapezoid" tool (Click+Drag).
+- Implement "Create Polygon" tool (Click+Click+...).
+- Render shapes on canvas using unified PointElement model.
+- Deliverable: Ability to draw rects, lines, trapezoids, polygons. Undo/Redo must work for these actions.
 ### Phase 3: Selection & Transformation
 - Implement "Selection Tool" (Black Arrow).
 - Click to select, Drag to move.
@@ -103,11 +139,11 @@ Deliverable: Ability to draw rects and ellipses. Undo/Redo must work for these a
 - Implement SnapService (1mm grid).
 - Toggle Snap via Hotkey.
 - Deliverable: Change color/dimensions via panel. Shapes snap to 1mm grid.
-### Phase 5: Direct Selection & Non-Destructive Editing
+### Phase 5: Direct Selection & Bezier Curves
 - Implement "Direct Selection Tool" (White Arrow) - Move individual nodes.
-- Implement Corner Radius for Rectangles (rx, ry attributes) via Properties Panel.
-- Ensure shapes remain primitives (<rect>, <ellipse>) unless explicitly converted.
-- Deliverable: Round rectangle corners. Move nodes individually.
+- Implement Bezier curve creation and editing via control points (cp1, cp2).
+- Implement circle/ellipse using 4 Bezier curves.
+- Deliverable: Move nodes individually. Create and edit Bezier curves.
 ### Phase 6: Export, Import & Settings
 - Export to SVG (Clean code, Lightburn compatible layers/colors).
 - Import SVG.

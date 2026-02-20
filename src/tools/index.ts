@@ -8,9 +8,9 @@ import type { ToolType } from '@/types-app/index'
 import type { ITool } from './types'
 import { selectionTool } from './SelectionTool'
 import { rectangleTool } from './RectangleTool'
-import { ellipseTool } from './EllipseTool'
 import { lineTool } from './LineTool'
 import { trapezoidTool } from './TrapezoidTool'
+import { polygonTool } from './PolygonTool'
 
 /**
  * Registry of all available tools
@@ -19,9 +19,9 @@ const tools: Record<ToolType, ITool> = {
   selection: selectionTool,
   directSelection: selectionTool, // Placeholder for Phase 5
   rectangle: rectangleTool,
-  ellipse: ellipseTool,
   line: lineTool,
   trapezoid: trapezoidTool,
+  polygon: polygonTool,
   pen: lineTool, // Placeholder
 }
 
@@ -35,5 +35,5 @@ export function getTool(type: ToolType): ITool {
 /**
  * Export all tools
  */
-export { selectionTool, rectangleTool, ellipseTool, lineTool, trapezoidTool }
+export { selectionTool, rectangleTool, lineTool, trapezoidTool, polygonTool }
 export type { ITool, ToolContext } from './types'

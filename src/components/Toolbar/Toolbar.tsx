@@ -8,9 +8,7 @@ import {
   MousePointer2, 
   MousePointerClick, 
   Square, 
-  Circle, 
   Minus,
-  Type,
   Pentagon,
 } from 'lucide-react'
 import { useEditorStore } from '@store/index'
@@ -50,12 +48,6 @@ const tools: ToolButton[] = [
     shortcut: 'R' 
   },
   { 
-    id: 'ellipse', 
-    icon: <Circle size={20} />, 
-    label: UI_STRINGS.TOOL_ELLIPSE, 
-    shortcut: 'E' 
-  },
-  { 
     id: 'line', 
     icon: <Minus size={20} />, 
     label: UI_STRINGS.TOOL_LINE, 
@@ -66,6 +58,12 @@ const tools: ToolButton[] = [
     icon: <Pentagon size={20} />, 
     label: 'Трапеция', 
     shortcut: 'T' 
+  },
+  { 
+    id: 'polygon', 
+    icon: <Pentagon size={20} />, 
+    label: 'Многоугольник', 
+    shortcut: 'P' 
   },
 ]
 
@@ -97,14 +95,6 @@ export const Toolbar: React.FC = () => {
       
       <div className="w-6 h-px bg-dark-border my-2" />
       
-      {/* Additional tools placeholder */}
-      <button
-        className="w-9 h-9 flex items-center justify-center rounded text-dark-textMuted hover:bg-dark-bgTertiary transition-colors"
-        title="Text Tool (T) - Coming in Phase 5"
-        disabled
-      >
-        <Type size={20} />
-      </button>
     </div>
   )
 }

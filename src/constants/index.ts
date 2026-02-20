@@ -43,7 +43,6 @@ export const UI_STRINGS = {
   TOOL_SELECTION: 'Selection Tool (V)',
   TOOL_DIRECT_SELECTION: 'Direct Selection (A)',
   TOOL_RECTANGLE: 'Rectangle Tool (R)',
-  TOOL_ELLIPSE: 'Ellipse Tool (E)',
   TOOL_LINE: 'Line Tool (L)',
   
   // Panels
@@ -83,7 +82,6 @@ export const HOTKEYS = {
   TOOL_SELECTION: 'v',
   TOOL_DIRECT_SELECTION: 'a',
   TOOL_RECTANGLE: 'r',
-  TOOL_ELLIPSE: 'e',
   TOOL_LINE: 'l',
   UNDO: 'ctrl+z',
   REDO: 'ctrl+y',

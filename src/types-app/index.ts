@@ -2,15 +2,16 @@
  * Core Type Definitions
  * 
  * TypeScript interfaces and types for the LaserSVG Editor application.
+ * All visible elements are represented as PointElement with array of points.
+ * Each point can optionally have Bezier curve control points (cp1, cp2).
  */
 
+import type { Point as BasePoint } from './point'
+
 /**
- * Represents a point in 2D space (in millimeters)
+ * Point with optional Bezier curve control points
  */
-export interface Point {
-  x: number
-  y: number
-}
+export type Point = BasePoint
 
 /**
  * Represents a rectangle's dimensions and position
@@ -25,7 +26,7 @@ export interface Rect {
 /**
  * Supported SVG element types
  */
-export type ElementType = 'rect' | 'ellipse' | 'line' | 'path' | 'text' | 'polygon'
+export type ElementType = 'point' | 'path' | 'text'
 
 /**
  * Base interface for all SVG elements
@@ -39,48 +40,23 @@ export interface BaseElement {
 }
 
 /**
- * Rectangle element
+ * Point Element - Universal element for all geometric shapes
+ * Represented as an array of vertices (points)
+ * - Line: 2 points, isClosedShape = false
+ * - Rectangle: 4 points (corners), isClosedShape = true
+ * - Polygon: N points (vertices), isClosedShape = true/false
+ * - Curves: Points with cp1/cp2 control points for Bezier curves
  */
-export interface RectElement extends BaseElement {
-  type: 'rect'
-  x: number
-  y: number
-  width: number
-  height: number
-  rx?: number
-  ry?: number
+export interface PointElement extends BaseElement {
+  type: 'point'
+  points: Point[]
   stroke: string
   strokeWidth: number
+  isClosedShape: boolean
 }
 
 /**
- * Ellipse element
- */
-export interface EllipseElement extends BaseElement {
-  type: 'ellipse'
-  cx: number
-  cy: number
-  rx: number
-  ry: number
-  stroke: string
-  strokeWidth: number
-}
-
-/**
- * Line element
- */
-export interface LineElement extends BaseElement {
-  type: 'line'
-  x1: number
-  y1: number
-  x2: number
-  y2: number
-  stroke: string
-  strokeWidth: number
-}
-
-/**
- * Path element
+ * Path element (for future complex paths with mixed segments)
  */
 export interface PathElement extends BaseElement {
   type: 'path'
@@ -90,19 +66,9 @@ export interface PathElement extends BaseElement {
 }
 
 /**
- * Polygon element (e.g., trapezoid)
- */
-export interface PolygonElement extends BaseElement {
-  type: 'polygon'
-  points: { x: number; y: number }[]
-  stroke: string
-  strokeWidth: number
-}
-
-/**
  * Union type for all element types
  */
-export type SVGElement = RectElement | EllipseElement | LineElement | PathElement | PolygonElement
+export type SVGElement = PointElement | PathElement
 
 /**
  * View state for the canvas (zoom and pan)
@@ -131,9 +97,9 @@ export type ToolType =
   | 'selection' 
   | 'directSelection' 
   | 'rectangle' 
-  | 'ellipse' 
   | 'line' 
   | 'trapezoid'
+  | 'polygon'
   | 'pen'
 
 /**
@@ -158,6 +124,7 @@ export interface ToolContext {
   settings: CanvasSettings
   screenToCanvas: (screenX: number, screenY: number) => Point
   snapPoint: (point: Point) => Point
+  addElement: (element: SVGElement) => void
 }
 
 /**
