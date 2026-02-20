@@ -14,7 +14,7 @@ export interface BoundingBoxProps {
   elements: SVGElement[]
   selectedIds: string[]
   scale: number
-  onHandleDragStart?: (handle: string, startPoint: Point) => void
+  onHandleDragStart?: (handle: string, startPoint: Point, altKey: boolean) => void
 }
 
 /**
@@ -55,7 +55,7 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
 
   const handleMouseDown = (handleId: string) => (e: React.MouseEvent) => {
     e.stopPropagation()
-    onHandleDragStart?.(handleId, { x: e.clientX, y: e.clientY })
+    onHandleDragStart?.(handleId, { x: e.clientX, y: e.clientY }, e.altKey)
   }
 
   return (

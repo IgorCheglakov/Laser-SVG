@@ -159,8 +159,10 @@ export function transformPoints(
     if (handle.horizontal) {
       const handleDeltaX = handlePos.x - pivot.x
       if (handleDeltaX !== 0) {
-        // Coefficient using absolute values as per specification
-        const coefficientX = Math.abs(p.x - pivot.x) / Math.abs(handleDeltaX)
+        // Coefficient: signed value for center-based, absolute for edge-based
+        const coefficientX = fromCenter 
+          ? (p.x - pivot.x) / handleDeltaX 
+          : Math.abs(p.x - pivot.x) / Math.abs(handleDeltaX)
         newX = p.x + coefficientX * delta.dx
       }
     }
@@ -169,8 +171,10 @@ export function transformPoints(
     if (handle.vertical) {
       const handleDeltaY = handlePos.y - pivot.y
       if (handleDeltaY !== 0) {
-        // Coefficient using absolute values as per specification
-        const coefficientY = Math.abs(p.y - pivot.y) / Math.abs(handleDeltaY)
+        // Coefficient: signed value for center-based, absolute for edge-based
+        const coefficientY = fromCenter 
+          ? (p.y - pivot.y) / handleDeltaY 
+          : Math.abs(p.y - pivot.y) / Math.abs(handleDeltaY)
         newY = p.y + coefficientY * delta.dy
       }
     }
@@ -185,7 +189,9 @@ export function transformPoints(
       if (handle.horizontal) {
         const handleDeltaX = handlePos.x - pivot.x
         if (handleDeltaX !== 0) {
-          const coefficientX = Math.abs(p.cp1.x - pivot.x) / Math.abs(handleDeltaX)
+          const coefficientX = fromCenter 
+            ? (p.cp1.x - pivot.x) / handleDeltaX 
+            : Math.abs(p.cp1.x - pivot.x) / Math.abs(handleDeltaX)
           newCp1X = p.cp1.x + coefficientX * delta.dx
         }
       }
@@ -193,7 +199,9 @@ export function transformPoints(
       if (handle.vertical) {
         const handleDeltaY = handlePos.y - pivot.y
         if (handleDeltaY !== 0) {
-          const coefficientY = Math.abs(p.cp1.y - pivot.y) / Math.abs(handleDeltaY)
+          const coefficientY = fromCenter 
+            ? (p.cp1.y - pivot.y) / handleDeltaY 
+            : Math.abs(p.cp1.y - pivot.y) / Math.abs(handleDeltaY)
           newCp1Y = p.cp1.y + coefficientY * delta.dy
         }
       }
@@ -208,7 +216,9 @@ export function transformPoints(
       if (handle.horizontal) {
         const handleDeltaX = handlePos.x - pivot.x
         if (handleDeltaX !== 0) {
-          const coefficientX = Math.abs(p.cp2.x - pivot.x) / Math.abs(handleDeltaX)
+          const coefficientX = fromCenter 
+            ? (p.cp2.x - pivot.x) / handleDeltaX 
+            : Math.abs(p.cp2.x - pivot.x) / Math.abs(handleDeltaX)
           newCp2X = p.cp2.x + coefficientX * delta.dx
         }
       }
@@ -216,7 +226,9 @@ export function transformPoints(
       if (handle.vertical) {
         const handleDeltaY = handlePos.y - pivot.y
         if (handleDeltaY !== 0) {
-          const coefficientY = Math.abs(p.cp2.y - pivot.y) / Math.abs(handleDeltaY)
+          const coefficientY = fromCenter 
+            ? (p.cp2.y - pivot.y) / handleDeltaY 
+            : Math.abs(p.cp2.y - pivot.y) / Math.abs(handleDeltaY)
           newCp2Y = p.cp2.y + coefficientY * delta.dy
         }
       }

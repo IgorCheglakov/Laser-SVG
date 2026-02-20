@@ -31,6 +31,7 @@ export const Canvas: React.FC = () => {
   const isResizingRef = useRef(false)
   const resizeHandleRef = useRef<string>('')
   const resizeStartRef = useRef<Point>({ x: 0, y: 0 })
+  const resizeFromCenterRef = useRef(false)
   const initialBoxRef = useRef<InitialSize | null>(null)
   const moveStartRef = useRef<Point>({ x: 0, y: 0 })
   const initialElementPositionsRef = useRef<Map<string, Point[]>>(new Map())
@@ -214,9 +215,10 @@ export const Canvas: React.FC = () => {
   /**
    * Handle resize start from BoundingBox handle
    */
-  const handleResizeStart = useCallback((handle: string, clientPoint: Point) => {
+  const handleResizeStart = useCallback((handle: string, clientPoint: Point, altKey: boolean) => {
     isResizingRef.current = true
     resizeHandleRef.current = handle
+    resizeFromCenterRef.current = altKey
     
     const point = screenToCanvas(clientPoint.x, clientPoint.y)
     resizeStartRef.current = point
@@ -404,7 +406,7 @@ export const Canvas: React.FC = () => {
           initialBox,
           { dx, dy },
           handle,
-          e.altKey
+          resizeFromCenterRef.current
         )
         
         updateElementNoHistory(id, { points: newPoints } as Partial<SVGElement>)
@@ -489,6 +491,7 @@ export const Canvas: React.FC = () => {
     if (isResizingRef.current) {
       isResizingRef.current = false
       resizeHandleRef.current = ''
+      resizeFromCenterRef.current = false
       initialBoxRef.current = null
       initialElementPositionsRef.current.clear()
     }
@@ -534,6 +537,7 @@ export const Canvas: React.FC = () => {
       if (isResizingRef.current) {
         isResizingRef.current = false
         resizeHandleRef.current = ''
+        resizeFromCenterRef.current = false
         initialBoxRef.current = null
         initialElementPositionsRef.current.clear()
       }
