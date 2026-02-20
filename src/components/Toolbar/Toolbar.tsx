@@ -59,12 +59,6 @@ const tools: ToolButton[] = [
     label: 'Трапеция', 
     shortcut: 'T' 
   },
-  { 
-    id: 'polygon', 
-    icon: <Pentagon size={20} />, 
-    label: 'Многоугольник', 
-    shortcut: 'P' 
-  },
 ]
 
 /**
@@ -82,6 +76,7 @@ export const Toolbar: React.FC = () => {
           className={`
             w-9 h-9 flex items-center justify-center rounded
             transition-colors duration-150
+            focus:outline-none
             ${activeTool === tool.id 
               ? 'bg-dark-accent text-white' 
               : 'text-dark-text hover:bg-dark-bgTertiary hover:text-white'
