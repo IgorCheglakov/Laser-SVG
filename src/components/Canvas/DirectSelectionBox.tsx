@@ -96,15 +96,14 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
             {pathPoints.map((p, index) => {
               const isSelected = isVertexSelected(element.id, index)
               return (
-                <circle
+                <rect
                   key={`vertex-${index}`}
-                  cx={p.x}
-                  cy={p.y}
-                  r={halfHandle}
+                  x={p.x - halfHandle}
+                  y={p.y - halfHandle}
+                  width={handleSize}
+                  height={handleSize}
+                  rx={1}
                   fill={isSelected ? '#6B238E' : HANDLE_COLOR}
-                  stroke={HANDLE_COLOR}
-                  strokeWidth={0.5}
-                  vectorEffect="non-scaling-stroke"
                   style={{ pointerEvents: 'all', cursor: 'move' }}
                   onMouseDown={handleVertexMouseDown(element.id, index)}
                 />
