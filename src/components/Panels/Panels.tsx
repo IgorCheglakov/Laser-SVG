@@ -6,7 +6,7 @@
 
 import { useMemo, useState } from 'react'
 import { useEditorStore } from '@store/index'
-import { UI_STRINGS, COLOR_PALETTE } from '@constants/index'
+import { UI_STRINGS, COLOR_PALETTE, getContrastColor } from '@constants/index'
 import { Square, Circle, Minus } from 'lucide-react'
 import type { PointElement, SVGElement } from '@/types-app/index'
 
@@ -301,15 +301,20 @@ export const Panels: React.FC = () => {
                           updateElement(selectedIds[0], { stroke: c.color } as Partial<SVGElement>)
                         }}
                         className={`
-                          w-6 h-6 rounded border-2 transition-all
+                          w-8 h-6 rounded border-2 transition-all text-xs font-bold
                           ${pointElement.stroke === c.color 
                             ? 'border-white scale-110' 
                             : 'border-transparent hover:border-dark-border'
                           }
                         `}
-                        style={{ backgroundColor: c.color }}
+                        style={{ 
+                          backgroundColor: c.color,
+                          color: getContrastColor(c.color),
+                        }}
                         title={`${c.index}: ${c.color}`}
-                      />
+                      >
+                        {c.index}
+                      </button>
                     ))}
                   </div>
                 </div>

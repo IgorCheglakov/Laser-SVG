@@ -115,6 +115,7 @@ export const DEFAULTS = {
  * Lightburn color palette
  */
 export const COLOR_PALETTE = [
+  { index: '00', color: '#000000' },
   { index: '01', color: '#0000FF' },
   { index: '02', color: '#FF0000' },
   { index: '03', color: '#00E000' },
@@ -147,3 +148,11 @@ export const COLOR_PALETTE = [
   { index: 'T1', color: '#F36926' },
   { index: 'T2', color: '#0C96D9' },
 ] as const
+
+export function getContrastColor(hexColor: string): string {
+  const r = parseInt(hexColor.slice(1, 3), 16)
+  const g = parseInt(hexColor.slice(3, 5), 16)
+  const b = parseInt(hexColor.slice(5, 7), 16)
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return luminance > 0.5 ? '#000000' : '#FFFFFF'
+}
