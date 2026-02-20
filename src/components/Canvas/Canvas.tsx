@@ -349,7 +349,7 @@ export const Canvas: React.FC = () => {
               { x: snappedPoint.x, y: snappedPoint.y },
             ],
             stroke: '#000000',
-            strokeWidth: 2,
+              strokeWidth: 1,
             visible: true,
             locked: false,
             isClosedShape: true,
@@ -364,7 +364,7 @@ export const Canvas: React.FC = () => {
               { x: snappedPoint.x, y: snappedPoint.y },
             ],
             stroke: '#000000',
-            strokeWidth: 2,
+              strokeWidth: 1,
             visible: true,
             locked: false,
             isClosedShape: false,
@@ -381,7 +381,7 @@ export const Canvas: React.FC = () => {
               { x: snappedPoint.x, y: snappedPoint.y },
             ],
             stroke: '#000000',
-            strokeWidth: 2,
+              strokeWidth: 1,
             visible: true,
             locked: false,
             isClosedShape: true,
@@ -700,7 +700,7 @@ export const Canvas: React.FC = () => {
               d={`M ${DEFAULTS.MM_TO_PX} 0 L 0 0 0 ${DEFAULTS.MM_TO_PX}`}
               fill="none"
               stroke="#3a3a3a"
-              strokeWidth={1 / view.scale}
+              strokeWidth={0.3 / view.scale}
               vectorEffect="non-scaling-stroke"
             />
           </pattern>
@@ -715,7 +715,7 @@ export const Canvas: React.FC = () => {
               d={`M ${DEFAULTS.MM_TO_PX * 10} 0 L 0 0 0 ${DEFAULTS.MM_TO_PX * 10}`}
               fill="none"
               stroke="#4a4a4a"
-              strokeWidth={1.5 / view.scale}
+              strokeWidth={2 / view.scale}
               vectorEffect="non-scaling-stroke"
             />
           </pattern>
@@ -790,8 +790,8 @@ export const Canvas: React.FC = () => {
         )}
 
         <g opacity={0.5}>
-          <line x1={-5} y1={0} x2={5} y2={0} stroke="#666" strokeWidth={1 / view.scale} vectorEffect="non-scaling-stroke" />
-          <line x1={0} y1={-5} x2={0} y2={5} stroke="#666" strokeWidth={1 / view.scale} vectorEffect="non-scaling-stroke" />
+          <line x1={-5} y1={0} x2={5} y2={0} stroke="#666" strokeWidth={0.5 / view.scale} vectorEffect="non-scaling-stroke" />
+          <line x1={0} y1={-5} x2={0} y2={5} stroke="#666" strokeWidth={0.5 / view.scale} vectorEffect="non-scaling-stroke" />
         </g>
       </svg>
 
@@ -855,7 +855,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({ element, isPreview, isSel
   const commonProps = {
     fill: 'none',
     stroke: isSelected ? '#007acc' : (element.stroke || '#000000'),
-    strokeWidth: isSelected ? 2 : 1,
+    strokeWidth: isSelected ? 0.5 : 0.5,
     vectorEffect: 'non-scaling-stroke' as const,
     opacity: isPreview ? 0.7 : 1,
     strokeDasharray: isPreview ? '2,2' : undefined,
