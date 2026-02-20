@@ -368,6 +368,7 @@ export const Canvas: React.FC = () => {
             visible: true,
             locked: false,
             isClosedShape: false,
+            isSimpleLine: true,
           })
         } else if (activeTool === 'trapezoid') {
           setPreviewElement({

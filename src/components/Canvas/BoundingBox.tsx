@@ -3,6 +3,7 @@
  * 
  * Renders selection bounds with resize handles for selected elements.
  * Also renders rotation center indicators: point for each element and crosshair for selection.
+ * For simple lines (2 points), shows special selection: 2 endpoint handles and line overlay.
  */
 
 import { useMemo } from 'react'
@@ -43,6 +44,13 @@ function calculateElementCenter(element: PointElement): { x: number; y: number }
 }
 
 /**
+ * Check if element is a simple line (2 points)
+ */
+function isSimpleLineElement(element: PointElement): boolean {
+  return element.isSimpleLine === true && element.points.length === 2
+}
+
+/**
  * Bounding Box with resize handles and rotation center indicators
  */
 export const BoundingBox: React.FC<BoundingBoxProps> = ({ 
@@ -57,6 +65,29 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
   }, [elements])
 
   const box = useMemo(() => calculateBoundingBox(pointElements, selectedIds), [pointElements, selectedIds])
+
+  const simpleLineElement = useMemo(() => {
+    if (selectedIds.length !== 1) return null
+    const element = elements.find(el => el.id === selectedIds[0])
+    if (!element || !('points' in element)) return null
+    const pointEl = element as PointElement
+    if (isSimpleLineElement(pointEl)) {
+      return pointEl
+    }
+    return null
+  }, [elements, selectedIds])
+
+  const simpleLineEndpoints = useMemo(() => {
+    if (!simpleLineElement) return null
+    const p1 = simpleLineElement.points[0]
+    const p2 = simpleLineElement.points[1]
+    return {
+      x1: p1.x * DEFAULTS.MM_TO_PX,
+      y1: p1.y * DEFAULTS.MM_TO_PX,
+      x2: p2.x * DEFAULTS.MM_TO_PX,
+      y2: p2.y * DEFAULTS.MM_TO_PX,
+    }
+  }, [simpleLineElement])
 
   const elementCenters = useMemo(() => {
     return selectedIds.map(id => {
@@ -105,7 +136,7 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
     { id: 'nw', x: x - halfRotation, y: y - halfRotation },
     { id: 'ne', x: x + width - halfRotation, y: y - halfRotation },
     { id: 'se', x: x + width - halfRotation, y: y + height - halfRotation },
-    { id: 'sw', x: x - halfRotation, y: y + height - halfRotation },
+    { id: 'sw', x: x - halfRotation, y: y + halfRotation },
   ]
 
   const edgeHandles = [
@@ -126,6 +157,82 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
   const handleRotateMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation()
     onRotateStart?.({ x: e.clientX, y: e.clientY }, e.shiftKey)
+  }
+
+  if (simpleLineElement && simpleLineEndpoints) {
+    return (
+      <g pointerEvents="none">
+        <line
+          x1={simpleLineEndpoints.x1}
+          y1={simpleLineEndpoints.y1}
+          x2={simpleLineEndpoints.x2}
+          y2={simpleLineEndpoints.y2}
+          stroke={SELECTION_COLOR}
+          strokeWidth={1.5}
+          vectorEffect="non-scaling-stroke"
+          style={{ pointerEvents: 'none' }}
+        />
+        
+        <rect
+          x={simpleLineEndpoints.x1 - halfHandle}
+          y={simpleLineEndpoints.y1 - halfHandle}
+          width={handleSize}
+          height={handleSize}
+          fill="#ffffff"
+          stroke={SELECTION_COLOR}
+          strokeWidth={1}
+          vectorEffect="non-scaling-stroke"
+          style={{ cursor: 'nwse-resize', pointerEvents: 'all' }}
+          onMouseDown={handleMouseDown('w')}
+        />
+        
+        <rect
+          x={simpleLineEndpoints.x2 - halfHandle}
+          y={simpleLineEndpoints.y2 - halfHandle}
+          width={handleSize}
+          height={handleSize}
+          fill="#ffffff"
+          stroke={SELECTION_COLOR}
+          strokeWidth={1}
+          vectorEffect="non-scaling-stroke"
+          style={{ cursor: 'nwse-resize', pointerEvents: 'all' }}
+          onMouseDown={handleMouseDown('e')}
+        />
+        
+        <rect
+          x={x - halfRotation}
+          y={y - halfRotation}
+          width={rotationHandleSize}
+          height={rotationHandleSize}
+          fill="transparent"
+          style={{ cursor: 'grab', pointerEvents: 'all' }}
+          onMouseDown={handleRotateMouseDown}
+        />
+        
+        {selectionCenter && (
+          <>
+            <line
+              x1={selectionCenter.x - crosshairLength / 2}
+              y1={selectionCenter.y}
+              x2={selectionCenter.x + crosshairLength / 2}
+              y2={selectionCenter.y}
+              stroke={SELECTION_COLOR}
+              strokeWidth={crosshairThickness}
+              strokeLinecap="round"
+            />
+            <line
+              x1={selectionCenter.x}
+              y1={selectionCenter.y - crosshairLength / 2}
+              x2={selectionCenter.x}
+              y2={selectionCenter.y + crosshairLength / 2}
+              stroke={SELECTION_COLOR}
+              strokeWidth={crosshairThickness}
+              strokeLinecap="round"
+            />
+          </>
+        )}
+      </g>
+    )
   }
 
   return (

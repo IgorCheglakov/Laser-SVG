@@ -55,6 +55,7 @@ export interface PointElement extends BaseElement {
   isClosedShape: boolean
   rotationCenter?: Point
   angle?: number
+  isSimpleLine?: boolean
 }
 
 /**
