@@ -84,40 +84,44 @@ export function parseHandle(handle: string): TransformHandle {
  * Calculate pivot point (opora) for transformation based on handle
  */
 function getPivotPoint(box: InitialSize, handle: TransformHandle): Point {
+  let pivotX = box.x + box.width / 2
+  let pivotY = box.y + box.height / 2
+  
   if (handle.horizontal === TransformDirection.Right) {
-    return { x: box.x, y: box.y + box.height / 2 }
-  }
-  if (handle.horizontal === TransformDirection.Left) {
-    return { x: box.x + box.width, y: box.y + box.height / 2 }
-  }
-  if (handle.vertical === TransformDirection.Bottom) {
-    return { x: box.x + box.width / 2, y: box.y }
-  }
-  if (handle.vertical === TransformDirection.Top) {
-    return { x: box.x + box.width / 2, y: box.y + box.height }
+    pivotX = box.x
+  } else if (handle.horizontal === TransformDirection.Left) {
+    pivotX = box.x + box.width
   }
   
-  return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+  if (handle.vertical === TransformDirection.Bottom) {
+    pivotY = box.y
+  } else if (handle.vertical === TransformDirection.Top) {
+    pivotY = box.y + box.height
+  }
+  
+  return { x: pivotX, y: pivotY }
 }
 
 /**
  * Calculate handle position based on handle type
  */
 function getHandlePosition(box: InitialSize, handle: TransformHandle): Point {
+  let handleX = box.x + box.width / 2
+  let handleY = box.y + box.height / 2
+  
   if (handle.horizontal === TransformDirection.Right) {
-    return { x: box.x + box.width, y: box.y + box.height / 2 }
-  }
-  if (handle.horizontal === TransformDirection.Left) {
-    return { x: box.x, y: box.y + box.height / 2 }
-  }
-  if (handle.vertical === TransformDirection.Bottom) {
-    return { x: box.x + box.width / 2, y: box.y + box.height }
-  }
-  if (handle.vertical === TransformDirection.Top) {
-    return { x: box.x + box.width / 2, y: box.y }
+    handleX = box.x + box.width
+  } else if (handle.horizontal === TransformDirection.Left) {
+    handleX = box.x
   }
   
-  return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+  if (handle.vertical === TransformDirection.Bottom) {
+    handleY = box.y + box.height
+  } else if (handle.vertical === TransformDirection.Top) {
+    handleY = box.y
+  }
+  
+  return { x: handleX, y: handleY }
 }
 
 /**
