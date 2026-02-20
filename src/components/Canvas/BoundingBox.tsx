@@ -6,20 +6,26 @@
  */
 
 import { useMemo } from 'react'
-import type { SVGElement, PointElement } from '@/types-app/index'
+import type { SVGElement, PointElement, Point } from '@/types-app/index'
 import { DEFAULTS } from '@constants/index'
 import { calculateBoundingBox } from '@/utils/bounds'
 
-interface BoundingBoxProps {
+export interface BoundingBoxProps {
   elements: SVGElement[]
   selectedIds: string[]
   scale: number
+  onHandleDragStart?: (handle: string, startPoint: Point) => void
 }
 
 /**
  * Bounding Box with resize handles
  */
-export const BoundingBox: React.FC<BoundingBoxProps> = ({ elements, selectedIds, scale }) => {
+export const BoundingBox: React.FC<BoundingBoxProps> = ({ 
+  elements, 
+  selectedIds, 
+  scale,
+  onHandleDragStart,
+}) => {
   const pointElements = useMemo(() => {
     return elements.filter(el => 'points' in el) as PointElement[]
   }, [elements])
@@ -47,6 +53,11 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({ elements, selectedIds,
     { id: 'w', x: x - halfHandle, y: y + height / 2 - halfHandle, cursor: 'w-resize' },
   ]
 
+  const handleMouseDown = (handleId: string) => (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onHandleDragStart?.(handleId, { x: e.clientX, y: e.clientY })
+  }
+
   return (
     <g pointerEvents="none">
       <rect
@@ -59,7 +70,8 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({ elements, selectedIds,
         strokeWidth={1}
         strokeDasharray="4,4"
         vectorEffect="non-scaling-stroke"
-        pointerEvents="none"
+        style={{ pointerEvents: 'all' }}
+        onMouseDown={(e) => e.stopPropagation()}
       />
 
       {handles.map(handle => (
@@ -74,6 +86,7 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({ elements, selectedIds,
           strokeWidth={1}
           vectorEffect="non-scaling-stroke"
           style={{ cursor: handle.cursor, pointerEvents: 'all' }}
+          onMouseDown={handleMouseDown(handle.id)}
         />
       ))}
     </g>

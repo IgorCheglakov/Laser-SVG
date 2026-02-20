@@ -14,6 +14,7 @@ import { snapPoint } from '@/utils/snap'
 import { generateId } from '@/utils/id'
 import { DEFAULTS } from '@constants/index'
 import { BoundingBox } from './BoundingBox'
+import { transformPoints, parseHandle, type InitialSize } from '@/utils/transform'
 
 /**
  * Canvas component with artboard, zoom, and tool integration
@@ -27,6 +28,10 @@ export const Canvas: React.FC = () => {
   const startPointRef = useRef<Point>({ x: 0, y: 0 })
   const isDrawingRef = useRef(false)
   const isMovingRef = useRef(false)
+  const isResizingRef = useRef(false)
+  const resizeHandleRef = useRef<string>('')
+  const resizeStartRef = useRef<Point>({ x: 0, y: 0 })
+  const initialBoxRef = useRef<InitialSize | null>(null)
   const moveStartRef = useRef<Point>({ x: 0, y: 0 })
   const initialElementPositionsRef = useRef<Map<string, Point[]>>(new Map())
   const isFirstMoveRef = useRef(true)
@@ -171,6 +176,67 @@ export const Canvas: React.FC = () => {
       offsetY: newOffsetY,
     })
   }, [view.scale, view.offsetX, view.offsetY, setView])
+
+  /**
+   * Calculate bounding box for selected elements
+   */
+  const calculateBoundsForSelected = useCallback((): InitialSize | null => {
+    if (selectedIds.length === 0) return null
+    
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+    
+    selectedIds.forEach(id => {
+      const el = elements.find(el => el.id === id)
+      if (el && 'points' in el) {
+        const pointEl = el as PointElement
+        for (const p of pointEl.points) {
+          minX = Math.min(minX, p.x)
+          minY = Math.min(minY, p.y)
+          maxX = Math.max(maxX, p.x)
+          maxY = Math.max(maxY, p.y)
+        }
+      }
+    })
+    
+    if (minX === Infinity) return null
+    
+    return {
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY,
+    }
+  }, [elements, selectedIds])
+
+  /**
+   * Handle resize start from BoundingBox handle
+   */
+  const handleResizeStart = useCallback((handle: string, clientPoint: Point) => {
+    isResizingRef.current = true
+    resizeHandleRef.current = handle
+    
+    const point = screenToCanvas(clientPoint.x, clientPoint.y)
+    resizeStartRef.current = point
+    
+    const box = calculateBoundsForSelected()
+    if (box) {
+      initialBoxRef.current = box
+    }
+    
+    initialElementPositionsRef.current.clear()
+    selectedIds.forEach(id => {
+      const el = elements.find(el => el.id === id)
+      if (el && 'points' in el) {
+        const pointEl = el as PointElement
+        initialElementPositionsRef.current.set(id, JSON.parse(JSON.stringify(pointEl.points)))
+      }
+    })
+    
+    saveToHistory()
+  }, [elements, selectedIds, screenToCanvas, calculateBoundsForSelected])
 
   /**
    * Handle mouse down
@@ -318,6 +384,32 @@ export const Canvas: React.FC = () => {
         updateElementNoHistory(id, { points: newPoints } as Partial<SVGElement>)
       })
     }
+
+    if (isResizingRef.current && (e.buttons & 1)) {
+      const currentPoint = screenToCanvas(e.clientX, e.clientY)
+      const dx = currentPoint.x - resizeStartRef.current.x
+      const dy = currentPoint.y - resizeStartRef.current.y
+      
+      const handle = parseHandle(resizeHandleRef.current)
+      const initialBox = initialBoxRef.current
+      
+      if (!initialBox) return
+      
+      selectedIds.forEach(id => {
+        const initialPoints = initialElementPositionsRef.current.get(id)
+        if (!initialPoints) return
+        
+        const newPoints = transformPoints(
+          initialPoints,
+          initialBox,
+          { dx, dy },
+          handle,
+          e.altKey
+        )
+        
+        updateElementNoHistory(id, { points: newPoints } as Partial<SVGElement>)
+      })
+    }
     
     if (isDrawingRef.current && previewElement && (e.buttons & 1)) {
       const currentPoint = screenToCanvas(e.clientX, e.clientY)
@@ -377,7 +469,7 @@ export const Canvas: React.FC = () => {
     }
     
     tool.onMouseMove(e, toolContext)
-  }, [isPanning, panStart, pan, selectedIds, previewElement, activeTool, tool, toolContext, screenToCanvas, snapToGrid, updateElementNoHistory])
+  }, [isPanning, panStart, pan, isResizingRef, isMovingRef, resizeHandleRef, resizeStartRef, initialBoxRef, selectedIds, previewElement, activeTool, tool, toolContext, screenToCanvas, snapToGrid, updateElementNoHistory, elements])
 
   /**
    * Handle mouse up
@@ -392,6 +484,13 @@ export const Canvas: React.FC = () => {
       isMovingRef.current = false
       initialElementPositionsRef.current.clear()
       isFirstMoveRef.current = true
+    }
+
+    if (isResizingRef.current) {
+      isResizingRef.current = false
+      resizeHandleRef.current = ''
+      initialBoxRef.current = null
+      initialElementPositionsRef.current.clear()
     }
     
     if (isDrawingRef.current && previewElement) {
@@ -429,6 +528,13 @@ export const Canvas: React.FC = () => {
       
       if (isMovingRef.current) {
         isMovingRef.current = false
+        initialElementPositionsRef.current.clear()
+      }
+
+      if (isResizingRef.current) {
+        isResizingRef.current = false
+        resizeHandleRef.current = ''
+        initialBoxRef.current = null
         initialElementPositionsRef.current.clear()
       }
       
@@ -560,6 +666,7 @@ export const Canvas: React.FC = () => {
             elements={elements} 
             selectedIds={selectedIds}
             scale={view.scale}
+            onHandleDragStart={handleResizeStart}
           />
         )}
 

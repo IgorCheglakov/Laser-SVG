@@ -78,6 +78,7 @@ interface ITool {
   onMouseUp(e: MouseEvent, context: ToolContext): void;
   onKeyDown(e: KeyboardEvent): void;
 }
+```
 
 ### 3.3. Snap Engine (SnapService)
 Pure function service.
@@ -105,11 +106,13 @@ Palette Datails are presented in the APPENDIX-COLOR.md file.
     Ctrl+O: Open
 
 ## 4. Development Roadmap (Strict Iterative Process)
+
 RULE FOR AI:
 - Do not proceed to the next phase until the user confirms the current phase works.
 - After each phase, provide instructions on how to build/run the portable version.
 - Keep code clean, typed, and modular.
 - If a library is needed (e.g., for icons), choose the most popular/react-friendly one.
+
 ### Phase 1: Project Skeleton & Canvas
 - Setup Electron + React + TS + Vite + Tailwind CSS.
 - Configure Dark Theme globally.
@@ -117,6 +120,7 @@ RULE FOR AI:
 - Implement Canvas rendering (White 1000x1000mm artboard on dark background).
 - Implement Zoom & Pan (Mouse wheel + Middle drag).
 - Deliverable: A window with a dark UI, white canvas that can be zoomed and panned.
+
 ### Phase 2: State Management & History
 - Setup Zustand store for SVG elements.
 - Implement Undo/Redo system integrated with the store.
@@ -126,12 +130,14 @@ RULE FOR AI:
 - Implement "Create Polygon" tool (Click+Click+...).
 - Render shapes on canvas using unified PointElement model.
 - Deliverable: Ability to draw rects, lines, trapezoids, polygons. Undo/Redo must work for these actions.
+
 ### Phase 3: Selection & Transformation
 - Implement "Selection Tool" (Black Arrow).
 - Click to select, Drag to move.
 - Implement Bounding Box for rotation and resizing.
 - Implement Floating Properties Widget (near object) for quick transform.
 - Deliverable: Select, Move, Rotate, Resize existing shapes. Undo/Redo must work for transforms.
+
 ### Phase 4: Properties, Styling & Snapping
 - Implement Docked Properties Panel (Numeric inputs for X, Y, W, H, Color).
 - Implement Color Picker (Lightburn palette).
@@ -139,11 +145,13 @@ RULE FOR AI:
 - Implement SnapService (1mm grid).
 - Toggle Snap via Hotkey.
 - Deliverable: Change color/dimensions via panel. Shapes snap to 1mm grid.
+
 ### Phase 5: Direct Selection & Bezier Curves
 - Implement "Direct Selection Tool" (White Arrow) - Move individual nodes.
 - Implement Bezier curve creation and editing via control points (cp1, cp2).
 - Implement circle/ellipse using 4 Bezier curves.
 - Deliverable: Move nodes individually. Create and edit Bezier curves.
+
 ### Phase 6: Export, Import & Settings
 - Export to SVG (Clean code, Lightburn compatible layers/colors).
 - Import SVG.
@@ -157,7 +165,101 @@ RULE FOR AI:
 - Fill: Always none for closed shapes (Laser cutting requirement).
 - Performance: Ensure canvas remains responsive with up to 500 objects.
 
-## 6. Code Quality & Documentation Standards
+## 6. Transformation Logic (Phase 3 - Current)
+
+### 6.1. Coefficient-Based Point Transformation
+
+When transforming (resizing) shapes via handle drag, each point of a PointsElement shifts relative to the transformation center (pivot) based on a coefficient.
+
+#### Coefficient Formula
+
+For **X-axis transformation**:
+```
+coefficientX = |point.x - pivot.x| / |handle.x - pivot.x|
+```
+
+For **Y-axis transformation**:
+```
+coefficientY = |point.y - pivot.y| / |handle.y - pivot.y|
+```
+
+Where:
+- `point` - the point being transformed
+- `pivot` - the transformation center (opposite handle or center when Alt is pressed)
+- `handle` - the handle being dragged
+
+#### Examples
+
+Given a rectangle with:
+- Pivot at left edge (x=0)
+- Handle at right edge (x=100)
+- Point A at x=0 (on pivot)
+- Point B at x=50 (middle)
+- Point C at x=100 (on handle)
+
+When handle moves by +20mm:
+- Point A coefficient: |0-0|/|100-0| = 0 → moves 0mm
+- Point B coefficient: |50-0|/|100-0| = 0.5 → moves 10mm
+- Point C coefficient: |100-0|/|100-0| = 1 → moves 20mm
+
+When handle moves by -20mm (inversion):
+- Point A coefficient: |0-0|/|100-0| = 0 → moves 0mm
+- Point B coefficient: |50-0|/|100-0| = 0.5 → moves -10mm
+- Point C coefficient: |100-0|/|100-0| = 1 → moves -20mm
+
+#### Handle to Pivot Mapping
+
+| Handle | Pivot Position | Transformation Axis |
+|--------|-----------------|---------------------|
+| NW | Bottom-Right (SE) | Both X and Y |
+| N | Bottom (S) | Y only |
+| NE | Bottom-Left (SW) | Both X and Y |
+| E | Left (W) | X only |
+| SE | Top-Left (NW) | Both X and Y |
+| S | Top (N) | Y only |
+| SW | Top-Right (NE) | Both X and Y |
+| W | Right (E) | X only |
+
+#### Handle Positions (in bounding box coordinates)
+
+| Handle | Position Formula |
+|--------|-------------------|
+| NW | (x, y) |
+| N | (x + width/2, y) |
+| NE | (x + width, y) |
+| E | (x + width, y + height/2) |
+| SE | (x + width, y + height) |
+| S | (x + width/2, y + height) |
+| SW | (x, y + height) |
+| W | (x, y + height/2) |
+
+#### Alt Key Behavior
+
+When Alt key is held during resize:
+- Pivot becomes the center of the bounding box
+- All points transform relative to center
+- Enables symmetric scaling from center
+
+#### Implementation Requirements
+
+1. **Transform Points Function** (`src/utils/transform.ts`):
+   - Input: points array, bounding box, delta {dx, dy}, handle type, fromCenter flag
+   - Output: transformed points array
+   - Must use absolute value in coefficient calculation
+   - Must handle Bezier control points (cp1, cp2) - transform them same as their anchor points
+
+2. **Canvas Integration**:
+   - BoundingBox handles must have onMouseDown handlers
+   - Track initial state on drag start (initial points, initial box)
+   - Calculate delta on each mouse move
+   - Apply transformation to all selected elements
+   - Save to history on drag start (first movement)
+
+3. **Bezier Control Points**:
+   - When transforming a point with cp1/cp2, transform the control points by the same coefficient
+   - Control points maintain their relative position to their anchor point
+
+## 7. Code Quality & Documentation Standards
 - **Language:** All code, comments, and documentation must be in English.
 - **JSDoc/TSDoc:** All public functions, interfaces, and components must have TSDoc comments describing:
   - Purpose of the function/component
