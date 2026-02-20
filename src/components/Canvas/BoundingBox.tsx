@@ -91,7 +91,7 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
   const handleSize = 8 / Math.max(scale, 0.5)
   const halfHandle = handleSize / 2
 
-  const rotationHandleSize = 14 / Math.max(scale, 0.5)
+  const rotationHandleSize = 42 / Math.max(scale, 0.5)
   const halfRotation = rotationHandleSize / 2
 
   const cornerHandles = [

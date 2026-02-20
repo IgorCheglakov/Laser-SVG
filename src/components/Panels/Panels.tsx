@@ -142,6 +142,22 @@ export const Panels: React.FC = () => {
     updateElement(selectedElement.id, { points: newPoints } as Partial<SVGElement>)
   }
 
+  const handleAngleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (selectedIds.length === 0) return
+    const value = parseFloat(e.target.value)
+    if (isNaN(value)) return
+    
+    selectedIds.forEach(id => {
+      const element = elements.find(el => el.id === id)
+      if (!element || !('points' in element)) return
+      updateElement(id, { angle: value } as Partial<SVGElement>)
+    })
+  }
+
+  const selectedElement = selectedIds.length === 1 ? elements.find(el => el.id === selectedIds[0]) : null
+  const pointElement = selectedElement && 'points' in selectedElement ? selectedElement as PointElement : null
+  const currentAngle = pointElement?.angle ?? 0
+
   return (
     <div className="flex flex-col h-full" onKeyDown={handleDelete} tabIndex={0}>
       {/* Properties Panel */}
@@ -210,6 +226,19 @@ export const Panels: React.FC = () => {
                       min="0.1"
                     />
                   </div>
+                </div>
+              )}
+
+              {selectedIds.length === 1 && (
+                <div>
+                  <label className="text-xs text-dark-textMuted block mb-1">{UI_STRINGS.PROP_ROTATION}</label>
+                  <input
+                    type="number"
+                    value={currentAngle}
+                    onChange={handleAngleChange}
+                    className="w-full bg-dark-bgTertiary text-dark-text text-xs px-2 py-1 rounded border border-dark-border"
+                    step="1"
+                  />
                 </div>
               )}
             </div>
