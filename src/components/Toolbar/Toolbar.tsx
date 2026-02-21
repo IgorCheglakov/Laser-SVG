@@ -10,7 +10,6 @@ import {
   Square, 
   Minus,
   Pentagon,
-  Bug,
 } from 'lucide-react'
 import { useEditorStore } from '@store/index'
 import type { ToolType } from '@/types-app/index'
@@ -66,7 +65,7 @@ const tools: ToolButton[] = [
  * Vertical toolbar with tool selection
  */
 export const Toolbar: React.FC = () => {
-  const { activeTool, setActiveTool, settings, toggleDebug } = useEditorStore()
+  const { activeTool, setActiveTool } = useEditorStore()
 
   return (
     <div className="flex flex-col items-center py-2 gap-1">
@@ -90,22 +89,6 @@ export const Toolbar: React.FC = () => {
       ))}
       
       <div className="w-6 h-px bg-dark-border my-2" />
-      
-      <button
-        onClick={() => toggleDebug()}
-        className={`
-          w-9 h-9 flex items-center justify-center rounded
-          transition-colors duration-150
-          focus:outline-none
-          ${settings.debugMode 
-            ? 'bg-green-700 text-white' 
-            : 'text-dark-text hover:bg-dark-bgTertiary hover:text-white'
-          }
-        `}
-        title="Toggle Debug Mode (Ctrl+Shift+D)"
-      >
-        <Bug size={20} />
-      </button>
       
     </div>
   )

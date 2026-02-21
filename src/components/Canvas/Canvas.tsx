@@ -598,6 +598,8 @@ export const Canvas: React.FC = () => {
           ...p,
           x: p.x + deltaX,
           y: p.y + deltaY,
+          cp1: p.cp1 ? { ...p.cp1, x: p.cp1.x + deltaX, y: p.cp1.y + deltaY } : undefined,
+          cp2: p.cp2 ? { ...p.cp2, x: p.cp2.x + deltaX, y: p.cp2.y + deltaY } : undefined,
         }))
         
         updateElementNoHistory(id, { points: newPoints } as Partial<SVGElement>)
@@ -636,6 +638,8 @@ export const Canvas: React.FC = () => {
             ...initialP,
             x: initialP.x + dx,
             y: initialP.y + dy,
+            cp1: initialP.cp1 ? { ...initialP.cp1, x: initialP.cp1.x + dx, y: initialP.cp1.y + dy } : undefined,
+            cp2: initialP.cp2 ? { ...initialP.cp2, x: initialP.cp2.x + dx, y: initialP.cp2.y + dy } : undefined,
           }
         }
       }
