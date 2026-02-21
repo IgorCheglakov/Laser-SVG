@@ -284,6 +284,28 @@ export const Canvas: React.FC = () => {
   }, [elements, selectedIds, calculateBoundsForSelected])
 
   /**
+   * Handle click on BoundingBox to start moving selected elements
+   */
+  const handleBoxClick = useCallback((clientPoint: Point, _altKey: boolean) => {
+    if (selectedIds.length === 0) return
+    
+    const point = screenToCanvas(clientPoint.x, clientPoint.y)
+    
+    isMovingRef.current = true
+    moveStartRef.current = point
+    isFirstMoveRef.current = true
+    
+    initialElementPositionsRef.current.clear()
+    selectedIds.forEach(id => {
+      const el = elements.find(el => el.id === id)
+      if (el && 'points' in el) {
+        const pointEl = el as PointElement
+        initialElementPositionsRef.current.set(id, [...pointEl.points])
+      }
+    })
+  }, [elements, selectedIds, screenToCanvas])
+
+  /**
    * Handle vertex selection for direct selection tool
    */
   const handleVertexSelect = useCallback((elementId: string, vertexIndex: number, addToSelection: boolean) => {
@@ -1106,6 +1128,7 @@ export const Canvas: React.FC = () => {
             scale={view.scale}
             onHandleDragStart={handleResizeStart}
             onRotateStart={handleRotateStart}
+            onBoxClick={handleBoxClick}
           />
         )}
 

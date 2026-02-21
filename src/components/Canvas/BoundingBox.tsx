@@ -17,6 +17,7 @@ export interface BoundingBoxProps {
   scale: number
   onHandleDragStart?: (handle: string, startPoint: Point, altKey: boolean) => void
   onRotateStart?: (startPoint: Point, shiftKey: boolean) => void
+  onBoxClick?: (clientPoint: Point, altKey: boolean) => void
 }
 
 const SELECTION_COLOR = '#007acc'
@@ -59,6 +60,7 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
   scale,
   onHandleDragStart,
   onRotateStart,
+  onBoxClick,
 }) => {
   const pointElements = useMemo(() => {
     return elements.filter(el => 'points' in el) as PointElement[]
@@ -160,6 +162,11 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
   const handleRotateMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation()
     onRotateStart?.({ x: e.clientX, y: e.clientY }, e.shiftKey)
+  }
+
+  const handleBoxMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onBoxClick?.({ x: e.clientX, y: e.clientY }, e.altKey)
   }
 
   if (simpleLineElement && simpleLineEndpoints) {
@@ -267,7 +274,7 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
   }
 
   return (
-    <g pointerEvents="none">
+      <g pointerEvents="none">
       <rect
         x={x}
         y={y}
@@ -277,8 +284,8 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
         stroke={SELECTION_COLOR}
         strokeWidth={0.5}
         vectorEffect="non-scaling-stroke"
-        style={{ pointerEvents: 'all', animation: 'selectionPulse 2s ease-in-out infinite' }}
-        onMouseDown={(e) => e.stopPropagation()}
+        style={{ pointerEvents: 'all', animation: 'selectionPulse 2s ease-in-out infinite', cursor: 'move' }}
+        onMouseDown={handleBoxMouseDown}
       />
 
       {rotationHandles.map(handle => (
