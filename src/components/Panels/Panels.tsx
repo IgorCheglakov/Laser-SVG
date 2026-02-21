@@ -9,6 +9,7 @@ import { useEditorStore } from '@store/index'
 import { UI_STRINGS, COLOR_PALETTE, getContrastColor } from '@constants/index'
 import { Square, Circle, Minus } from 'lucide-react'
 import type { PointElement, SVGElement } from '@/types-app/index'
+import { convertToCorner, convertToStraight } from '@/types-app/point'
 
 /**
  * Vertex Properties Panel for Direct Selection tool
@@ -146,9 +147,17 @@ const VertexPropertiesPanel: React.FC<{
       const vertexIndex = parseInt(vertexIndexStr, 10)
       const element = elements.find(el => el.id === elementId)
       if (element) {
-        const newPoints = [...element.points]
-        const p = newPoints[vertexIndex]
-        newPoints[vertexIndex] = { ...p, vertexType: newType }
+        let newPoints: PointElement['points']
+        
+        if (newType === 'corner') {
+          const converted = convertToCorner(vertexIndex, element.points, element.isClosedShape)
+          newPoints = [...element.points]
+          newPoints[vertexIndex] = converted
+        } else {
+          const converted = convertToStraight(vertexIndex, element.points, element.isClosedShape)
+          newPoints = [...element.points]
+          newPoints[vertexIndex] = converted
+        }
         
         updateElement(elementId, { points: newPoints } as Partial<SVGElement>)
       }

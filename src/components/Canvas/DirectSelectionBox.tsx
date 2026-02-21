@@ -6,6 +6,7 @@
  * Vertices are shown as squares with dark blue fill.
  * Selected vertices change to dark purple.
  * Supports multiple vertex selection via Ctrl+Click.
+ * Shows Bezier control handles for corner vertices.
  */
 
 import { useMemo, useState, useEffect } from 'react'
@@ -23,23 +24,20 @@ export interface DirectSelectionBoxProps {
 }
 
 const HANDLE_COLOR = '#0047AB'
+const BEZIER_HANDLE_COLOR = '#FF6B35'
 const HANDLE_SIZE = 10
+const CONTROL_HANDLE_SIZE = 8
 
-/**
- * Generate a unique key for a vertex
- */
 function vertexKey(elementId: string, vertexIndex: number): string {
   return `${elementId}:${vertexIndex}`
 }
 
-/**
- * Direct Selection Box with vertex handles
- */
 export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({ 
   elements, 
   selectedIds,
   scale,
   onVertexDragStart,
+  onControlDragStart,
   selectedVertices,
   onVertexSelect,
 }) => {
@@ -50,6 +48,8 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
   
   const handleSize = HANDLE_SIZE / Math.max(scale, 0.5)
   const halfHandle = handleSize / 2
+  const controlHandleSize = CONTROL_HANDLE_SIZE / Math.max(scale, 0.5)
+  const halfControlHandle = controlHandleSize / 2
 
   const selectedElements = useMemo(() => {
     return elements.filter(el => selectedIds.includes(el.id) && 'points' in el) as PointElement[]
@@ -105,6 +105,11 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
     onVertexDragStart?.(elementId, indices, { x: e.clientX, y: e.clientY })
   }
 
+  const handleControlMouseDown = (elementId: string, vertexIndex: number, controlType: 'cp1' | 'cp2') => (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onControlDragStart?.(elementId, vertexIndex, controlType, { x: e.clientX, y: e.clientY })
+  }
+
   const isVertexSelected = (elementId: string, vertexIndex: number) => {
     return currentSelectedVertices.has(vertexKey(elementId, vertexIndex))
   }
@@ -120,9 +125,58 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
               const isSelected = isVertexSelected(element.id, index)
               const px = p.x * DEFAULTS.MM_TO_PX
               const py = p.y * DEFAULTS.MM_TO_PX
+              const showHandles = p.vertexType === 'corner'
               
               return (
                 <g key={`vertex-${index}`}>
+                  {showHandles && p.cp1 && (
+                    <>
+                      <line
+                        x1={px}
+                        y1={py}
+                        x2={p.cp1.x * DEFAULTS.MM_TO_PX}
+                        y2={p.cp1.y * DEFAULTS.MM_TO_PX}
+                        stroke={BEZIER_HANDLE_COLOR}
+                        strokeWidth={0.3}
+                        vectorEffect="non-scaling-stroke"
+                        style={{ pointerEvents: 'none' }}
+                      />
+                      <rect
+                        x={p.cp1.x * DEFAULTS.MM_TO_PX - halfControlHandle}
+                        y={p.cp1.y * DEFAULTS.MM_TO_PX - halfControlHandle}
+                        width={controlHandleSize}
+                        height={controlHandleSize}
+                        fill={BEZIER_HANDLE_COLOR}
+                        style={{ pointerEvents: 'all', cursor: 'move' }}
+                        onMouseDown={handleControlMouseDown(element.id, index, 'cp1')}
+                      />
+                    </>
+                  )}
+                  
+                  {showHandles && p.cp2 && (
+                    <>
+                      <line
+                        x1={px}
+                        y1={py}
+                        x2={p.cp2.x * DEFAULTS.MM_TO_PX}
+                        y2={p.cp2.y * DEFAULTS.MM_TO_PX}
+                        stroke={BEZIER_HANDLE_COLOR}
+                        strokeWidth={0.3}
+                        vectorEffect="non-scaling-stroke"
+                        style={{ pointerEvents: 'none' }}
+                      />
+                      <rect
+                        x={p.cp2.x * DEFAULTS.MM_TO_PX - halfControlHandle}
+                        y={p.cp2.y * DEFAULTS.MM_TO_PX - halfControlHandle}
+                        width={controlHandleSize}
+                        height={controlHandleSize}
+                        fill={BEZIER_HANDLE_COLOR}
+                        style={{ pointerEvents: 'all', cursor: 'move' }}
+                        onMouseDown={handleControlMouseDown(element.id, index, 'cp2')}
+                      />
+                    </>
+                  )}
+                  
                   <rect
                     x={px - halfHandle}
                     y={py - halfHandle}

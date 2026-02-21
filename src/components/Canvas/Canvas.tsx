@@ -578,6 +578,7 @@ export const Canvas: React.FC = () => {
       
       const elementId = controlMoveElementIdRef.current
       const vertexIndex = controlMoveVertexIndexRef.current
+      const controlType = controlMoveTypeRef.current
       const initialPositions = initialControlPositionsRef.current.get(elementId)
       
       if (!initialPositions) return
@@ -590,10 +591,26 @@ export const Canvas: React.FC = () => {
       
       if (vertexIndex >= 0 && vertexIndex < newPoints.length) {
         const initialPoint = initialPositions[vertexIndex]
-        newPoints[vertexIndex] = {
-          x: initialPoint.x + dx,
-          y: initialPoint.y + dy,
-          vertexType: initialPoint.vertexType,
+        const targetCp = controlType === 'cp1' ? initialPoint.cp1 : initialPoint.cp2
+        
+        if (targetCp) {
+          if (controlType === 'cp1') {
+            newPoints[vertexIndex] = {
+              ...newPoints[vertexIndex],
+              cp1: {
+                x: targetCp.x + dx,
+                y: targetCp.y + dy,
+              },
+            }
+          } else {
+            newPoints[vertexIndex] = {
+              ...newPoints[vertexIndex],
+              cp2: {
+                x: targetCp.x + dx,
+                y: targetCp.y + dy,
+              },
+            }
+          }
         }
       }
       
