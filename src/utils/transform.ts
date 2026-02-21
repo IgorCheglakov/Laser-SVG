@@ -173,7 +173,7 @@ export function transformPoints(
         // Coefficient: signed value for center-based, absolute for edge-based
         const coefficientX = fromCenter 
           ? (p.x - pivot.x) / handleDeltaX 
-          : Math.abs(p.x - pivot.x) / Math.abs(handleDeltaX)
+          : Math.abs(p.x - pivot.x) / Math.abs(handleDeltaX) 
         newX = p.x + coefficientX * delta.dx
       }
     }
@@ -204,9 +204,15 @@ export function transformPoints(
       if (handle.horizontal) {
         const handleDeltaX = handlePos.x - pivot.x
         if (handleDeltaX !== 0) {
-          const coefficientX = fromCenter 
+          let coefficientX = fromCenter 
             ? (p.cp1.x - pivot.x) / handleDeltaX 
             : Math.abs(p.cp1.x - pivot.x) / Math.abs(handleDeltaX)
+          
+          // Flipping the sign if cp1.x and handle are on opposite sides of pivot
+          const sameSideX = (handlePos.x > pivot.x && p.cp1.x > pivot.x) || 
+                            (handlePos.x < pivot.x && p.cp1.x < pivot.x)
+          if (!sameSideX) coefficientX = -coefficientX
+          
           newCp1X = p.cp1.x + coefficientX * delta.dx
         }
       }
@@ -214,9 +220,15 @@ export function transformPoints(
       if (handle.vertical) {
         const handleDeltaY = handlePos.y - pivot.y
         if (handleDeltaY !== 0) {
-          const coefficientY = fromCenter 
+          let coefficientY = fromCenter 
             ? (p.cp1.y - pivot.y) / handleDeltaY 
             : Math.abs(p.cp1.y - pivot.y) / Math.abs(handleDeltaY)
+          
+          // Flipping the sign if cp1.y and handle are on opposite sides of pivot
+          const sameSideY = (handlePos.y > pivot.y && p.cp1.y > pivot.y) || 
+                            (handlePos.y < pivot.y && p.cp1.y < pivot.y)
+          if (!sameSideY) coefficientY = -coefficientY
+          
           newCp1Y = p.cp1.y + coefficientY * delta.dy
         }
       }
@@ -236,9 +248,15 @@ export function transformPoints(
       if (handle.horizontal) {
         const handleDeltaX = handlePos.x - pivot.x
         if (handleDeltaX !== 0) {
-          const coefficientX = fromCenter 
+          let coefficientX = fromCenter 
             ? (p.cp2.x - pivot.x) / handleDeltaX 
             : Math.abs(p.cp2.x - pivot.x) / Math.abs(handleDeltaX)
+          
+          // Flipping the sign if cp2.x and handle are on opposite sides of pivot
+          const sameSideX = (handlePos.x > pivot.x && p.cp2.x > pivot.x) || 
+                            (handlePos.x < pivot.x && p.cp2.x < pivot.x)
+          if (!sameSideX) coefficientX = -coefficientX
+          
           newCp2X = p.cp2.x + coefficientX * delta.dx
         }
       }
@@ -246,9 +264,15 @@ export function transformPoints(
       if (handle.vertical) {
         const handleDeltaY = handlePos.y - pivot.y
         if (handleDeltaY !== 0) {
-          const coefficientY = fromCenter 
+          let coefficientY = fromCenter 
             ? (p.cp2.y - pivot.y) / handleDeltaY 
             : Math.abs(p.cp2.y - pivot.y) / Math.abs(handleDeltaY)
+          
+          // Flipping the sign if cp2.y and handle are on opposite sides of pivot
+          const sameSideY = (handlePos.y > pivot.y && p.cp2.y > pivot.y) || 
+                            (handlePos.y < pivot.y && p.cp2.y < pivot.y)
+          if (!sameSideY) coefficientY = -coefficientY
+          
           newCp2Y = p.cp2.y + coefficientY * delta.dy
         }
       }
