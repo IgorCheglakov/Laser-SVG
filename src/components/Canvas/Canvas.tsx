@@ -578,7 +578,6 @@ export const Canvas: React.FC = () => {
       
       const elementId = controlMoveElementIdRef.current
       const vertexIndex = controlMoveVertexIndexRef.current
-      const controlType = controlMoveTypeRef.current
       const initialPositions = initialControlPositionsRef.current.get(elementId)
       
       if (!initialPositions) return
@@ -588,67 +587,13 @@ export const Canvas: React.FC = () => {
       
       const pointEl = el as PointElement
       const newPoints = [...pointEl.points]
-      const vertexType = pointEl.points[vertexIndex]?.vertexType
       
       if (vertexIndex >= 0 && vertexIndex < newPoints.length) {
         const initialPoint = initialPositions[vertexIndex]
-        const targetCp = controlType === 'cp1' ? initialPoint.cp1 : initialPoint.cp2
-        
-        if (targetCp) {
-          const isSmooth = vertexType === 'smooth'
-          const vertex = newPoints[vertexIndex]
-          
-          if (controlType === 'cp1') {
-            const newCp1 = {
-              x: targetCp.x + dx,
-              y: targetCp.y + dy,
-            }
-            newPoints[vertexIndex] = {
-              ...newPoints[vertexIndex],
-              cp1: newCp1,
-            }
-            // Mirror cp2 for smooth vertices: opposite angle, preserve original length
-            if (isSmooth && initialPoint.cp2) {
-              const origCp2 = initialPoint.cp2
-              const origLength = Math.sqrt(
-                Math.pow(origCp2.x - vertex.x, 2) + 
-                Math.pow(origCp2.y - vertex.y, 2)
-              )
-              // Angle of new cp1 from vertex
-              const newAngle = Math.atan2(newCp1.y - vertex.y, newCp1.x - vertex.x)
-              // cp2 should be 180° opposite
-              const mirrorAngle = newAngle + Math.PI
-              newPoints[vertexIndex].cp2 = {
-                x: vertex.x + Math.cos(mirrorAngle) * origLength,
-                y: vertex.y + Math.sin(mirrorAngle) * origLength,
-              }
-            }
-          } else {
-            const newCp2 = {
-              x: targetCp.x + dx,
-              y: targetCp.y + dy,
-            }
-            newPoints[vertexIndex] = {
-              ...newPoints[vertexIndex],
-              cp2: newCp2,
-            }
-            // Mirror cp1 for smooth vertices: opposite angle, preserve original length
-            if (isSmooth && initialPoint.cp1) {
-              const origCp1 = initialPoint.cp1
-              const origLength = Math.sqrt(
-                Math.pow(origCp1.x - vertex.x, 2) + 
-                Math.pow(origCp1.y - vertex.y, 2)
-              )
-              // Angle of new cp2 from vertex
-              const newAngle = Math.atan2(newCp2.y - vertex.y, newCp2.x - vertex.x)
-              // cp1 should be 180° opposite
-              const mirrorAngle = newAngle + Math.PI
-              newPoints[vertexIndex].cp1 = {
-                x: vertex.x + Math.cos(mirrorAngle) * origLength,
-                y: vertex.y + Math.sin(mirrorAngle) * origLength,
-              }
-            }
-          }
+        newPoints[vertexIndex] = {
+          x: initialPoint.x + dx,
+          y: initialPoint.y + dy,
+          vertexType: initialPoint.vertexType,
         }
       }
       
@@ -1202,24 +1147,8 @@ const CanvasElement: React.FC<CanvasElementProps> = ({ element, isPreview, isSel
       if (i === 0) {
         d += `M ${px} ${py}`
       } else {
-        const prev = points[i - 1]
-        const prevPx = prev.x * DEFAULTS.MM_TO_PX
-        const prevPy = prev.y * DEFAULTS.MM_TO_PX
-        
-        const prevIsSmoothOrCorner = prev && (prev.vertexType === 'smooth' || prev.vertexType === 'corner')
-        
-        // Check for Bezier curve control points and vertex type
-        if ((prev.cp2 || p.cp1) && prevIsSmoothOrCorner) {
-          // Cubic Bezier curve
-          const cp1x = prev.cp2 ? prev.cp2.x * DEFAULTS.MM_TO_PX : prevPx
-          const cp1y = prev.cp2 ? prev.cp2.y * DEFAULTS.MM_TO_PX : prevPy
-          const cp2x = p.cp1 ? p.cp1.x * DEFAULTS.MM_TO_PX : px
-          const cp2y = p.cp1 ? p.cp1.y * DEFAULTS.MM_TO_PX : py
-          d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${px} ${py}`
-        } else {
-          // Line segment
-          d += ` L ${px} ${py}`
-        }
+        // Line segment
+        d += ` L ${px} ${py}`
       }
     }
     

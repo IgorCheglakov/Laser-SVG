@@ -9,7 +9,6 @@ import { useEditorStore } from '@store/index'
 import { UI_STRINGS, COLOR_PALETTE, getContrastColor } from '@constants/index'
 import { Square, Circle, Minus } from 'lucide-react'
 import type { PointElement, SVGElement } from '@/types-app/index'
-import { convertToSmooth, convertToCorner } from '@/types-app/point'
 
 /**
  * Vertex Properties Panel for Direct Selection tool
@@ -141,24 +140,15 @@ const VertexPropertiesPanel: React.FC<{
     return 'straight'
   }, [selectedVertices, elements])
 
-  const handleVertexTypeChange = (newType: 'straight' | 'smooth' | 'corner') => {
+  const handleVertexTypeChange = (newType: 'straight' | 'corner') => {
     selectedVertices.forEach(key => {
       const [elementId, vertexIndexStr] = key.split(':')
       const vertexIndex = parseInt(vertexIndexStr, 10)
       const element = elements.find(el => el.id === elementId)
       if (element) {
         const newPoints = [...element.points]
-        
-        if (newType === 'smooth') {
-          const converted = convertToSmooth(vertexIndex, element.points, element.isClosedShape)
-          newPoints[vertexIndex] = converted
-        } else if (newType === 'corner') {
-          const converted = convertToCorner(vertexIndex, element.points, element.isClosedShape)
-          newPoints[vertexIndex] = converted
-        } else {
-          const p = newPoints[vertexIndex]
-          newPoints[vertexIndex] = { ...p, vertexType: newType }
-        }
+        const p = newPoints[vertexIndex]
+        newPoints[vertexIndex] = { ...p, vertexType: newType }
         
         updateElement(elementId, { points: newPoints } as Partial<SVGElement>)
       }
@@ -227,21 +217,9 @@ const VertexPropertiesPanel: React.FC<{
                 ? 'bg-dark-accent text-white border-dark-accent'
                 : 'bg-dark-bgTertiary text-dark-text border-dark-border hover:bg-dark-border'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
-            title="Straight (no curve)"
+            title="Straight"
           >
             Straight
-          </button>
-          <button
-            onClick={() => handleVertexTypeChange('smooth')}
-            disabled={!isActive}
-            className={`flex-1 px-2 py-1.5 text-xs rounded border ${
-              currentVertexType === 'smooth'
-                ? 'bg-dark-accent text-white border-dark-accent'
-                : 'bg-dark-bgTertiary text-dark-text border-dark-border hover:bg-dark-border'
-            } disabled:opacity-50 disabled:cursor-not-allowed`}
-            title="Smooth (linked handles)"
-          >
-            Smooth
           </button>
           <button
             onClick={() => handleVertexTypeChange('corner')}
@@ -251,7 +229,7 @@ const VertexPropertiesPanel: React.FC<{
                 ? 'bg-dark-accent text-white border-dark-accent'
                 : 'bg-dark-bgTertiary text-dark-text border-dark-border hover:bg-dark-border'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
-            title="Corner (independent handles)"
+            title="Corner"
           >
             Corner
           </button>
