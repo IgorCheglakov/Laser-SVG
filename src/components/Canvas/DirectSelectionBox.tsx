@@ -128,6 +128,7 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
         const pathPoints = points.map(p => ({
           x: p.x * DEFAULTS.MM_TO_PX,
           y: p.y * DEFAULTS.MM_TO_PX,
+          vertexType: p.vertexType || 'straight',
           cp1: p.cp1 ? { x: p.cp1.x * DEFAULTS.MM_TO_PX, y: p.cp1.y * DEFAULTS.MM_TO_PX } : undefined,
           cp2: p.cp2 ? { x: p.cp2.x * DEFAULTS.MM_TO_PX, y: p.cp2.y * DEFAULTS.MM_TO_PX } : undefined,
         }))
@@ -167,10 +168,11 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
             
             {pathPoints.map((p, index) => {
               const isSelected = isVertexSelected(element.id, index)
+              const showHandles = p.vertexType !== 'straight'
               
               return (
                 <g key={`vertex-${index}`}>
-                  {p.cp1 && (
+                  {showHandles && p.cp1 && (
                     <>
                       <line
                         x1={p.x}
@@ -194,7 +196,7 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
                     </>
                   )}
                   
-                  {p.cp2 && (
+                  {showHandles && p.cp2 && (
                     <>
                       <line
                         x1={p.x}

@@ -9,6 +9,7 @@ import { useEditorStore } from '@store/index'
 import { UI_STRINGS, COLOR_PALETTE, getContrastColor } from '@constants/index'
 import { Square, Circle, Minus } from 'lucide-react'
 import type { PointElement, SVGElement } from '@/types-app/index'
+import { convertToSmooth, convertToCorner } from '@/types-app/point'
 
 /**
  * Vertex Properties Panel for Direct Selection tool
@@ -140,21 +141,6 @@ const VertexPropertiesPanel: React.FC<{
     return 'straight'
   }, [selectedVertices, elements])
 
-  const hasControlPoints = useMemo(() => {
-    let hasCp = false
-    selectedVertices.forEach(key => {
-      const [elementId, vertexIndexStr] = key.split(':')
-      const vertexIndex = parseInt(vertexIndexStr, 10)
-      const element = elements.find(el => el.id === elementId)
-      if (element && element.points[vertexIndex]) {
-        if (element.points[vertexIndex].cp1 || element.points[vertexIndex].cp2) {
-          hasCp = true
-        }
-      }
-    })
-    return hasCp
-  }, [selectedVertices, elements])
-
   const handleVertexTypeChange = (newType: 'straight' | 'smooth' | 'corner') => {
     selectedVertices.forEach(key => {
       const [elementId, vertexIndexStr] = key.split(':')
@@ -162,8 +148,18 @@ const VertexPropertiesPanel: React.FC<{
       const element = elements.find(el => el.id === elementId)
       if (element) {
         const newPoints = [...element.points]
-        const p = newPoints[vertexIndex]
-        newPoints[vertexIndex] = { ...p, vertexType: newType }
+        
+        if (newType === 'smooth') {
+          const converted = convertToSmooth(vertexIndex, element.points, element.isClosedShape)
+          newPoints[vertexIndex] = converted
+        } else if (newType === 'corner') {
+          const converted = convertToCorner(vertexIndex, element.points, element.isClosedShape)
+          newPoints[vertexIndex] = converted
+        } else {
+          const p = newPoints[vertexIndex]
+          newPoints[vertexIndex] = { ...p, vertexType: newType }
+        }
+        
         updateElement(elementId, { points: newPoints } as Partial<SVGElement>)
       }
     })
@@ -237,7 +233,7 @@ const VertexPropertiesPanel: React.FC<{
           </button>
           <button
             onClick={() => handleVertexTypeChange('smooth')}
-            disabled={!isActive || !hasControlPoints}
+            disabled={!isActive}
             className={`flex-1 px-2 py-1.5 text-xs rounded border ${
               currentVertexType === 'smooth'
                 ? 'bg-dark-accent text-white border-dark-accent'
@@ -249,7 +245,7 @@ const VertexPropertiesPanel: React.FC<{
           </button>
           <button
             onClick={() => handleVertexTypeChange('corner')}
-            disabled={!isActive || !hasControlPoints}
+            disabled={!isActive}
             className={`flex-1 px-2 py-1.5 text-xs rounded border ${
               currentVertexType === 'corner'
                 ? 'bg-dark-accent text-white border-dark-accent'

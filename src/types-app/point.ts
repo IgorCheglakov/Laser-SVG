@@ -1,7 +1,8 @@
 /**
  * Point Definition
  * 
- * Point with optional Bezier curve control points.
+ * Point with Bezier curve control points.
+ * All points have cp1 and cp2 control handles.
  * Vertex type determines how control points behave.
  */
 
@@ -11,7 +12,12 @@
 export type VertexType = 'straight' | 'smooth' | 'corner'
 
 /**
- * Point with optional Bezier curve control points
+ * Default control point offset (10mm)
+ */
+const DEFAULT_CP_OFFSET = 10
+
+/**
+ * Point with Bezier curve control points
  */
 export interface Point {
   x: number
@@ -53,9 +59,16 @@ export function isCorner(p: Point): boolean {
 
 /**
  * Create a simple point without curves
+ * Control points are created but hidden for straight vertices
  */
 export function createPoint(x: number, y: number, vertexType: VertexType = 'straight'): Point {
-  return { x, y, vertexType }
+  return { 
+    x, 
+    y, 
+    vertexType,
+    cp1: { x: x + DEFAULT_CP_OFFSET, y },
+    cp2: { x: x - DEFAULT_CP_OFFSET, y },
+  }
 }
 
 /**
@@ -68,7 +81,13 @@ export function createCurvePoint(
   cp1?: { x: number; y: number }, 
   cp2?: { x: number; y: number }
 ): Point {
-  return { x, y, vertexType, cp1, cp2 }
+  return { 
+    x, 
+    y, 
+    vertexType, 
+    cp1: cp1 || { x: x + DEFAULT_CP_OFFSET, y },
+    cp2: cp2 || { x: x - DEFAULT_CP_OFFSET, y },
+  }
 }
 
 /**
@@ -95,4 +114,136 @@ export function setSmoothCp2(p: Point, cp2: { x: number; y: number }): Point {
     result.cp1 = { x: p.x + dx, y: p.y + dy }
   }
   return result
+}
+
+/**
+ * Convert straight vertex to smooth vertex
+ * Calculates control points based on neighbors
+ */
+export function convertToSmooth(
+  pointIndex: number,
+  points: Point[],
+  _isClosedShape: boolean
+): Point {
+  const p = points[pointIndex]
+  const totalPoints = points.length
+  
+  if (totalPoints < 2) return p
+  
+  const isFirst = pointIndex === 0
+  const isLast = pointIndex === totalPoints - 1
+  
+  let cp1: { x: number; y: number } | undefined
+  let cp2: { x: number; y: number } | undefined
+  
+  if (isFirst) {
+    const nextP = points[1]
+    const dx = nextP.x - p.x
+    const dy = nextP.y - p.y
+    const dist = Math.sqrt(dx * dx + dy * dy)
+    const handleLength = Math.max(dist / 4, 10)
+    cp1 = { x: p.x + (dx / dist) * handleLength, y: p.y + (dy / dist) * handleLength }
+  } else if (isLast) {
+    const prevP = points[pointIndex - 1]
+    const dx = prevP.x - p.x
+    const dy = prevP.y - p.y
+    const dist = Math.sqrt(dx * dx + dy * dy)
+    const handleLength = Math.max(dist / 4, 10)
+    cp2 = { x: p.x - (dx / dist) * handleLength, y: p.y - (dy / dist) * handleLength }
+  } else {
+    const prevP = points[pointIndex - 1]
+    const nextP = points[pointIndex + 1]
+    
+    const dx1 = p.x - prevP.x
+    const dy1 = p.y - prevP.y
+    const dist1 = Math.sqrt(dx1 * dx1 + dy1 * dy1)
+    
+    const dx2 = nextP.x - p.x
+    const dy2 = nextP.y - p.y
+    const dist2 = Math.sqrt(dx2 * dx2 + dy2 * dy2)
+    
+    const bisectorAngle1 = Math.atan2(dy1, dx1)
+    const bisectorAngle2 = Math.atan2(dy2, dx2)
+    
+    const perpAngle1 = bisectorAngle1 + Math.PI / 2
+    const perpAngle2 = bisectorAngle2 + Math.PI / 2
+    
+    const handleLength1 = dist1 / 4
+    const handleLength2 = dist2 / 4
+    
+    cp2 = { 
+      x: p.x + Math.cos(perpAngle1) * handleLength1, 
+      y: p.y + Math.sin(perpAngle1) * handleLength1 
+    }
+    cp1 = { 
+      x: p.x + Math.cos(perpAngle2) * handleLength2, 
+      y: p.y + Math.sin(perpAngle2) * handleLength2 
+    }
+  }
+  
+  return { ...p, vertexType: 'smooth', cp1, cp2 }
+}
+
+/**
+ * Convert straight vertex to corner vertex
+ * Creates independent control points
+ */
+export function convertToCorner(
+  pointIndex: number,
+  points: Point[],
+  _isClosedShape: boolean
+): Point {
+  const p = points[pointIndex]
+  const totalPoints = points.length
+  
+  if (totalPoints < 2) return p
+  
+  const isFirst = pointIndex === 0
+  const isLast = pointIndex === totalPoints - 1
+  
+  let cp1: { x: number; y: number } | undefined
+  let cp2: { x: number; y: number } | undefined
+  
+  if (isFirst) {
+    const nextP = points[1]
+    const dx = nextP.x - p.x
+    const dy = nextP.y - p.y
+    const dist = Math.sqrt(dx * dx + dy * dy)
+    if (dist > 0) {
+      const handleLength = Math.max(dist / 4, 10)
+      cp1 = { x: p.x + (dx / dist) * handleLength, y: p.y + (dy / dist) * handleLength }
+    }
+  } else if (isLast) {
+    const prevP = points[pointIndex - 1]
+    const dx = prevP.x - p.x
+    const dy = prevP.y - p.y
+    const dist = Math.sqrt(dx * dx + dy * dy)
+    if (dist > 0) {
+      const handleLength = Math.max(dist / 4, 10)
+      cp2 = { x: p.x - (dx / dist) * handleLength, y: p.y - (dy / dist) * handleLength }
+    }
+  } else {
+    const prevP = points[pointIndex - 1]
+    const nextP = points[pointIndex + 1]
+    
+    const dx1 = nextP.x - p.x
+    const dy1 = nextP.y - p.y
+    const dist1 = Math.sqrt(dx1 * dx1 + dy1 * dy1)
+    
+    const dx2 = prevP.x - p.x
+    const dy2 = prevP.y - p.y
+    const dist2 = Math.sqrt(dx2 * dx2 + dy2 * dy2)
+    
+    if (dist1 > 0) {
+      const handleLength = dist1 / 4
+      cp1 = { x: p.x + (dx1 / dist1) * handleLength, y: p.y + (dy1 / dist1) * handleLength }
+    }
+    
+    if (dist2 > 0) {
+      const handleLength = dist2 / 4
+      cp2 = { x: p.x + (dx2 / dist2) * handleLength, y: p.y + (dy2 / dist2) * handleLength }
+    }
+  }
+  
+  return { ...p, vertexType: 'corner', cp1, cp2 }
 }
