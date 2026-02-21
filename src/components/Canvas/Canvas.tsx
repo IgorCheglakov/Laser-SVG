@@ -27,6 +27,7 @@ export const Canvas: React.FC = () => {
   const [isPanning, setIsPanning] = useState(false)
   const [panStart, setPanStart] = useState<Point>({ x: 0, y: 0 })
   const [previewElement, setPreviewElement] = useState<PointElement | null>(null)
+  const [hoveredElementId, setHoveredElementId] = useState<string | null>(null)
   const startPointRef = useRef<Point>({ x: 0, y: 0 })
   const isDrawingRef = useRef(false)
   const isMovingRef = useRef(false)
@@ -91,7 +92,7 @@ export const Canvas: React.FC = () => {
   }, [settings.gridSize, settings.snapToGrid])
 
   /**
-   * Calculate bounding box for a set of points
+   * Calculate bounding box for a set of points, including Bezier control points
    */
   const calculateBounds = useCallback((points: Point[]): { x: number; y: number; width: number; height: number } => {
     if (points.length === 0) {
@@ -108,6 +109,19 @@ export const Canvas: React.FC = () => {
       minY = Math.min(minY, p.y)
       maxX = Math.max(maxX, p.x)
       maxY = Math.max(maxY, p.y)
+      
+      if (p.cp1) {
+        minX = Math.min(minX, p.cp1.x)
+        minY = Math.min(minY, p.cp1.y)
+        maxX = Math.max(maxX, p.cp1.x)
+        maxY = Math.max(maxY, p.cp1.y)
+      }
+      if (p.cp2) {
+        minX = Math.min(minX, p.cp2.x)
+        minY = Math.min(minY, p.cp2.y)
+        maxX = Math.max(maxX, p.cp2.x)
+        maxY = Math.max(maxY, p.cp2.y)
+      }
     }
     
     return {
@@ -138,11 +152,11 @@ export const Canvas: React.FC = () => {
         point.y >= bounds.y - hitThreshold &&
         point.y <= bounds.y + bounds.height + hitThreshold
       ) {
-        // Check edges
+        // Check edges (including Bezier curves)
         for (let j = 0; j < el.points.length; j++) {
           const p1 = el.points[j]
           const p2 = el.points[(j + 1) % el.points.length]
-          const dist = distanceToLineSegment(point, p1, p2)
+          const dist = distanceToBezierCurve(point, p1, p2)
           if (dist <= hitThreshold) {
             return element
           }
@@ -520,6 +534,15 @@ export const Canvas: React.FC = () => {
       return
     }
     
+    // Track hovered element for cursor change
+    if (activeTool === 'selection' || activeTool === 'directSelection') {
+      const point = screenToCanvas(e.clientX, e.clientY)
+      const hovered = findElementAtPoint(point)
+      setHoveredElementId(hovered ? hovered.id : null)
+    } else {
+      setHoveredElementId(null)
+    }
+    
     if (isMovingRef.current && (e.buttons & 1)) {
       let point = screenToCanvas(e.clientX, e.clientY)
       
@@ -633,7 +656,7 @@ export const Canvas: React.FC = () => {
             const distCurrent = Math.sqrt(dxCurrent * dxCurrent + dyCurrent * dyCurrent)
             
             if (distCurrent > 0) {
-              let angleCurrent = Math.atan2(dyCurrent, dxCurrent) * 180 / Math.PI
+              const angleCurrent = Math.atan2(dyCurrent, dxCurrent) * 180 / Math.PI
               let angleSibling = angleCurrent + 180
               
               if (angleSibling > 180) angleSibling -= 360
@@ -848,7 +871,7 @@ export const Canvas: React.FC = () => {
     }
     
     tool.onMouseMove(e, toolContext)
-  }, [isPanning, panStart, pan, isResizingRef, isMovingRef, isRotatingRef, rotationStartRef, rotationShiftRef, resizeHandleRef, resizeStartRef, initialBoxRef, selectedIds, elements, previewElement, activeTool, tool, toolContext, screenToCanvas, snapToGrid, updateElementNoHistory, calculateAngle, settings])
+  }, [isPanning, panStart, pan, isResizingRef, isMovingRef, isRotatingRef, rotationStartRef, rotationShiftRef, resizeHandleRef, resizeStartRef, initialBoxRef, selectedIds, elements, previewElement, activeTool, tool, toolContext, screenToCanvas, snapToGrid, updateElementNoHistory, calculateAngle, settings, findElementAtPoint, setHoveredElementId])
 
   /**
    * Handle mouse up
@@ -994,14 +1017,18 @@ export const Canvas: React.FC = () => {
   const artboardWidthPx = settings.artboardWidth * DEFAULTS.MM_TO_PX
   const artboardHeightPx = settings.artboardHeight * DEFAULTS.MM_TO_PX
 
+  const cursorStyle = hoveredElementId ? 'pointer' : 'crosshair'
+
   return (
     <div
       ref={containerRef}
-      className="w-full h-full bg-canvas-bg overflow-hidden relative cursor-crosshair"
+      className={`w-full h-full bg-canvas-bg overflow-hidden relative`}
+      style={{ cursor: cursorStyle }}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
+      onMouseLeave={() => setHoveredElementId(null)}
       onContextMenu={handleContextMenu}
     >
       <svg
@@ -1195,6 +1222,49 @@ function distanceToLineSegment(point: Point, p1: Point, p2: Point): number {
   const closestY = y1 + t * dy
   
   return Math.sqrt((point.x - closestX) ** 2 + (point.y - closestY) ** 2)
+}
+
+/**
+ * Calculate point on cubic Bezier curve at parameter t
+ */
+function bezierPoint(t: number, p0: Point, p1: Point, p2: Point, p3: Point): Point {
+  const mt = 1 - t
+  const mt2 = mt * mt
+  const mt3 = mt2 * mt
+  const t2 = t * t
+  const t3 = t2 * t
+  
+  return {
+    x: mt3 * p0.x + 3 * mt2 * t * p1.x + 3 * mt * t2 * p2.x + t3 * p3.x,
+    y: mt3 * p0.y + 3 * mt2 * t * p1.y + 3 * mt * t2 * p2.y + t3 * p3.y,
+  }
+}
+
+/**
+ * Calculate minimum distance from point to cubic Bezier curve segment
+ */
+function distanceToBezierCurve(point: Point, p1: Point, p2: Point): number {
+  const cp1 = p1.cp2
+  const cp2 = p2.cp1
+  
+  if (!cp1 && !cp2) {
+    return distanceToLineSegment(point, p1, p2)
+  }
+  
+  const cp1Point = cp1 ? { x: cp1.x, y: cp1.y } : p1
+  const cp2Point = cp2 ? { x: cp2.x, y: cp2.y } : p2
+  
+  const samples = 20
+  let minDist = Infinity
+  
+  for (let i = 0; i <= samples; i++) {
+    const t = i / samples
+    const curvePoint = bezierPoint(t, p1, cp1Point, cp2Point, p2)
+    const dist = Math.sqrt((point.x - curvePoint.x) ** 2 + (point.y - curvePoint.y) ** 2)
+    minDist = Math.min(minDist, dist)
+  }
+  
+  return minDist
 }
 
 /**

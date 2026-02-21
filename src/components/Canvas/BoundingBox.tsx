@@ -6,7 +6,7 @@
  * For simple lines (2 points), shows special selection: 2 endpoint handles and line overlay.
  */
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { SVGElement, PointElement, Point } from '@/types-app/index'
 import { DEFAULTS } from '@constants/index'
 import { calculateBoundingBox } from '@/utils/bounds'
@@ -62,6 +62,8 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
   onRotateStart,
   onBoxClick,
 }) => {
+  const [isHovered, setIsHovered] = useState(false)
+  
   const pointElements = useMemo(() => {
     return elements.filter(el => 'points' in el) as PointElement[]
   }, [elements])
@@ -168,6 +170,9 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
     e.stopPropagation()
     onBoxClick?.({ x: e.clientX, y: e.clientY }, e.altKey)
   }
+
+  const handleBoxMouseEnter = () => setIsHovered(true)
+  const handleBoxMouseLeave = () => setIsHovered(false)
 
   if (simpleLineElement && simpleLineEndpoints) {
     return (
@@ -281,11 +286,13 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
         width={width}
         height={height}
         fill="none"
-        stroke={SELECTION_COLOR}
-        strokeWidth={0.5}
+        stroke={isHovered ? '#2d5a2d' : SELECTION_COLOR}
+        strokeWidth={isHovered ? 1 : 0.5}
         vectorEffect="non-scaling-stroke"
-        style={{ pointerEvents: 'all', animation: 'selectionPulse 2s ease-in-out infinite', cursor: 'move' }}
+        style={{ pointerEvents: 'all', animation: isHovered ? 'none' : 'selectionPulse 2s ease-in-out infinite', cursor: 'move' }}
         onMouseDown={handleBoxMouseDown}
+        onMouseEnter={handleBoxMouseEnter}
+        onMouseLeave={handleBoxMouseLeave}
       />
 
       {rotationHandles.map(handle => (
