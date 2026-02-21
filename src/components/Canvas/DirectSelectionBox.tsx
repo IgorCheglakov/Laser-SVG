@@ -129,7 +129,7 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
               
               return (
                 <g key={`vertex-${index}`}>
-                  {showHandles && p.cp1 && (
+                  {showHandles && p.cp1 && p.cp1.targetVertexIndex !== null && (
                     <>
                       <line
                         x1={px}
@@ -153,7 +153,7 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
                     </>
                   )}
                   
-                  {showHandles && p.cp2 && (
+                  {showHandles && p.cp2 && p.cp2.targetVertexIndex !== null && (
                     <>
                       <line
                         x1={px}
