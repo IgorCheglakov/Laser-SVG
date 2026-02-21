@@ -162,11 +162,12 @@ export const Canvas: React.FC = () => {
           }
         }
         
-        // Check edges (including Bezier curves)
-        for (let j = 0; j < el.points.length; j++) {
-          const p1 = el.points[j]
-          const p2 = el.points[(j + 1) % el.points.length]
-          const dist = distanceToBezierCurve(point, p1, p2)
+        // Check edges using unified curve logic
+        const segments = getCurveSegments(el.points, el.isClosedShape)
+        for (const seg of segments) {
+          const dist = seg.isCurve 
+            ? distanceToBezierCurveExact(point, seg.p1, seg.cp1, seg.cp2, seg.p2)
+            : distanceToLineSegment(point, seg.p1, seg.p2)
           if (dist <= hitThreshold) {
             return element
           }
@@ -550,22 +551,18 @@ export const Canvas: React.FC = () => {
       const hovered = findElementAtPoint(point)
       setHoveredElementId(hovered ? hovered.id : null)
       
-      // Debug: generate samples for hovered element
+      // Debug: generate samples for hovered element using unified curve logic
       if (hovered && 'points' in hovered) {
         const pointEl = hovered as PointElement
         const samples: Point[] = []
-        for (let j = 0; j < pointEl.points.length; j++) {
-          const p1 = pointEl.points[j]
-          const p2 = pointEl.points[(j + 1) % pointEl.points.length]
-          const cp1 = p1.cp1
-          const cp2 = p2.cp2
-          
-          if (cp1 || cp2) {
-            const cp1Point = cp1 ? { x: cp1.x, y: cp1.y } : p1
-            const cp2Point = cp2 ? { x: cp2.x, y: cp2.y } : p2
-            for (let i = 0; i <= 50; i++) {
-              const t = i / 50
-              samples.push(bezierPoint(t, p1, cp1Point, cp2Point, p2))
+        const segments = getCurveSegments(pointEl.points, pointEl.isClosedShape)
+        
+        for (const seg of segments) {
+          if (seg.isCurve) {
+            const sampleCount = getAdaptiveSampleCount(seg.p1, seg.p2)
+            for (let i = 0; i <= sampleCount; i++) {
+              const t = i / sampleCount
+              samples.push(bezierPoint(t, seg.p1, seg.cp1, seg.cp2, seg.p2))
             }
           }
         }
@@ -1275,6 +1272,60 @@ function distanceToLineSegment(point: Point, p1: Point, p2: Point): number {
   return Math.sqrt((point.x - closestX) ** 2 + (point.y - closestY) ** 2)
 }
 
+interface CurveSegment {
+  p1: Point
+  cp1: Point
+  cp2: Point
+  p2: Point
+  isCurve: boolean
+}
+
+/**
+ * Get curve segments from points array using unified logic (same as rendering)
+ */
+function getCurveSegments(points: Point[], isClosed: boolean): CurveSegment[] {
+  const segments: CurveSegment[] = []
+  const len = points.length
+  
+  if (len < 2) return segments
+  
+  for (let i = 0; i < len; i++) {
+    const p1 = points[i]
+    const p2 = points[(i + 1) % len]
+    
+    // Skip closing segment for open shapes
+    if (i === len - 1 && !isClosed) continue
+    
+    // Same logic as rendering: use cp1 from p1 (incoming to p1) and cp2 from p2 (outgoing from p2)
+    const hasCp1 = (p1.vertexType === 'corner' || p1.vertexType === 'smooth') && p1.cp1
+    const hasCp2 = (p2.vertexType === 'corner' || p2.vertexType === 'smooth') && p2.cp2
+    
+    // If either endpoint has control points, use curve logic
+    if (hasCp1 || hasCp2) {
+      const cp1Point = hasCp1 ? { x: p1.cp1!.x, y: p1.cp1!.y } : p1
+      const cp2Point = hasCp2 ? { x: p2.cp2!.x, y: p2.cp2!.y } : p2
+      
+      segments.push({
+        p1,
+        cp1: cp1Point,
+        cp2: cp2Point,
+        p2,
+        isCurve: true,
+      })
+    } else {
+      segments.push({
+        p1,
+        cp1: p1,
+        cp2: p2,
+        p2,
+        isCurve: false,
+      })
+    }
+  }
+  
+  return segments
+}
+
 /**
  * Calculate point on cubic Bezier curve at parameter t
  */
@@ -1294,28 +1345,29 @@ function bezierPoint(t: number, p0: Point, p1: Point, p2: Point, p3: Point): Poi
 /**
  * Calculate minimum distance from point to cubic Bezier curve segment
  */
-function distanceToBezierCurve(point: Point, p1: Point, p2: Point): number {
-  const cp1 = p1.cp1
-  const cp2 = p2.cp2
-  
-  if (!cp1 && !cp2) {
-    return distanceToLineSegment(point, p1, p2)
-  }
-  
-  const cp1Point = cp1 ? { x: cp1.x, y: cp1.y } : p1
-  const cp2Point = cp2 ? { x: cp2.x, y: cp2.y } : p2
-  
-  const samples = 50
+function distanceToBezierCurveExact(point: Point, p1: Point, cp1: Point, cp2: Point, p2: Point): number {
+  const samples = getAdaptiveSampleCount(p1, p2)
   let minDist = Infinity
   
   for (let i = 0; i <= samples; i++) {
     const t = i / samples
-    const curvePoint = bezierPoint(t, p1, cp1Point, cp2Point, p2)
+    const curvePoint = bezierPoint(t, p1, cp1, cp2, p2)
     const dist = Math.sqrt((point.x - curvePoint.x) ** 2 + (point.y - curvePoint.y) ** 2)
     minDist = Math.min(minDist, dist)
   }
   
   return minDist
+}
+
+/**
+ * Calculate adaptive sample count based on segment length
+ */
+function getAdaptiveSampleCount(p1: Point, p2: Point): number {
+  const dx = p2.x - p1.x
+  const dy = p2.y - p1.y
+  const length = Math.sqrt(dx * dx + dy * dy)
+  // Minimum 10 samples, maximum 100, scale with length
+  return Math.min(100, Math.max(10, Math.floor(length * 5)))
 }
 
 /**
@@ -1340,51 +1392,36 @@ const CanvasElement: React.FC<CanvasElementProps> = ({ element, isPreview, isSel
   if ('points' in element && element.points) {
     const pointEl = element as PointElement
     const points = pointEl.points
+    const isClosed = pointEl.isClosedShape
     
-    // Generate SVG path data with Bezier curve support
+    // Generate SVG path data using unified curve logic
     let d = ''
-    for (let i = 0; i < points.length; i++) {
-      const p = points[i]
-      const px = p.x * DEFAULTS.MM_TO_PX
-      const py = p.y * DEFAULTS.MM_TO_PX
+    const segments = getCurveSegments(points, isClosed)
+    
+    for (let i = 0; i < segments.length; i++) {
+      const seg = segments[i]
+      const px = seg.p1.x * DEFAULTS.MM_TO_PX
+      const py = seg.p1.y * DEFAULTS.MM_TO_PX
+      const p2x = seg.p2.x * DEFAULTS.MM_TO_PX
+      const p2y = seg.p2.y * DEFAULTS.MM_TO_PX
       
       if (i === 0) {
         d += `M ${px} ${py}`
+      }
+      
+      if (seg.isCurve) {
+        const cp1x = seg.cp1.x * DEFAULTS.MM_TO_PX
+        const cp1y = seg.cp1.y * DEFAULTS.MM_TO_PX
+        const cp2x = seg.cp2.x * DEFAULTS.MM_TO_PX
+        const cp2y = seg.cp2.y * DEFAULTS.MM_TO_PX
+        d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2x} ${p2y}`
       } else {
-        const prev = points[i - 1]
-        
-        const prevCp1 = (prev.vertexType === 'corner' || prev.vertexType === 'smooth') ? prev.cp1 : undefined
-        const currCp2 = (p.vertexType === 'corner' || p.vertexType === 'smooth') ? p.cp2 : undefined
-        
-        if (prevCp1 || currCp2) {
-          const cp1x = prevCp1 ? prevCp1.x * DEFAULTS.MM_TO_PX : px
-          const cp1y = prevCp1 ? prevCp1.y * DEFAULTS.MM_TO_PX : py
-          const cp2x = currCp2 ? currCp2.x * DEFAULTS.MM_TO_PX : px
-          const cp2y = currCp2 ? currCp2.y * DEFAULTS.MM_TO_PX : py
-          d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${px} ${py}`
-        } else {
-          d += ` L ${px} ${py}`
-        }
+        d += ` L ${p2x} ${p2y}`
       }
     }
     
     // Close path if isClosedShape is true
-    if (pointEl.isClosedShape && points.length > 2) {
-      const first = points[0]
-      const last = points[points.length - 1]
-      
-      const lastCp1 = (last.vertexType === 'corner' || last.vertexType === 'smooth') ? last.cp1 : undefined
-      const firstCp2 = (first.vertexType === 'corner' || first.vertexType === 'smooth') ? first.cp2 : undefined
-      
-      if (lastCp1 || firstCp2) {
-        const firstPx = first.x * DEFAULTS.MM_TO_PX
-        const firstPy = first.y * DEFAULTS.MM_TO_PX
-        const cp1x = lastCp1 ? lastCp1.x * DEFAULTS.MM_TO_PX : firstPx
-        const cp1y = lastCp1 ? lastCp1.y * DEFAULTS.MM_TO_PX : firstPy
-        const cp2x = firstCp2 ? firstCp2.x * DEFAULTS.MM_TO_PX : firstPx
-        const cp2y = firstCp2 ? firstCp2.y * DEFAULTS.MM_TO_PX : firstPy
-        d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${firstPx} ${firstPy}`
-      }
+    if (isClosed && points.length > 2) {
       d += ' Z'
     }
     
