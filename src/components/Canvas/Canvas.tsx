@@ -592,25 +592,63 @@ export const Canvas: React.FC = () => {
       if (vertexIndex >= 0 && vertexIndex < newPoints.length) {
         const initialPoint = initialPositions[vertexIndex]
         const targetCp = controlType === 'cp1' ? initialPoint.cp1 : initialPoint.cp2
+        const vertexType = initialPoint.vertexType
+        const siblingCp = controlType === 'cp1' ? initialPoint.cp2 : initialPoint.cp1
+        const vertex = pointEl.points[vertexIndex]
         
         if (targetCp) {
+          const newCpX = targetCp.x + dx
+          const newCpY = targetCp.y + dy
+          
+          let siblingCpUpdate = undefined
+          
+          if (vertexType === 'smooth' && siblingCp) {
+            const dxCurrent = newCpX - vertex.x
+            const dyCurrent = newCpY - vertex.y
+            const distCurrent = Math.sqrt(dxCurrent * dxCurrent + dyCurrent * dyCurrent)
+            
+            if (distCurrent > 0) {
+              let angleCurrent = Math.atan2(dyCurrent, dxCurrent) * 180 / Math.PI
+              let angleSibling = angleCurrent + 180
+              
+              if (angleSibling > 180) angleSibling -= 360
+              if (angleSibling <= -180) angleSibling += 360
+              
+              const distSibling = Math.sqrt(
+                Math.pow(siblingCp.x - vertex.x, 2) + 
+                Math.pow(siblingCp.y - vertex.y, 2)
+              )
+              
+              siblingCpUpdate = {
+                x: vertex.x + Math.cos(angleSibling * Math.PI / 180) * distSibling,
+                y: vertex.y + Math.sin(angleSibling * Math.PI / 180) * distSibling,
+                targetVertexIndex: siblingCp.targetVertexIndex,
+                siblingIndex: siblingCp.siblingIndex,
+              }
+            }
+          }
+          
           if (controlType === 'cp1') {
             newPoints[vertexIndex] = {
               ...newPoints[vertexIndex],
               cp1: {
-                x: targetCp.x + dx,
-                y: targetCp.y + dy,
+                x: newCpX,
+                y: newCpY,
                 targetVertexIndex: targetCp.targetVertexIndex,
+                siblingIndex: targetCp.siblingIndex,
               },
+              ...(siblingCpUpdate && { cp2: siblingCpUpdate }),
             }
           } else {
             newPoints[vertexIndex] = {
               ...newPoints[vertexIndex],
               cp2: {
-                x: targetCp.x + dx,
-                y: targetCp.y + dy,
+                x: newCpX,
+                y: newCpY,
                 targetVertexIndex: targetCp.targetVertexIndex,
+                siblingIndex: targetCp.siblingIndex,
               },
+              ...(siblingCpUpdate && { cp1: siblingCpUpdate }),
             }
           }
         }
