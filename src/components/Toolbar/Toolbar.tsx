@@ -8,6 +8,7 @@ import {
   MousePointer2, 
   MousePointerClick, 
   Square, 
+  Circle,
   Minus,
   Pentagon,
 } from 'lucide-react'
@@ -48,7 +49,13 @@ const tools: ToolButton[] = [
     shortcut: 'R' 
   },
   { 
-    id: 'line', 
+    id: 'ellipse', 
+    icon: <Circle size={20} />, 
+    label: UI_STRINGS.TOOL_ELLIPSE, 
+    shortcut: 'E' 
+  },
+  { 
+    id: 'line',
     icon: <Minus size={20} />, 
     label: UI_STRINGS.TOOL_LINE, 
     shortcut: 'L' 

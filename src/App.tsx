@@ -72,6 +72,10 @@ const useGlobalShortcuts = () => {
             setActiveTool('rectangle')
             e.preventDefault()
             break
+          case HOTKEYS.TOOL_ELLIPSE:
+            setActiveTool('ellipse')
+            e.preventDefault()
+            break
           case HOTKEYS.TOOL_LINE:
             setActiveTool('line')
             e.preventDefault()

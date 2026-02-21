@@ -101,6 +101,7 @@ export type ToolType =
   | 'selection' 
   | 'directSelection' 
   | 'rectangle' 
+  | 'ellipse'
   | 'line' 
   | 'trapezoid'
   | 'polygon'

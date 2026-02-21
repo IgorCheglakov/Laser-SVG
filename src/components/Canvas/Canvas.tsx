@@ -483,7 +483,7 @@ export const Canvas: React.FC = () => {
             setSelectedIds([])
           }
         }
-      } else if (activeTool === 'rectangle' || activeTool === 'line' || activeTool === 'trapezoid') {
+      } else if (activeTool === 'rectangle' || activeTool === 'ellipse' || activeTool === 'line' || activeTool === 'trapezoid') {
         isMovingRef.current = false
         initialElementPositionsRef.current.clear()
         
@@ -504,6 +504,23 @@ export const Canvas: React.FC = () => {
             ],
             stroke: '#000000',
               strokeWidth: 1,
+            visible: true,
+            locked: false,
+            isClosedShape: true,
+          })
+        } else if (activeTool === 'ellipse') {
+          setPreviewElement({
+            id: 'preview',
+            type: 'point',
+            name: 'Ellipse',
+            points: [
+              { x: snappedPoint.x, y: snappedPoint.y, vertexType: 'smooth' },
+              { x: snappedPoint.x, y: snappedPoint.y, vertexType: 'smooth' },
+              { x: snappedPoint.x, y: snappedPoint.y, vertexType: 'smooth' },
+              { x: snappedPoint.x, y: snappedPoint.y, vertexType: 'smooth' },
+            ],
+            stroke: '#000000',
+            strokeWidth: 1,
             visible: true,
             locked: false,
             isClosedShape: true,
@@ -886,6 +903,51 @@ export const Canvas: React.FC = () => {
               { x: x + width, y },
               { x: x + width, y: y + height },
               { x, y: y + height },
+            ]
+          }
+        }
+        
+        if (activeTool === 'ellipse') {
+          const centerX = (startPoint.x + snappedPoint.x) / 2
+          const centerY = (startPoint.y + snappedPoint.y) / 2
+          const rx = Math.abs(snappedPoint.x - startPoint.x) / 2
+          const ry = Math.abs(snappedPoint.y - startPoint.y) / 2
+          
+          if (rx < 1 || ry < 1) return prev
+          
+          const k = 0.5523
+          
+          return {
+            ...prev,
+            points: [
+              { 
+                x: centerX, 
+                y: centerY - ry, 
+                vertexType: 'smooth',
+                cp1: { x: centerX - rx * k, y: centerY - ry, targetVertexIndex: 1, siblingIndex: 1 },
+                cp2: { x: centerX + rx * k, y: centerY - ry, targetVertexIndex: 3, siblingIndex: 0 }
+              },
+              { 
+                x: centerX + rx, 
+                y: centerY, 
+                vertexType: 'smooth',
+                cp1: { x: centerX + rx, y: centerY - ry * k, targetVertexIndex: 2, siblingIndex: 1 },
+                cp2: { x: centerX + rx, y: centerY + ry * k, targetVertexIndex: 0, siblingIndex: 2 }
+              },
+              { 
+                x: centerX, 
+                y: centerY + ry, 
+                vertexType: 'smooth',
+                cp1: { x: centerX + rx * k, y: centerY + ry, targetVertexIndex: 3, siblingIndex: 2 },
+                cp2: { x: centerX - rx * k, y: centerY + ry, targetVertexIndex: 1, siblingIndex: 3 }
+              },
+              { 
+                x: centerX - rx, 
+                y: centerY, 
+                vertexType: 'smooth',
+                cp1: { x: centerX - rx, y: centerY + ry * k, targetVertexIndex: 0, siblingIndex: 3 },
+                cp2: { x: centerX - rx, y: centerY - ry * k, targetVertexIndex: 2, siblingIndex: 0 }
+              },
             ]
           }
         }
@@ -1315,14 +1377,16 @@ function getCurveSegments(points: Point[], isClosed: boolean): CurveSegment[] {
     // Skip closing segment for open shapes
     if (i === len - 1 && !isClosed) continue
     
-    // Same logic as rendering: use cp1 from p1 (incoming to p1) and cp2 from p2 (outgoing from p2)
-    const hasCp1 = (p1.vertexType === 'corner' || p1.vertexType === 'smooth') && p1.cp1
-    const hasCp2 = (p2.vertexType === 'corner' || p2.vertexType === 'smooth') && p2.cp2
+    // For segment from p1 to p2:
+    // - cp1 should be cp2 of p1 (outgoing from p1)
+    // - cp2 should be cp1 of p2 (incoming to p2)
+    const hasCp1 = (p1.vertexType === 'corner' || p1.vertexType === 'smooth') && p1.cp2
+    const hasCp2 = (p2.vertexType === 'corner' || p2.vertexType === 'smooth') && p2.cp1
     
     // If either endpoint has control points, use curve logic
     if (hasCp1 || hasCp2) {
-      const cp1Point = hasCp1 ? { x: p1.cp1!.x, y: p1.cp1!.y } : p1
-      const cp2Point = hasCp2 ? { x: p2.cp2!.x, y: p2.cp2!.y } : p2
+      const cp1Point = hasCp1 ? { x: p1.cp2!.x, y: p1.cp2!.y } : p1
+      const cp2Point = hasCp2 ? { x: p2.cp1!.x, y: p2.cp1!.y } : p2
       
       segments.push({
         p1,

@@ -19,6 +19,7 @@ const tools: Record<ToolType, ITool> = {
   selection: selectionTool,
   directSelection: selectionTool, // Placeholder for Phase 5
   rectangle: rectangleTool,
+  ellipse: rectangleTool, // Uses rectangle tool logic
   line: lineTool,
   trapezoid: trapezoidTool,
   polygon: polygonTool,
