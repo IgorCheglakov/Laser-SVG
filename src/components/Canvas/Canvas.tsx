@@ -222,6 +222,22 @@ export const Canvas: React.FC = () => {
   }, [view.scale, view.offsetX, view.offsetY, setView])
 
   /**
+   * Attach wheel listener with passive: false to allow preventDefault
+   */
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      handleWheel(e as unknown as React.WheelEvent)
+    }
+
+    container.addEventListener('wheel', onWheel, { passive: false })
+    return () => container.removeEventListener('wheel', onWheel)
+  }, [handleWheel])
+
+  /**
    * Calculate bounding box for selected elements
    */
   const calculateBoundsForSelected = useCallback((): InitialSize | null => {
@@ -1060,7 +1076,6 @@ export const Canvas: React.FC = () => {
       ref={containerRef}
       className={`w-full h-full bg-canvas-bg overflow-hidden relative`}
       style={{ cursor: cursorStyle }}
-      onWheel={handleWheel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
