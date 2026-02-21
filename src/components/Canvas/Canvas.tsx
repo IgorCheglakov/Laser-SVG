@@ -600,6 +600,7 @@ export const Canvas: React.FC = () => {
               cp1: {
                 x: targetCp.x + dx,
                 y: targetCp.y + dy,
+                targetVertexIndex: targetCp.targetVertexIndex,
               },
             }
           } else {
@@ -608,6 +609,7 @@ export const Canvas: React.FC = () => {
               cp2: {
                 x: targetCp.x + dx,
                 y: targetCp.y + dy,
+                targetVertexIndex: targetCp.targetVertexIndex,
               },
             }
           }
