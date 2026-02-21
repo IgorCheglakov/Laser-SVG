@@ -125,7 +125,7 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
               const isSelected = isVertexSelected(element.id, index)
               const px = p.x * DEFAULTS.MM_TO_PX
               const py = p.y * DEFAULTS.MM_TO_PX
-              const showHandles = p.vertexType === 'corner'
+              const showHandles = p.vertexType === 'corner' || p.vertexType === 'smooth'
               
               return (
                 <g key={`vertex-${index}`}>

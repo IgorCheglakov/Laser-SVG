@@ -1168,8 +1168,8 @@ const CanvasElement: React.FC<CanvasElementProps> = ({ element, isPreview, isSel
       } else {
         const prev = points[i - 1]
         
-        const prevCp1 = prev.vertexType === 'corner' ? prev.cp1 : undefined
-        const currCp2 = p.vertexType === 'corner' ? p.cp2 : undefined
+        const prevCp1 = (prev.vertexType === 'corner' || prev.vertexType === 'smooth') ? prev.cp1 : undefined
+        const currCp2 = (p.vertexType === 'corner' || p.vertexType === 'smooth') ? p.cp2 : undefined
         
         if (prevCp1 || currCp2) {
           const cp1x = prevCp1 ? prevCp1.x * DEFAULTS.MM_TO_PX : px
@@ -1188,8 +1188,8 @@ const CanvasElement: React.FC<CanvasElementProps> = ({ element, isPreview, isSel
       const first = points[0]
       const last = points[points.length - 1]
       
-      const lastCp1 = last.vertexType === 'corner' ? last.cp1 : undefined
-      const firstCp2 = first.vertexType === 'corner' ? first.cp2 : undefined
+      const lastCp1 = (last.vertexType === 'corner' || last.vertexType === 'smooth') ? last.cp1 : undefined
+      const firstCp2 = (first.vertexType === 'corner' || first.vertexType === 'smooth') ? first.cp2 : undefined
       
       if (lastCp1 || firstCp2) {
         const firstPx = first.x * DEFAULTS.MM_TO_PX

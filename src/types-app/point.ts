@@ -5,12 +5,13 @@
  * Control points exist for all vertices but are hidden for straight vertices.
  */
 
-export type VertexType = 'straight' | 'corner'
+export type VertexType = 'straight' | 'corner' | 'smooth'
 
 export interface ControlPoint {
   x: number
   y: number
   targetVertexIndex: number | null
+  siblingIndex?: number | null  // reference to cp1 (1) or cp2 (2) on the same vertex
 }
 
 export interface Point {
@@ -220,6 +221,9 @@ export function convertToCorner(
   
   const validated = validateAndFixControlPoints(pointIndex, points, cp1, cp2, 'corner')
   
+  if (cp1) cp1.siblingIndex = cp2 ? 2 : null
+  if (cp2) cp2.siblingIndex = cp1 ? 1 : null
+  
   return { ...p, vertexType: 'corner', cp1: validated.cp1, cp2: validated.cp2 }
 }
 
@@ -324,9 +328,166 @@ export function convertToStraight(
     }
   }
   
+  if (cp1) cp1.siblingIndex = cp2 ? 2 : null
+  if (cp2) cp2.siblingIndex = cp1 ? 1 : null
+  
   return { 
     ...p, 
     vertexType: 'straight',
+    cp1,
+    cp2,
+  }
+}
+
+export function convertToSmooth(
+  pointIndex: number,
+  points: Point[],
+  isClosedShape: boolean
+): Point {
+  const p = points[pointIndex]
+  const totalPoints = points.length
+  
+  if (totalPoints < 2) return p
+  
+  const isFirst = pointIndex === 0
+  const isLast = pointIndex === totalPoints - 1
+  
+  let cp1: ControlPoint | undefined
+  let cp2: ControlPoint | undefined
+  
+  if (isFirst) {
+    if (isClosedShape && totalPoints > 2) {
+      const nextP = points[1]
+      const lastP = points[totalPoints - 1]
+      
+      const dx1 = nextP.x - p.x
+      const dy1 = nextP.y - p.y
+      const dist1 = Math.sqrt(dx1 * dx1 + dy1 * dy1)
+      
+      const dx2 = lastP.x - p.x
+      const dy2 = lastP.y - p.y
+      const dist2 = Math.sqrt(dx2 * dx2 + dy2 * dy2)
+      
+      if (dist1 > 0) {
+        const handleLength = dist1 / 4
+        cp1 = { 
+          x: p.x + (dx1 / dist1) * handleLength, 
+          y: p.y + (dy1 / dist1) * handleLength,
+          targetVertexIndex: 1
+        }
+      }
+      if (dist2 > 0) {
+        const handleLength = dist2 / 4
+        cp2 = { 
+          x: p.x - (dx2 / dist2) * handleLength, 
+          y: p.y - (dy2 / dist2) * handleLength,
+          targetVertexIndex: totalPoints - 1
+        }
+      }
+    } else {
+      const nextP = points[1]
+      const dx = nextP.x - p.x
+      const dy = nextP.y - p.y
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      if (dist > 0) {
+        const handleLength = dist / 4
+        cp1 = { 
+          x: p.x + (dx / dist) * handleLength, 
+          y: p.y + (dy / dist) * handleLength,
+          targetVertexIndex: 1
+        }
+        cp2 = { 
+          x: p.x - (dx / dist) * handleLength, 
+          y: p.y - (dy / dist) * handleLength,
+          targetVertexIndex: null
+        }
+      }
+    }
+  } else if (isLast) {
+    if (isClosedShape && totalPoints > 2) {
+      const prevP = points[pointIndex - 1]
+      const firstP = points[0]
+      
+      const dx1 = prevP.x - p.x
+      const dy1 = prevP.y - p.y
+      const dist1 = Math.sqrt(dx1 * dx1 + dy1 * dy1)
+      
+      const dx2 = firstP.x - p.x
+      const dy2 = firstP.y - p.y
+      const dist2 = Math.sqrt(dx2 * dx2 + dy2 * dy2)
+      
+      if (dist1 > 0) {
+        const handleLength = dist1 / 4
+        cp2 = { 
+          x: p.x - (dx1 / dist1) * handleLength, 
+          y: p.y - (dy1 / dist1) * handleLength,
+          targetVertexIndex: pointIndex - 1
+        }
+      }
+      if (dist2 > 0) {
+        const handleLength = dist2 / 4
+        cp1 = { 
+          x: p.x - (dx2 / dist2) * handleLength, 
+          y: p.y - (dy2 / dist2) * handleLength,
+          targetVertexIndex: 0
+        }
+      }
+    } else {
+      const prevP = points[pointIndex - 1]
+      const dx = prevP.x - p.x
+      const dy = prevP.y - p.y
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      if (dist > 0) {
+        const handleLength = dist / 4
+        cp2 = { 
+          x: p.x - (dx / dist) * handleLength, 
+          y: p.y - (dy / dist) * handleLength,
+          targetVertexIndex: pointIndex - 1
+        }
+        cp1 = { 
+          x: p.x + (dx / dist) * handleLength, 
+          y: p.y + (dy / dist) * handleLength,
+          targetVertexIndex: null
+        }
+      }
+    }
+  } else {
+    const prevP = points[pointIndex - 1]
+    const nextP = points[pointIndex + 1]
+    
+    const dx1 = nextP.x - p.x
+    const dy1 = nextP.y - p.y
+    const dist1 = Math.sqrt(dx1 * dx1 + dy1 * dy1)
+    
+    const dx2 = prevP.x - p.x
+    const dy2 = prevP.y - p.y
+    const dist2 = Math.sqrt(dx2 * dx2 + dy2 * dy2)
+    
+    if (dist1 > 0) {
+      const handleLength = dist1 / 4
+      cp1 = { 
+        x: p.x + (dx1 / dist1) * handleLength, 
+        y: p.y + (dy1 / dist1) * handleLength,
+        targetVertexIndex: pointIndex + 1
+      }
+    }
+    
+    if (dist2 > 0) {
+      const handleLength = dist2 / 4
+      cp2 = { 
+        x: p.x - (dx2 / dist2) * handleLength, 
+        y: p.y - (dy2 / dist2) * handleLength,
+        targetVertexIndex: pointIndex - 1
+      }
+    }
+  }
+  
+  if (cp1) cp1.siblingIndex = cp2 ? 2 : null
+  if (cp2) cp2.siblingIndex = cp1 ? 1 : null
+  
+  return { 
+    ...p, 
+    vertexType: 'smooth',
     cp1,
     cp2,
   }
