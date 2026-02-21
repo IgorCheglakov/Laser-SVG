@@ -20,6 +20,7 @@ const useGlobalShortcuts = () => {
     resetView, 
     toggleGrid, 
     toggleSnap,
+    toggleDebug,
     deleteElement,
     selectedIds,
   } = useEditorStore()
@@ -116,13 +117,19 @@ const useGlobalShortcuts = () => {
               e.preventDefault()
             }
             break
+          case 'd':
+            if (shift && ctrl) {
+              toggleDebug()
+              e.preventDefault()
+            }
+            break
         }
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [setActiveTool, zoomIn, zoomOut, resetView, toggleGrid, toggleSnap, deleteElement, selectedIds])
+  }, [setActiveTool, zoomIn, zoomOut, resetView, toggleGrid, toggleSnap, toggleDebug, deleteElement, selectedIds])
 }
 
 /**
@@ -138,7 +145,8 @@ const useMenuActions = () => {
     zoomOut, 
     resetView, 
     toggleGrid, 
-    toggleSnap 
+    toggleSnap,
+    toggleDebug 
   } = useEditorStore()
 
   useEffect(() => {
@@ -180,6 +188,9 @@ const useMenuActions = () => {
         case 'toggle-snap':
           toggleSnap()
           break
+        case 'toggle-debug':
+          toggleDebug()
+          break
       }
     }
 
@@ -188,7 +199,7 @@ const useMenuActions = () => {
     return () => {
       window.electronAPI?.removeMenuListener()
     }
-  }, [setActiveTool, deleteElement, deleteAllElements, selectedIds, zoomIn, zoomOut, resetView, toggleGrid, toggleSnap])
+  }, [setActiveTool, deleteElement, deleteAllElements, selectedIds, zoomIn, zoomOut, resetView, toggleGrid, toggleSnap, toggleDebug])
 }
 
 /**

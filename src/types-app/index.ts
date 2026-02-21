@@ -91,6 +91,7 @@ export interface CanvasSettings {
   showGrid: boolean
   snapToGrid: boolean
   gridSize: number
+  debugMode: boolean
 }
 
 /**
@@ -167,6 +168,7 @@ export interface EditorState {
   setSettings: (settings: Partial<CanvasSettings>) => void
   toggleGrid: () => void
   toggleSnap: () => void
+  toggleDebug: () => void
   
   // Tool actions
   setActiveTool: (tool: ToolType) => void

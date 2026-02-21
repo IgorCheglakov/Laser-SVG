@@ -71,6 +71,8 @@ const createMenu = (mainWindow: BrowserWindow): Menu => {
         { type: 'separator' },
         { label: 'Toggle Grid', accelerator: "Ctrl+'", click: () => sendMenuAction('toggle-grid') },
         { label: 'Toggle Snap', accelerator: 'Ctrl+Shift+S', click: () => sendMenuAction('toggle-snap') },
+        { type: 'separator' },
+        { label: 'Toggle Debug Mode', accelerator: 'Ctrl+Shift+D', click: () => sendMenuAction('toggle-debug') },
       ],
     },
   ]

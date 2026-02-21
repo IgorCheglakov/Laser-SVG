@@ -1181,7 +1181,7 @@ export const Canvas: React.FC = () => {
         )}
 
         {/* Debug: render bezier samples */}
-        {debugSamples.length > 0 && (
+        {settings.debugMode && debugSamples.length > 0 && (
           <g>
             {debugSamples.map((sample, idx) => (
               <circle

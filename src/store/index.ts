@@ -28,6 +28,7 @@ const initialSettings: CanvasSettings = {
   showGrid: false,
   snapToGrid: true,
   gridSize: DEFAULTS.GRID_SIZE,
+  debugMode: false,
 }
 
 /**
@@ -189,6 +190,11 @@ export const useEditorStore = create<EditorState>()(
     toggleSnap: () =>
       set((state) => ({
         settings: { ...state.settings, snapToGrid: !state.settings.snapToGrid },
+      })),
+
+    toggleDebug: () =>
+      set((state) => ({
+        settings: { ...state.settings, debugMode: !state.settings.debugMode },
       })),
 
     // Tool actions
