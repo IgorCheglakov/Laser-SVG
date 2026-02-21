@@ -1166,13 +1166,40 @@ const CanvasElement: React.FC<CanvasElementProps> = ({ element, isPreview, isSel
       if (i === 0) {
         d += `M ${px} ${py}`
       } else {
-        // Line segment
-        d += ` L ${px} ${py}`
+        const prev = points[i - 1]
+        
+        const prevCp2 = prev.vertexType === 'corner' ? prev.cp2 : undefined
+        const currCp1 = p.vertexType === 'corner' ? p.cp1 : undefined
+        
+        if (prevCp2 || currCp1) {
+          const cp1x = prevCp2 ? prevCp2.x * DEFAULTS.MM_TO_PX : px
+          const cp1y = prevCp2 ? prevCp2.y * DEFAULTS.MM_TO_PX : py
+          const cp2x = currCp1 ? currCp1.x * DEFAULTS.MM_TO_PX : px
+          const cp2y = currCp1 ? currCp1.y * DEFAULTS.MM_TO_PX : py
+          d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${px} ${py}`
+        } else {
+          d += ` L ${px} ${py}`
+        }
       }
     }
     
     // Close path if isClosedShape is true
     if (pointEl.isClosedShape && points.length > 2) {
+      const first = points[0]
+      const last = points[points.length - 1]
+      
+      const lastCp2 = last.vertexType === 'corner' ? last.cp2 : undefined
+      const firstCp1 = first.vertexType === 'corner' ? first.cp1 : undefined
+      
+      if (lastCp2 || firstCp1) {
+        const firstPx = first.x * DEFAULTS.MM_TO_PX
+        const firstPy = first.y * DEFAULTS.MM_TO_PX
+        const cp1x = lastCp2 ? lastCp2.x * DEFAULTS.MM_TO_PX : firstPx
+        const cp1y = lastCp2 ? lastCp2.y * DEFAULTS.MM_TO_PX : firstPy
+        const cp2x = firstCp1 ? firstCp1.x * DEFAULTS.MM_TO_PX : firstPx
+        const cp2y = firstCp1 ? firstCp1.y * DEFAULTS.MM_TO_PX : firstPy
+        d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${firstPx} ${firstPy}`
+      }
       d += ' Z'
     }
     
