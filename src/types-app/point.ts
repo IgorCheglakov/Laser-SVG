@@ -155,8 +155,8 @@ export function convertToCorner(
       if (dist1 > 0) {
         const handleLength = dist1 / 4
         cp2 = { 
-          x: p.x - (dx1 / dist1) * handleLength, 
-          y: p.y - (dy1 / dist1) * handleLength,
+          x: p.x + (dx1 / dist1) * handleLength, 
+          y: p.y + (dy1 / dist1) * handleLength,
           targetVertexIndex: pointIndex - 1
         }
       }
@@ -176,13 +176,13 @@ export function convertToCorner(
       if (dist > 0) {
         const handleLength = dist / 4
         cp2 = { 
-          x: p.x - (dx / dist) * handleLength, 
-          y: p.y - (dy / dist) * handleLength,
+          x: p.x + (dx / dist) * handleLength, 
+          y: p.y + (dy / dist) * handleLength,
           targetVertexIndex: pointIndex - 1
         }
         cp1 = { 
-          x: p.x + (dx / dist) * handleLength, 
-          y: p.y + (dy / dist) * handleLength,
+          x: p.x - (dx / dist) * handleLength, 
+          y: p.y - (dy / dist) * handleLength,
           targetVertexIndex: null
         }
       }
