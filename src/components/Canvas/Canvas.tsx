@@ -518,8 +518,9 @@ export const Canvas: React.FC = () => {
         if (!initialPoints) return
         
         const newPoints = initialPoints.map(p => ({
+          ...p,
           x: p.x + deltaX,
-          y: p.y + deltaY
+          y: p.y + deltaY,
         }))
         
         updateElementNoHistory(id, { points: newPoints } as Partial<SVGElement>)
@@ -553,9 +554,11 @@ export const Canvas: React.FC = () => {
       
       for (const index of indices) {
         if (index >= 0 && index < newPoints.length) {
+          const initialP = initialPositions[index]
           newPoints[index] = {
-            x: initialPositions[index].x + dx,
-            y: initialPositions[index].y + dy,
+            ...initialP,
+            x: initialP.x + dx,
+            y: initialP.y + dy,
           }
         }
       }

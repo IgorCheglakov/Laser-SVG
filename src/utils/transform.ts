@@ -32,8 +32,19 @@ export interface TransformHandle {
 export interface Point {
   x: number
   y: number
-  cp1?: { x: number; y: number }
-  cp2?: { x: number; y: number }
+  vertexType?: 'straight' | 'corner' | 'smooth'
+  cp1?: { 
+    x: number; 
+    y: number; 
+    targetVertexIndex?: number | null
+    siblingIndex?: number | null
+  }
+  cp2?: { 
+    x: number; 
+    y: number; 
+    targetVertexIndex?: number | null
+    siblingIndex?: number | null
+  }
 }
 
 export interface TransformBox {
@@ -180,7 +191,11 @@ export function transformPoints(
     }
     
     // Transform Bezier control points
-    const newPoint: Point = { x: newX, y: newY }
+    const newPoint: Point = { 
+      x: newX, 
+      y: newY,
+      vertexType: p.vertexType,
+    }
     
     if (p.cp1) {
       let newCp1X = p.cp1.x
@@ -206,7 +221,12 @@ export function transformPoints(
         }
       }
       
-      newPoint.cp1 = { x: newCp1X, y: newCp1Y }
+      newPoint.cp1 = { 
+        x: newCp1X, 
+        y: newCp1Y,
+        targetVertexIndex: p.cp1.targetVertexIndex,
+        siblingIndex: p.cp1.siblingIndex,
+      }
     }
     
     if (p.cp2) {
@@ -233,7 +253,12 @@ export function transformPoints(
         }
       }
       
-      newPoint.cp2 = { x: newCp2X, y: newCp2Y }
+      newPoint.cp2 = { 
+        x: newCp2X, 
+        y: newCp2Y,
+        targetVertexIndex: p.cp2.targetVertexIndex,
+        siblingIndex: p.cp2.siblingIndex,
+      }
     }
     
     return newPoint
@@ -246,9 +271,23 @@ export function transformPoints(
 export function flipPointsHorizontal(points: Point[], box: InitialSize): Point[] {
   const centerX = box.x + box.width / 2
   return points.map(p => {
-    const newPoint: Point = { x: 2 * centerX - p.x, y: p.y }
-    if (p.cp1) newPoint.cp1 = { x: 2 * centerX - p.cp1.x, y: p.cp1.y }
-    if (p.cp2) newPoint.cp2 = { x: 2 * centerX - p.cp2.x, y: p.cp2.y }
+    const newPoint: Point = { 
+      x: 2 * centerX - p.x, 
+      y: p.y,
+      vertexType: p.vertexType,
+    }
+    if (p.cp1) newPoint.cp1 = { 
+      x: 2 * centerX - p.cp1.x, 
+      y: p.cp1.y,
+      targetVertexIndex: p.cp1.targetVertexIndex,
+      siblingIndex: p.cp1.siblingIndex,
+    }
+    if (p.cp2) newPoint.cp2 = { 
+      x: 2 * centerX - p.cp2.x, 
+      y: p.cp2.y,
+      targetVertexIndex: p.cp2.targetVertexIndex,
+      siblingIndex: p.cp2.siblingIndex,
+    }
     return newPoint
   })
 }
@@ -259,9 +298,23 @@ export function flipPointsHorizontal(points: Point[], box: InitialSize): Point[]
 export function flipPointsVertical(points: Point[], box: InitialSize): Point[] {
   const centerY = box.y + box.height / 2
   return points.map(p => {
-    const newPoint: Point = { x: p.x, y: 2 * centerY - p.y }
-    if (p.cp1) newPoint.cp1 = { x: p.cp1.x, y: 2 * centerY - p.cp1.y }
-    if (p.cp2) newPoint.cp2 = { x: p.cp2.x, y: 2 * centerY - p.cp2.y }
+    const newPoint: Point = { 
+      x: p.x, 
+      y: 2 * centerY - p.y,
+      vertexType: p.vertexType,
+    }
+    if (p.cp1) newPoint.cp1 = { 
+      x: p.cp1.x, 
+      y: 2 * centerY - p.cp1.y,
+      targetVertexIndex: p.cp1.targetVertexIndex,
+      siblingIndex: p.cp1.siblingIndex,
+    }
+    if (p.cp2) newPoint.cp2 = { 
+      x: p.cp2.x, 
+      y: 2 * centerY - p.cp2.y,
+      targetVertexIndex: p.cp2.targetVertexIndex,
+      siblingIndex: p.cp2.siblingIndex,
+    }
     return newPoint
   })
 }
@@ -284,7 +337,11 @@ export function rotatePoints(
     const newX = center.x + dx * cos - dy * sin
     const newY = center.y + dx * sin + dy * cos
 
-    const newPoint: Point = { x: newX, y: newY }
+    const newPoint: Point = { 
+      x: newX, 
+      y: newY,
+      vertexType: p.vertexType,
+    }
 
     if (p.cp1) {
       const cp1dx = p.cp1.x - center.x
@@ -292,6 +349,8 @@ export function rotatePoints(
       newPoint.cp1 = {
         x: center.x + cp1dx * cos - cp1dy * sin,
         y: center.y + cp1dx * sin + cp1dy * cos,
+        targetVertexIndex: p.cp1.targetVertexIndex,
+        siblingIndex: p.cp1.siblingIndex,
       }
     }
 
@@ -301,6 +360,8 @@ export function rotatePoints(
       newPoint.cp2 = {
         x: center.x + cp2dx * cos - cp2dy * sin,
         y: center.y + cp2dx * sin + cp2dy * cos,
+        targetVertexIndex: p.cp2.targetVertexIndex,
+        siblingIndex: p.cp2.siblingIndex,
       }
     }
 
