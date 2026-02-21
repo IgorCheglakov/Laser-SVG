@@ -588,26 +588,49 @@ export const Canvas: React.FC = () => {
       
       const pointEl = el as PointElement
       const newPoints = [...pointEl.points]
+      const vertexType = pointEl.points[vertexIndex]?.vertexType
       
       if (vertexIndex >= 0 && vertexIndex < newPoints.length) {
         const initialPoint = initialPositions[vertexIndex]
         const targetCp = controlType === 'cp1' ? initialPoint.cp1 : initialPoint.cp2
         
         if (targetCp) {
+          const isSmooth = vertexType === 'smooth'
+          
           if (controlType === 'cp1') {
+            const newCp1 = {
+              x: targetCp.x + dx,
+              y: targetCp.y + dy,
+            }
             newPoints[vertexIndex] = {
               ...newPoints[vertexIndex],
-              cp1: {
-                x: targetCp.x + dx,
-                y: targetCp.y + dy,
+              cp1: newCp1,
+            }
+            // Mirror cp2 for smooth vertices
+            if (isSmooth && initialPoint.cp2) {
+              const mirrorDx = newPoints[vertexIndex].x - newCp1.x
+              const mirrorDy = newPoints[vertexIndex].y - newCp1.y
+              newPoints[vertexIndex].cp2 = {
+                x: newPoints[vertexIndex].x + mirrorDx,
+                y: newPoints[vertexIndex].y + mirrorDy,
               }
             }
           } else {
+            const newCp2 = {
+              x: targetCp.x + dx,
+              y: targetCp.y + dy,
+            }
             newPoints[vertexIndex] = {
               ...newPoints[vertexIndex],
-              cp2: {
-                x: targetCp.x + dx,
-                y: targetCp.y + dy,
+              cp2: newCp2,
+            }
+            // Mirror cp1 for smooth vertices
+            if (isSmooth && initialPoint.cp1) {
+              const mirrorDx = newPoints[vertexIndex].x - newCp2.x
+              const mirrorDy = newPoints[vertexIndex].y - newCp2.y
+              newPoints[vertexIndex].cp1 = {
+                x: newPoints[vertexIndex].x + mirrorDx,
+                y: newPoints[vertexIndex].y + mirrorDy,
               }
             }
           }
@@ -1168,8 +1191,10 @@ const CanvasElement: React.FC<CanvasElementProps> = ({ element, isPreview, isSel
         const prevPx = prev.x * DEFAULTS.MM_TO_PX
         const prevPy = prev.y * DEFAULTS.MM_TO_PX
         
-        // Check for Bezier curve control points
-        if (prev.cp2 || p.cp1) {
+        const prevIsSmoothOrCorner = prev && (prev.vertexType === 'smooth' || prev.vertexType === 'corner')
+        
+        // Check for Bezier curve control points and vertex type
+        if ((prev.cp2 || p.cp1) && prevIsSmoothOrCorner) {
           // Cubic Bezier curve
           const cp1x = prev.cp2 ? prev.cp2.x * DEFAULTS.MM_TO_PX : prevPx
           const cp1y = prev.cp2 ? prev.cp2.y * DEFAULTS.MM_TO_PX : prevPy
