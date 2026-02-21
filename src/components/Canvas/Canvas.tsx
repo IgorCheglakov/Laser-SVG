@@ -596,6 +596,7 @@ export const Canvas: React.FC = () => {
         
         if (targetCp) {
           const isSmooth = vertexType === 'smooth'
+          const vertex = newPoints[vertexIndex]
           
           if (controlType === 'cp1') {
             const newCp1 = {
@@ -606,13 +607,20 @@ export const Canvas: React.FC = () => {
               ...newPoints[vertexIndex],
               cp1: newCp1,
             }
-            // Mirror cp2 for smooth vertices
+            // Mirror cp2 for smooth vertices: opposite angle, preserve original length
             if (isSmooth && initialPoint.cp2) {
-              const mirrorDx = newPoints[vertexIndex].x - newCp1.x
-              const mirrorDy = newPoints[vertexIndex].y - newCp1.y
+              const origCp2 = initialPoint.cp2
+              const origLength = Math.sqrt(
+                Math.pow(origCp2.x - vertex.x, 2) + 
+                Math.pow(origCp2.y - vertex.y, 2)
+              )
+              // Angle of new cp1 from vertex
+              const newAngle = Math.atan2(newCp1.y - vertex.y, newCp1.x - vertex.x)
+              // cp2 should be 180° opposite
+              const mirrorAngle = newAngle + Math.PI
               newPoints[vertexIndex].cp2 = {
-                x: newPoints[vertexIndex].x + mirrorDx,
-                y: newPoints[vertexIndex].y + mirrorDy,
+                x: vertex.x + Math.cos(mirrorAngle) * origLength,
+                y: vertex.y + Math.sin(mirrorAngle) * origLength,
               }
             }
           } else {
@@ -624,13 +632,20 @@ export const Canvas: React.FC = () => {
               ...newPoints[vertexIndex],
               cp2: newCp2,
             }
-            // Mirror cp1 for smooth vertices
+            // Mirror cp1 for smooth vertices: opposite angle, preserve original length
             if (isSmooth && initialPoint.cp1) {
-              const mirrorDx = newPoints[vertexIndex].x - newCp2.x
-              const mirrorDy = newPoints[vertexIndex].y - newCp2.y
+              const origCp1 = initialPoint.cp1
+              const origLength = Math.sqrt(
+                Math.pow(origCp1.x - vertex.x, 2) + 
+                Math.pow(origCp1.y - vertex.y, 2)
+              )
+              // Angle of new cp2 from vertex
+              const newAngle = Math.atan2(newCp2.y - vertex.y, newCp2.x - vertex.x)
+              // cp1 should be 180° opposite
+              const mirrorAngle = newAngle + Math.PI
               newPoints[vertexIndex].cp1 = {
-                x: newPoints[vertexIndex].x + mirrorDx,
-                y: newPoints[vertexIndex].y + mirrorDy,
+                x: vertex.x + Math.cos(mirrorAngle) * origLength,
+                y: vertex.y + Math.sin(mirrorAngle) * origLength,
               }
             }
           }

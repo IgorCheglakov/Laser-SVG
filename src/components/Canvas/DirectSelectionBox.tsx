@@ -133,50 +133,8 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
           cp2: p.cp2 ? { x: p.cp2.x * DEFAULTS.MM_TO_PX, y: p.cp2.y * DEFAULTS.MM_TO_PX } : undefined,
         }))
         
-        let pathD = ''
-        for (let i = 0; i < pathPoints.length; i++) {
-          const p = pathPoints[i]
-          const prevP = points[i - 1]
-          const currentPoint = points[i]
-          
-          if (i === 0) {
-            pathD += `M ${p.x} ${p.y}`
-          } else {
-            const isSmoothOrCorner = (currentPoint.vertexType === 'smooth' || currentPoint.vertexType === 'corner')
-            const prevIsSmoothOrCorner = prevP && (prevP.vertexType === 'smooth' || prevP.vertexType === 'corner')
-            
-            if ((currentPoint.cp1 || currentPoint.cp2) && isSmoothOrCorner) {
-              const prev = pathPoints[i - 1]
-              const cp1 = currentPoint.cp1 ? { x: currentPoint.cp1.x * DEFAULTS.MM_TO_PX, y: currentPoint.cp1.y * DEFAULTS.MM_TO_PX } : prev
-              const cp2 = currentPoint.cp2 ? { x: currentPoint.cp2.x * DEFAULTS.MM_TO_PX, y: currentPoint.cp2.y * DEFAULTS.MM_TO_PX } : p
-              pathD += ` C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${p.x} ${p.y}`
-            } else if ((prevP?.cp1 || prevP?.cp2) && prevIsSmoothOrCorner) {
-              const prev = pathPoints[i - 1]
-              const cp1 = prevP.cp1 ? { x: prevP.cp1.x * DEFAULTS.MM_TO_PX, y: prevP.cp1.y * DEFAULTS.MM_TO_PX } : prev
-              const cp2 = prevP.cp2 ? { x: prevP.cp2.x * DEFAULTS.MM_TO_PX, y: prevP.cp2.y * DEFAULTS.MM_TO_PX } : p
-              pathD += ` C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${p.x} ${p.y}`
-            } else {
-              pathD += ` L ${p.x} ${p.y}`
-            }
-          }
-        }
-        
-        if (element.isClosedShape) {
-          pathD += ' Z'
-        }
-
         return (
           <g key={element.id}>
-            <path
-              d={pathD}
-              fill="none"
-              stroke="#007acc"
-              strokeWidth={0.5}
-              strokeDasharray="4,4"
-              vectorEffect="non-scaling-stroke"
-              style={{ pointerEvents: 'none', animation: 'selectionPulse 2s ease-in-out infinite' }}
-            />
-            
             {pathPoints.map((p, index) => {
               const isSelected = isVertexSelected(element.id, index)
               const showHandles = p.vertexType !== 'straight'

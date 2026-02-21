@@ -123,7 +123,7 @@ export function setSmoothCp2(p: Point, cp2: { x: number; y: number }): Point {
 export function convertToSmooth(
   pointIndex: number,
   points: Point[],
-  _isClosedShape: boolean
+  isClosedShape: boolean
 ): Point {
   const p = points[pointIndex]
   const totalPoints = points.length
@@ -137,25 +137,65 @@ export function convertToSmooth(
   let cp2: { x: number; y: number } | undefined
   
   if (isFirst) {
-    // First point: cp1 points toward next point, cp2 is mirror
-    const nextP = points[1]
-    const dx = nextP.x - p.x
-    const dy = nextP.y - p.y
-    const dist = Math.sqrt(dx * dx + dy * dy)
-    const handleLength = Math.max(dist / 4, 10)
-    cp1 = { x: p.x + (dx / dist) * handleLength, y: p.y + (dy / dist) * handleLength }
-    cp2 = { x: p.x - (dx / dist) * handleLength, y: p.y - (dy / dist) * handleLength }
+    // First point
+    if (isClosedShape && totalPoints > 2) {
+      // For closed: cp1 toward next, cp2 toward last (180° apart from cp1)
+      const nextP = points[1]
+      const lastP = points[totalPoints - 1]
+      
+      const dx1 = nextP.x - p.x
+      const dy1 = nextP.y - p.y
+      const dist1 = Math.sqrt(dx1 * dx1 + dy1 * dy1)
+      
+      const dx2 = lastP.x - p.x
+      const dy2 = lastP.y - p.y
+      const dist2 = Math.sqrt(dx2 * dx2 + dy2 * dy2)
+      
+      const handleLength = Math.max((dist1 + dist2) / 8, 10)
+      
+      cp1 = { x: p.x + (dx1 / dist1) * handleLength, y: p.y + (dy1 / dist1) * handleLength }
+      cp2 = { x: p.x + (dx2 / dist2) * handleLength, y: p.y + (dy2 / dist2) * handleLength }
+    } else {
+      // For open: cp1 toward next, cp2 is mirror
+      const nextP = points[1]
+      const dx = nextP.x - p.x
+      const dy = nextP.y - p.y
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      const handleLength = Math.max(dist / 4, 10)
+      cp1 = { x: p.x + (dx / dist) * handleLength, y: p.y + (dy / dist) * handleLength }
+      cp2 = { x: p.x - (dx / dist) * handleLength, y: p.y - (dy / dist) * handleLength }
+    }
   } else if (isLast) {
-    // Last point: cp2 points toward previous point, cp1 is mirror
-    const prevP = points[pointIndex - 1]
-    const dx = prevP.x - p.x
-    const dy = prevP.y - p.y
-    const dist = Math.sqrt(dx * dx + dy * dy)
-    const handleLength = Math.max(dist / 4, 10)
-    cp2 = { x: p.x - (dx / dist) * handleLength, y: p.y - (dy / dist) * handleLength }
-    cp1 = { x: p.x + (dx / dist) * handleLength, y: p.y + (dy / dist) * handleLength }
+    // Last point
+    if (isClosedShape && totalPoints > 2) {
+      // For closed: cp2 toward prev, cp1 toward first
+      const prevP = points[pointIndex - 1]
+      const firstP = points[0]
+      
+      const dx1 = prevP.x - p.x
+      const dy1 = prevP.y - p.y
+      const dist1 = Math.sqrt(dx1 * dx1 + dy1 * dy1)
+      
+      const dx2 = firstP.x - p.x
+      const dy2 = firstP.y - p.y
+      const dist2 = Math.sqrt(dx2 * dx2 + dy2 * dy2)
+      
+      const handleLength = Math.max((dist1 + dist2) / 8, 10)
+      
+      cp2 = { x: p.x - (dx1 / dist1) * handleLength, y: p.y - (dy1 / dist1) * handleLength }
+      cp1 = { x: p.x + (dx2 / dist2) * handleLength, y: p.y + (dy2 / dist2) * handleLength }
+    } else {
+      // For open: cp2 toward prev, cp1 is mirror
+      const prevP = points[pointIndex - 1]
+      const dx = prevP.x - p.x
+      const dy = prevP.y - p.y
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      const handleLength = Math.max(dist / 4, 10)
+      cp2 = { x: p.x - (dx / dist) * handleLength, y: p.y - (dy / dist) * handleLength }
+      cp1 = { x: p.x + (dx / dist) * handleLength, y: p.y + (dy / dist) * handleLength }
+    }
   } else {
-    // Middle point: use angle bisector for smooth curve
+    // Middle point: both handles 180° apart
     const prevP = points[pointIndex - 1]
     const nextP = points[pointIndex + 1]
     
@@ -196,7 +236,7 @@ export function convertToSmooth(
 export function convertToCorner(
   pointIndex: number,
   points: Point[],
-  _isClosedShape: boolean
+  isClosedShape: boolean
 ): Point {
   const p = points[pointIndex]
   const totalPoints = points.length
@@ -210,6 +250,7 @@ export function convertToCorner(
   let cp2: { x: number; y: number } | undefined
   
   if (isFirst) {
+    // First point: cp1 toward next, cp2 mirror or toward last (for closed)
     const nextP = points[1]
     const dx = nextP.x - p.x
     const dy = nextP.y - p.y
@@ -217,8 +258,22 @@ export function convertToCorner(
     if (dist > 0) {
       const handleLength = Math.max(dist / 4, 10)
       cp1 = { x: p.x + (dx / dist) * handleLength, y: p.y + (dy / dist) * handleLength }
+      // For closed shapes, cp2 should point toward last point
+      if (isClosedShape && totalPoints > 2) {
+        const lastP = points[totalPoints - 1]
+        const dx2 = lastP.x - p.x
+        const dy2 = lastP.y - p.y
+        const dist2 = Math.sqrt(dx2 * dx2 + dy2 * dy2)
+        if (dist2 > 0) {
+          cp2 = { x: p.x + (dx2 / dist2) * handleLength, y: p.y + (dy2 / dist2) * handleLength }
+        }
+      } else {
+        // Mirror of cp1
+        cp2 = { x: p.x - (dx / dist) * handleLength, y: p.y - (dy / dist) * handleLength }
+      }
     }
   } else if (isLast) {
+    // Last point: cp2 toward previous, cp1 mirror or toward first (for closed)
     const prevP = points[pointIndex - 1]
     const dx = prevP.x - p.x
     const dy = prevP.y - p.y
@@ -226,8 +281,22 @@ export function convertToCorner(
     if (dist > 0) {
       const handleLength = Math.max(dist / 4, 10)
       cp2 = { x: p.x - (dx / dist) * handleLength, y: p.y - (dy / dist) * handleLength }
+      // For closed shapes, cp1 should point toward first point
+      if (isClosedShape && totalPoints > 2) {
+        const firstP = points[0]
+        const dx2 = firstP.x - p.x
+        const dy2 = firstP.y - p.y
+        const dist2 = Math.sqrt(dx2 * dx2 + dy2 * dy2)
+        if (dist2 > 0) {
+          cp1 = { x: p.x + (dx2 / dist2) * handleLength, y: p.y + (dy2 / dist2) * handleLength }
+        }
+      } else {
+        // Mirror of cp2
+        cp1 = { x: p.x + (dx / dist) * handleLength, y: p.y + (dy / dist) * handleLength }
+      }
     }
   } else {
+    // Middle points: both handles toward neighbors
     const prevP = points[pointIndex - 1]
     const nextP = points[pointIndex + 1]
     
