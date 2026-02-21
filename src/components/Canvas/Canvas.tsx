@@ -28,6 +28,7 @@ export const Canvas: React.FC = () => {
   const [panStart, setPanStart] = useState<Point>({ x: 0, y: 0 })
   const [previewElement, setPreviewElement] = useState<PointElement | null>(null)
   const [hoveredElementId, setHoveredElementId] = useState<string | null>(null)
+  const [debugSamples, setDebugSamples] = useState<Point[]>([])
   const startPointRef = useRef<Point>({ x: 0, y: 0 })
   const isDrawingRef = useRef(false)
   const isMovingRef = useRef(false)
@@ -136,7 +137,7 @@ export const Canvas: React.FC = () => {
    * Hit test - find element at point
    */
   const findElementAtPoint = useCallback((point: Point): SVGElement | null => {
-    const hitThreshold = 3 / view.scale
+    const hitThreshold = 5 / view.scale
     
     for (let i = elements.length - 1; i >= 0; i--) {
       const element = elements[i]
@@ -152,6 +153,15 @@ export const Canvas: React.FC = () => {
         point.y >= bounds.y - hitThreshold &&
         point.y <= bounds.y + bounds.height + hitThreshold
       ) {
+        // Check vertices (anchor points)
+        for (let j = 0; j < el.points.length; j++) {
+          const p = el.points[j]
+          const distToPoint = Math.sqrt((point.x - p.x) ** 2 + (point.y - p.y) ** 2)
+          if (distToPoint <= hitThreshold) {
+            return element
+          }
+        }
+        
         // Check edges (including Bezier curves)
         for (let j = 0; j < el.points.length; j++) {
           const p1 = el.points[j]
@@ -539,8 +549,33 @@ export const Canvas: React.FC = () => {
       const point = screenToCanvas(e.clientX, e.clientY)
       const hovered = findElementAtPoint(point)
       setHoveredElementId(hovered ? hovered.id : null)
+      
+      // Debug: generate samples for hovered element
+      if (hovered && 'points' in hovered) {
+        const pointEl = hovered as PointElement
+        const samples: Point[] = []
+        for (let j = 0; j < pointEl.points.length; j++) {
+          const p1 = pointEl.points[j]
+          const p2 = pointEl.points[(j + 1) % pointEl.points.length]
+          const cp1 = p1.cp1
+          const cp2 = p2.cp2
+          
+          if (cp1 || cp2) {
+            const cp1Point = cp1 ? { x: cp1.x, y: cp1.y } : p1
+            const cp2Point = cp2 ? { x: cp2.x, y: cp2.y } : p2
+            for (let i = 0; i <= 50; i++) {
+              const t = i / 50
+              samples.push(bezierPoint(t, p1, cp1Point, cp2Point, p2))
+            }
+          }
+        }
+        setDebugSamples(samples)
+      } else {
+        setDebugSamples([])
+      }
     } else {
       setHoveredElementId(null)
+      setDebugSamples([])
     }
     
     if (isMovingRef.current && (e.buttons & 1)) {
@@ -1148,6 +1183,22 @@ export const Canvas: React.FC = () => {
           <CanvasElement element={previewElement} isPreview />
         )}
 
+        {/* Debug: render bezier samples */}
+        {debugSamples.length > 0 && (
+          <g>
+            {debugSamples.map((sample, idx) => (
+              <circle
+                key={idx}
+                cx={sample.x * DEFAULTS.MM_TO_PX}
+                cy={sample.y * DEFAULTS.MM_TO_PX}
+                r={1.5 / view.scale}
+                fill="red"
+                opacity={0.7}
+              />
+            ))}
+          </g>
+        )}
+
         {selectedIds.length > 0 && activeTool === 'selection' && (
           <BoundingBox 
             elements={elements} 
@@ -1244,8 +1295,8 @@ function bezierPoint(t: number, p0: Point, p1: Point, p2: Point, p3: Point): Poi
  * Calculate minimum distance from point to cubic Bezier curve segment
  */
 function distanceToBezierCurve(point: Point, p1: Point, p2: Point): number {
-  const cp1 = p1.cp2
-  const cp2 = p2.cp1
+  const cp1 = p1.cp1
+  const cp2 = p2.cp2
   
   if (!cp1 && !cp2) {
     return distanceToLineSegment(point, p1, p2)
@@ -1254,7 +1305,7 @@ function distanceToBezierCurve(point: Point, p1: Point, p2: Point): number {
   const cp1Point = cp1 ? { x: cp1.x, y: cp1.y } : p1
   const cp2Point = cp2 ? { x: cp2.x, y: cp2.y } : p2
   
-  const samples = 20
+  const samples = 50
   let minDist = Infinity
   
   for (let i = 0; i <= samples; i++) {
