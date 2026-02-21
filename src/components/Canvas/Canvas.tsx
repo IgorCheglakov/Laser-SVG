@@ -1168,14 +1168,14 @@ const CanvasElement: React.FC<CanvasElementProps> = ({ element, isPreview, isSel
       } else {
         const prev = points[i - 1]
         
-        const prevCp2 = prev.vertexType === 'corner' ? prev.cp2 : undefined
-        const currCp1 = p.vertexType === 'corner' ? p.cp1 : undefined
+        const prevCp1 = prev.vertexType === 'corner' ? prev.cp1 : undefined
+        const currCp2 = p.vertexType === 'corner' ? p.cp2 : undefined
         
-        if (prevCp2 || currCp1) {
-          const cp1x = prevCp2 ? prevCp2.x * DEFAULTS.MM_TO_PX : px
-          const cp1y = prevCp2 ? prevCp2.y * DEFAULTS.MM_TO_PX : py
-          const cp2x = currCp1 ? currCp1.x * DEFAULTS.MM_TO_PX : px
-          const cp2y = currCp1 ? currCp1.y * DEFAULTS.MM_TO_PX : py
+        if (prevCp1 || currCp2) {
+          const cp1x = prevCp1 ? prevCp1.x * DEFAULTS.MM_TO_PX : px
+          const cp1y = prevCp1 ? prevCp1.y * DEFAULTS.MM_TO_PX : py
+          const cp2x = currCp2 ? currCp2.x * DEFAULTS.MM_TO_PX : px
+          const cp2y = currCp2 ? currCp2.y * DEFAULTS.MM_TO_PX : py
           d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${px} ${py}`
         } else {
           d += ` L ${px} ${py}`
@@ -1188,16 +1188,16 @@ const CanvasElement: React.FC<CanvasElementProps> = ({ element, isPreview, isSel
       const first = points[0]
       const last = points[points.length - 1]
       
-      const lastCp2 = last.vertexType === 'corner' ? last.cp2 : undefined
-      const firstCp1 = first.vertexType === 'corner' ? first.cp1 : undefined
+      const lastCp1 = last.vertexType === 'corner' ? last.cp1 : undefined
+      const firstCp2 = first.vertexType === 'corner' ? first.cp2 : undefined
       
-      if (lastCp2 || firstCp1) {
+      if (lastCp1 || firstCp2) {
         const firstPx = first.x * DEFAULTS.MM_TO_PX
         const firstPy = first.y * DEFAULTS.MM_TO_PX
-        const cp1x = lastCp2 ? lastCp2.x * DEFAULTS.MM_TO_PX : firstPx
-        const cp1y = lastCp2 ? lastCp2.y * DEFAULTS.MM_TO_PX : firstPy
-        const cp2x = firstCp1 ? firstCp1.x * DEFAULTS.MM_TO_PX : firstPx
-        const cp2y = firstCp1 ? firstCp1.y * DEFAULTS.MM_TO_PX : firstPy
+        const cp1x = lastCp1 ? lastCp1.x * DEFAULTS.MM_TO_PX : firstPx
+        const cp1y = lastCp1 ? lastCp1.y * DEFAULTS.MM_TO_PX : firstPy
+        const cp2x = firstCp2 ? firstCp2.x * DEFAULTS.MM_TO_PX : firstPx
+        const cp2y = firstCp2 ? firstCp2.y * DEFAULTS.MM_TO_PX : firstPy
         d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${firstPx} ${firstPy}`
       }
       d += ' Z'
