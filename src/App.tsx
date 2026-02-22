@@ -9,7 +9,7 @@ import { Layout } from '@components/Layout/Layout'
 import { useEditorStore, undo, redo } from '@store/index'
 import { HOTKEYS } from '@constants/index'
 import { exportToSVG } from '@/utils/exportSvg'
-import { importFromSVG } from '@/utils/importSvg'
+import { importFromSVG, centerElements } from '@/utils/importSvg'
 import type { SVGElement, PointElement } from '@/types-app/index'
 
 /**
@@ -150,6 +150,7 @@ const useMenuActions = () => {
     selectedIds,
     elements,
     settings,
+    view,
     zoomIn, 
     zoomOut, 
     resetView, 
@@ -215,8 +216,9 @@ const useMenuActions = () => {
                 console.log('[App] File opened:', result.path, 'content length:', result.content.length, 'timestamp:', result.timestamp)
                 console.log('[App] Content preview:', result.content.substring(0, 200))
                 const importedElements = importFromSVG(result.content, result.timestamp)
-                console.log('[App] Imported elements count:', importedElements.length)
-                importedElements.forEach((element: SVGElement) => {
+                const centeredElements = centerElements(importedElements, view, settings.artboardWidth, settings.artboardHeight)
+                console.log('[App] Imported elements count:', centeredElements.length)
+                centeredElements.forEach((element: SVGElement) => {
                   const points = 'points' in element ? (element as PointElement).points?.length : 'N/A'
                   console.log('[App] Adding element:', element.name, 'points:', points)
                   addElement(element)
@@ -238,7 +240,7 @@ const useMenuActions = () => {
     return () => {
       window.electronAPI?.removeMenuListener()
     }
-  }, [setActiveTool, deleteElement, deleteAllElements, selectedIds, elements, settings, zoomIn, zoomOut, resetView, toggleGrid, toggleSnap, toggleDebug, addElement])
+  }, [setActiveTool, deleteElement, deleteAllElements, selectedIds, elements, settings, view, zoomIn, zoomOut, resetView, toggleGrid, toggleSnap, toggleDebug, addElement])
 }
 
 /**

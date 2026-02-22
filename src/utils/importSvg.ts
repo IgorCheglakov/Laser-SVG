@@ -443,6 +443,111 @@ function scalePoints(points: Point[], scaleFactor: number): Point[] {
   })
 }
 
+function calculateBounds(points: Point[]): { x: number; y: number; width: number; height: number } {
+  if (points.length === 0) {
+    return { x: 0, y: 0, width: 0, height: 0 }
+  }
+  
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  
+  for (const p of points) {
+    minX = Math.min(minX, p.x)
+    minY = Math.min(minY, p.y)
+    maxX = Math.max(maxX, p.x)
+    maxY = Math.max(maxY, p.y)
+    
+    if (p.prevControlHandle) {
+      minX = Math.min(minX, p.prevControlHandle.x)
+      minY = Math.min(minY, p.prevControlHandle.y)
+      maxX = Math.max(maxX, p.prevControlHandle.x)
+      maxY = Math.max(maxY, p.prevControlHandle.y)
+    }
+    if (p.nextControlHandle) {
+      minX = Math.min(minX, p.nextControlHandle.x)
+      minY = Math.min(minY, p.nextControlHandle.y)
+      maxX = Math.max(maxX, p.nextControlHandle.x)
+      maxY = Math.max(maxY, p.nextControlHandle.y)
+    }
+  }
+  
+  return {
+    x: minX,
+    y: minY,
+    width: maxX - minX,
+    height: maxY - minY,
+  }
+}
+
+export function centerElements(elements: SVGElement[], _viewState: { scale: number; offsetX: number; offsetY: number }, artboardWidth: number, artboardHeight: number): SVGElement[] {
+  if (elements.length === 0) return elements
+
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+
+  for (const el of elements) {
+    if ('points' in el && el.points) {
+      const bounds = calculateBounds(el.points)
+      minX = Math.min(minX, bounds.x)
+      minY = Math.min(minY, bounds.y)
+      maxX = Math.max(maxX, bounds.x + bounds.width)
+      maxY = Math.max(maxY, bounds.y + bounds.height)
+    }
+  }
+
+  if (minX === Infinity) return elements
+
+  const elementsCenterX = (minX + maxX) / 2
+  const elementsCenterY = (minY + maxY) / 2
+
+  const viewCenterX = artboardWidth / 2
+  const viewCenterY = artboardHeight / 2
+
+  let offsetX = viewCenterX - elementsCenterX
+  let offsetY = viewCenterY - elementsCenterY
+
+  if (minX + offsetX < 0) {
+    offsetX = -minX
+  }
+  if (minY + offsetY < 0) {
+    offsetY = -minY
+  }
+  if (maxX + offsetX > artboardWidth) {
+    offsetX = artboardWidth - maxX
+  }
+  if (maxY + offsetY > artboardHeight) {
+    offsetY = artboardHeight - maxY
+  }
+
+  if (offsetX === 0 && offsetY === 0) {
+    return elements
+  }
+
+  return elements.map(el => {
+    if ('points' in el && el.points) {
+      const newPoints = el.points.map(p => ({
+        ...p,
+        x: p.x + offsetX,
+        y: p.y + offsetY,
+        prevControlHandle: p.prevControlHandle ? {
+          x: p.prevControlHandle.x + offsetX,
+          y: p.prevControlHandle.y + offsetY,
+        } : undefined,
+        nextControlHandle: p.nextControlHandle ? {
+          x: p.nextControlHandle.x + offsetX,
+          y: p.nextControlHandle.y + offsetY,
+        } : undefined,
+      }))
+      return { ...el, points: newPoints }
+    }
+    return el
+  })
+}
+
 export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGElement[] {
   console.log('[Import] Starting importFromSVG, content length:', svgContent.length, 'fileTimestamp:', fileTimestamp)
   
