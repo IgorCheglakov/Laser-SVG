@@ -1144,6 +1144,7 @@ export const Canvas: React.FC = () => {
         style={{
           transform: `translate(${view.offsetX}px, ${view.offsetY}px) scale(${view.scale})`,
           transformOrigin: '0 0',
+          overflow: 'visible',
         }}
       >
         <defs>
@@ -1180,6 +1181,23 @@ export const Canvas: React.FC = () => {
               vectorEffect="non-scaling-stroke"
             />
           </pattern>
+
+          <pattern
+            id="gridDec"
+            x={0}
+            y={0}
+            width={DEFAULTS.MM_TO_PX * 100}
+            height={DEFAULTS.MM_TO_PX * 100}
+            patternUnits="userSpaceOnUse"
+          >
+            <path
+              d={`M ${DEFAULTS.MM_TO_PX * 100} 0 L 0 0 0 ${DEFAULTS.MM_TO_PX * 100}`}
+              fill="none"
+              stroke="#2a2a2a"
+              strokeWidth={4 / view.scale}
+              vectorEffect="non-scaling-stroke"
+            />
+          </pattern>
         </defs>
 
         {settings.showGrid && (
@@ -1194,14 +1212,26 @@ export const Canvas: React.FC = () => {
                 opacity={0.94}
               />
             )}
-            <rect
-              x={-10000}
-              y={-10000}
-              width={20000}
-              height={20000}
-              fill="url(#gridBold)"
-              opacity={0.2}
-            />
+            {view.scale >= 1 && (
+              <rect
+                x={-10000}
+                y={-10000}
+                width={20000}
+                height={20000}
+                fill="url(#gridBold)"
+                opacity={0.2}
+              />
+            )}
+            {view.scale < 1 && (
+              <rect
+                x={-10000}
+                y={-10000}
+                width={20000}
+                height={20000}
+                fill="url(#gridDec)"
+                opacity={0.3}
+              />
+            )}
           </>
         )}
 
