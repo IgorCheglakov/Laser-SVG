@@ -148,7 +148,14 @@ function parsePathData(d: string): ParsedCommand[] {
     const argsStr = match[2].trim()
     
     if (argsStr) {
-      const values = argsStr.split(/[\s,]+/).filter(v => v).map(Number)
+      const rawValues = argsStr.split(/[\s,]+/).filter(v => v)
+      const values: number[] = []
+      for (const v of rawValues) {
+        const num = Number(v)
+        if (!isNaN(num)) {
+          values.push(num)
+        }
+      }
       commands.push({ command, values })
     } else {
       commands.push({ command, values: [] })
@@ -171,8 +178,12 @@ function convertToAbsolute(commands: ParsedCommand[]): ParsedCommand[] {
     const isRelative = c === c.toLowerCase()
     const baseCmd = c.toUpperCase()
 
+    // Skip commands with invalid/insufficient values
+    if (v.some(val => isNaN(val))) continue
+
     switch (baseCmd) {
       case 'M': {
+        if (v.length < 2) continue
         const newX = isRelative ? x + v[0] : v[0]
         const newY = isRelative ? y + v[1] : v[1]
         absolute.push({ command: 'M', values: [newX, newY] })
@@ -183,6 +194,7 @@ function convertToAbsolute(commands: ParsedCommand[]): ParsedCommand[] {
         break
       }
       case 'L': {
+        if (v.length < 2) continue
         const newX = isRelative ? x + v[0] : v[0]
         const newY = isRelative ? y + v[1] : v[1]
         absolute.push({ command: 'L', values: [newX, newY] })
@@ -191,6 +203,7 @@ function convertToAbsolute(commands: ParsedCommand[]): ParsedCommand[] {
         break
       }
       case 'C': {
+        if (v.length < 6) continue
         let cp1x, cp1y, cp2x, cp2y, endX, endY
         if (isRelative) {
           cp1x = x + v[0]
@@ -255,13 +268,23 @@ function convertPathToPoints(d: string): Point[] {
   let currentPoint: Point | null = null
 
   for (const cmd of absCommands) {
+    // Skip commands with invalid values
+    if (cmd.values.some(v => isNaN(v))) continue
+    
     if (cmd.command === 'M') {
+      if (cmd.values.length < 2) continue
       currentPoint = { x: cmd.values[0], y: cmd.values[1], vertexType: 'straight' }
-      points.push(currentPoint)
+      if (!isNaN(currentPoint.x) && !isNaN(currentPoint.y)) {
+        points.push(currentPoint)
+      }
     } else if (cmd.command === 'L') {
+      if (cmd.values.length < 2) continue
       currentPoint = { x: cmd.values[0], y: cmd.values[1], vertexType: 'straight' }
-      points.push(currentPoint)
+      if (!isNaN(currentPoint.x) && !isNaN(currentPoint.y)) {
+        points.push(currentPoint)
+      }
     } else if (cmd.command === 'C') {
+      if (cmd.values.length < 6) continue
       if (currentPoint) {
         currentPoint.nextControlHandle = {
           x: cmd.values[0],
@@ -278,7 +301,9 @@ function convertPathToPoints(d: string): Point[] {
           y: cmd.values[3],
         },
       }
-      points.push(currentPoint)
+      if (!isNaN(currentPoint.x) && !isNaN(currentPoint.y)) {
+        points.push(currentPoint)
+      }
     } else if (cmd.command === 'Z') {
       if (points.length > 2 && currentPoint) {
         const first = points[0]
