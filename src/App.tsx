@@ -8,6 +8,7 @@ import { useEffect } from 'react'
 import { Layout } from '@components/Layout/Layout'
 import { useEditorStore, undo, redo } from '@store/index'
 import { HOTKEYS } from '@constants/index'
+import { exportToSVG } from '@/utils/exportSvg'
 
 /**
  * Global keyboard shortcuts handler
@@ -145,12 +146,14 @@ const useMenuActions = () => {
     deleteElement,
     deleteAllElements,
     selectedIds,
+    elements,
+    settings,
     zoomIn, 
     zoomOut, 
     resetView, 
     toggleGrid, 
     toggleSnap,
-    toggleDebug 
+    toggleDebug,
   } = useEditorStore()
 
   useEffect(() => {
@@ -195,6 +198,21 @@ const useMenuActions = () => {
         case 'toggle-debug':
           toggleDebug()
           break
+        case 'save':
+          {
+            const svgContent = exportToSVG(elements, settings.artboardWidth, settings.artboardHeight)
+            window.electronAPI?.saveFile(svgContent)
+          }
+          break
+        case 'open':
+          {
+            window.electronAPI?.openFile().then((result) => {
+              if (result) {
+                console.log('Opened file:', result.path)
+              }
+            })
+          }
+          break
       }
     }
 
@@ -203,7 +221,7 @@ const useMenuActions = () => {
     return () => {
       window.electronAPI?.removeMenuListener()
     }
-  }, [setActiveTool, deleteElement, deleteAllElements, selectedIds, zoomIn, zoomOut, resetView, toggleGrid, toggleSnap, toggleDebug])
+  }, [setActiveTool, deleteElement, deleteAllElements, selectedIds, elements, settings, zoomIn, zoomOut, resetView, toggleGrid, toggleSnap, toggleDebug])
 }
 
 /**

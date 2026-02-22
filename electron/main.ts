@@ -5,8 +5,9 @@
  * system-level interactions.
  */
 
-import { app, BrowserWindow, ipcMain, Menu } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, dialog } from 'electron'
 import path from 'path'
+import fs from 'fs'
 
 /**
  * Get the preload script path based on environment
@@ -146,4 +147,52 @@ app.on('window-all-closed', () => {
 // IPC handlers for future file operations
 ipcMain.handle('app:version', () => {
   return app.getVersion()
+})
+
+// Save file handler
+ipcMain.handle('file:save', async (_event, content: string, defaultPath?: string) => {
+  const result = await dialog.showSaveDialog({
+    defaultPath: defaultPath || 'design.svg',
+    filters: [
+      { name: 'SVG Files', extensions: ['svg'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+  })
+  
+  if (result.canceled || !result.filePath) {
+    return null
+  }
+  
+  try {
+    fs.writeFileSync(result.filePath, content, 'utf-8')
+    return result.filePath
+  } catch (error) {
+    console.error('Error saving file:', error)
+    return null
+  }
+})
+
+// Open file handler
+ipcMain.handle('file:open', async () => {
+  const result = await dialog.showOpenDialog({
+    filters: [
+      { name: 'SVG Files', extensions: ['svg'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+    properties: ['openFile'],
+  })
+  
+  if (result.canceled || result.filePaths.length === 0) {
+    return null
+  }
+  
+  const filePath = result.filePaths[0]
+  
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8')
+    return { content, path: filePath }
+  } catch (error) {
+    console.error('Error opening file:', error)
+    return null
+  }
 })

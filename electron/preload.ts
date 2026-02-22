@@ -18,6 +18,9 @@ export interface ElectronAPI {
   /** Menu action listeners */
   onMenuAction: (callback: (action: string) => void) => void
   removeMenuListener: () => void
+  /** File operations */
+  saveFile: (content: string, defaultPath?: string) => Promise<string | null>
+  openFile: () => Promise<{ content: string; path: string } | null>
 }
 
 const api: ElectronAPI = {
@@ -29,6 +32,10 @@ const api: ElectronAPI = {
   removeMenuListener: () => {
     ipcRenderer.removeAllListeners('menu:action')
   },
+  saveFile: (content: string, defaultPath?: string) => 
+    ipcRenderer.invoke('file:save', content, defaultPath),
+  openFile: () => 
+    ipcRenderer.invoke('file:open'),
 }
 
 // Expose the API to the renderer process
