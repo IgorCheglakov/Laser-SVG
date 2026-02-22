@@ -1212,7 +1212,7 @@ export const Canvas: React.FC = () => {
                 opacity={0.94}
               />
             )}
-            {view.scale >= 1 && (
+            {/* {view.scale >= 1 && (
               <rect
                 x={-10000}
                 y={-10000}
@@ -1221,7 +1221,7 @@ export const Canvas: React.FC = () => {
                 fill="url(#gridBold)"
                 opacity={0.2}
               />
-            )}
+            )} */}
             {view.scale < 1 && (
               <rect
                 x={-10000}
