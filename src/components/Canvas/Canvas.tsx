@@ -1304,7 +1304,7 @@ export const Canvas: React.FC = () => {
                 pointerEvents="none"
               />
             )}
-            {view.scale < 1 && (
+            {view.scale < 0.7 && (
               <rect
                 x={0}
                 y={0}
