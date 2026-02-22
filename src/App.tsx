@@ -208,12 +208,23 @@ const useMenuActions = () => {
           break
         case 'open':
           {
+            console.log('[App] Open file action triggered')
             window.electronAPI?.openFile().then((result) => {
               if (result) {
-                console.log('Opened file:', result.path)
+                console.log('[App] File opened:', result.path, 'content length:', result.content.length)
+                console.log('[App] Content preview:', result.content.substring(0, 200))
                 const importedElements = importFromSVG(result.content)
-                importedElements.forEach(element => addElement(element))
+                console.log('[App] Imported elements count:', importedElements.length)
+                importedElements.forEach(element => {
+                  console.log('[App] Adding element:', element.name, 'points:', 'points' in element ? (element as any).points?.length : 'N/A')
+                  addElement(element)
+                })
+                console.log('[App] All elements added')
+              } else {
+                console.log('[App] No file result (cancelled or error)')
               }
+            }).catch((err) => {
+              console.error('[App] Error opening file:', err)
             })
           }
           break
