@@ -9,6 +9,7 @@ import { Layout } from '@components/Layout/Layout'
 import { useEditorStore, undo, redo } from '@store/index'
 import { HOTKEYS } from '@constants/index'
 import { exportToSVG } from '@/utils/exportSvg'
+import { importFromSVG } from '@/utils/importSvg'
 
 /**
  * Global keyboard shortcuts handler
@@ -154,6 +155,7 @@ const useMenuActions = () => {
     toggleGrid, 
     toggleSnap,
     toggleDebug,
+    addElement,
   } = useEditorStore()
 
   useEffect(() => {
@@ -209,6 +211,8 @@ const useMenuActions = () => {
             window.electronAPI?.openFile().then((result) => {
               if (result) {
                 console.log('Opened file:', result.path)
+                const importedElements = importFromSVG(result.content)
+                importedElements.forEach(element => addElement(element))
               }
             })
           }
@@ -221,7 +225,7 @@ const useMenuActions = () => {
     return () => {
       window.electronAPI?.removeMenuListener()
     }
-  }, [setActiveTool, deleteElement, deleteAllElements, selectedIds, elements, settings, zoomIn, zoomOut, resetView, toggleGrid, toggleSnap, toggleDebug])
+  }, [setActiveTool, deleteElement, deleteAllElements, selectedIds, elements, settings, zoomIn, zoomOut, resetView, toggleGrid, toggleSnap, toggleDebug, addElement])
 }
 
 /**
