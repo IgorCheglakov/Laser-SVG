@@ -987,6 +987,19 @@ export const Canvas: React.FC = () => {
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
     if (isPanning) {
       setIsPanning(false)
+      
+      // Log visible center coordinates
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect()
+        const centerScreenX = rect.width / 2
+        const centerScreenY = rect.height / 2
+        
+        const centerCanvasX = (centerScreenX - view.offsetX) / view.scale / DEFAULTS.MM_TO_PX
+        const centerCanvasY = (centerScreenY - view.offsetY) / view.scale / DEFAULTS.MM_TO_PX
+        
+        console.log(`[Canvas] Visible center: (${centerCanvasX.toFixed(3)} mm, ${centerCanvasY.toFixed(3)} mm)`)
+      }
+      
       return
     }
     

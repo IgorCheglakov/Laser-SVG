@@ -378,15 +378,19 @@ function isLaserSvgCompatible(svg: Element, fileTimestamp: number): boolean {
   return diff <= TIMESTAMP_TOLERANCE_MS
 }
 
-function getSvgDimensions(svg: Element): { width: number; height: number; viewBox: { x: number; y: number; width: number; height: number } | null; unit: string | null } {
+function getSvgDimensions(svg: Element): { width: number; height: number; viewBox: { x: number; y: number; width: number; height: number } | null; unit: string | null; offsetX: number; offsetY: number } {
   // Get viewBox first (preferred)
   const viewBoxAttr = svg.getAttribute('viewBox')
   let viewBox: { x: number; y: number; width: number; height: number } | null = null
+  let offsetX = 0
+  let offsetY = 0
   
   if (viewBoxAttr) {
     const parts = viewBoxAttr.split(/[\s,]+/).map(Number)
     if (parts.length === 4 && !parts.some(isNaN)) {
       viewBox = { x: parts[0], y: parts[1], width: parts[2], height: parts[3] }
+      offsetX = parts[0]
+      offsetY = parts[1]
     }
   }
   
@@ -426,9 +430,9 @@ function getSvgDimensions(svg: Element): { width: number; height: number; viewBo
   if (isNaN(height)) height = 1000
   if (!unit) unit = 'px'
   
-  console.log(`[Import] SVG dimensions: ${width}x${height}${unit}, viewBox:`, viewBox)
+  console.log(`[Import] SVG dimensions: ${width}x${height}${unit}, viewBox:`, viewBox, 'offset:', offsetX, offsetY)
   
-  return { width, height, viewBox, unit }
+  return { width, height, viewBox, unit, offsetX, offsetY }
 }
 
 const DEFAULT_ARTBOARD_SIZE = 1000
@@ -467,23 +471,23 @@ function calculateScaleFactor(svgWidth: number, svgHeight: number, unit: string 
   return scale
 }
 
-function scalePoints(points: Point[], scaleFactor: number): Point[] {
+function scalePoints(points: Point[], scaleFactor: number, offsetX: number = 0, offsetY: number = 0): Point[] {
   return points.map(p => {
     const scaled: Point = {
-      x: p.x * scaleFactor,
-      y: p.y * scaleFactor,
+      x: p.x * scaleFactor + offsetX,
+      y: p.y * scaleFactor + offsetY,
       vertexType: p.vertexType,
     }
     if (p.prevControlHandle) {
       scaled.prevControlHandle = {
-        x: p.prevControlHandle.x * scaleFactor,
-        y: p.prevControlHandle.y * scaleFactor,
+        x: p.prevControlHandle.x * scaleFactor + offsetX,
+        y: p.prevControlHandle.y * scaleFactor + offsetY,
       }
     }
     if (p.nextControlHandle) {
       scaled.nextControlHandle = {
-        x: p.nextControlHandle.x * scaleFactor,
-        y: p.nextControlHandle.y * scaleFactor,
+        x: p.nextControlHandle.x * scaleFactor + offsetX,
+        y: p.nextControlHandle.y * scaleFactor + offsetY,
       }
     }
     return scaled
@@ -528,7 +532,13 @@ function calculateBounds(points: Point[]): { x: number; y: number; width: number
   }
 }
 
-export function centerElements(elements: SVGElement[], _viewState: { scale: number; offsetX: number; offsetY: number }, artboardWidth: number, artboardHeight: number): SVGElement[] {
+export function centerElements(
+  elements: SVGElement[], 
+  targetCenterX: number, 
+  targetCenterY: number, 
+  artboardWidth: number, 
+  artboardHeight: number
+): SVGElement[] {
   if (elements.length === 0) return elements
 
   let minX = Infinity
@@ -558,11 +568,8 @@ export function centerElements(elements: SVGElement[], _viewState: { scale: numb
   const elementsCenterX = (minX + maxX) / 2
   const elementsCenterY = (minY + maxY) / 2
 
-  const viewCenterX = artboardWidth / 2
-  const viewCenterY = artboardHeight / 2
-
-  const offsetX = viewCenterX - elementsCenterX
-  const offsetY = viewCenterY - elementsCenterY
+  const offsetX = targetCenterX - elementsCenterX
+  const offsetY = targetCenterY - elementsCenterY
 
   return elements.map(el => {
     if ('points' in el && el.points) {
@@ -610,7 +617,7 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
     }
 
     // Get SVG dimensions and calculate scale factor
-    const { width: svgWidth, height: svgHeight, unit } = getSvgDimensions(svg)
+    const { width: svgWidth, height: svgHeight, unit, offsetX, offsetY } = getSvgDimensions(svg)
     const scaleFactor = calculateScaleFactor(svgWidth, svgHeight, unit)
     console.log(`[Import] Scale factor: ${scaleFactor}`)
 
@@ -715,7 +722,7 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
           name,
           visible: true,
           locked: false,
-          points: scalePoints(points, scaleFactor),
+          points: scalePoints(points, scaleFactor, offsetX, offsetY),
           stroke: finalStroke,
           strokeWidth: attrs.strokeWidth,
           isClosedShape: isClosed,

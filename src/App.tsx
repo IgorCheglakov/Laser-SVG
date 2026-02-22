@@ -10,6 +10,7 @@ import { useEditorStore, undo, redo } from '@store/index'
 import { HOTKEYS } from '@constants/index'
 import { exportToSVG } from '@/utils/exportSvg'
 import { importFromSVG, centerElements } from '@/utils/importSvg'
+import { DEFAULTS } from '@constants/index'
 import type { SVGElement, PointElement } from '@/types-app/index'
 
 /**
@@ -216,7 +217,12 @@ const useMenuActions = () => {
                 console.log('[App] File opened:', result.path, 'content length:', result.content.length, 'timestamp:', result.timestamp)
                 console.log('[App] Content preview:', result.content.substring(0, 200))
                 const importedElements = importFromSVG(result.content, result.timestamp)
-                const centeredElements = centerElements(importedElements, view, settings.artboardWidth, settings.artboardHeight)
+                
+                // Calculate visible center in mm coordinates
+                const visibleCenterX = settings.artboardWidth / 2 - view.offsetX / view.scale / DEFAULTS.MM_TO_PX
+                const visibleCenterY = settings.artboardHeight / 2 - view.offsetY / view.scale / DEFAULTS.MM_TO_PX
+                
+                const centeredElements = centerElements(importedElements, visibleCenterX, visibleCenterY, settings.artboardWidth, settings.artboardHeight)
                 console.log('[App] Imported elements count:', centeredElements.length)
                 centeredElements.forEach((element: SVGElement) => {
                   const points = 'points' in element ? (element as PointElement).points?.length : 'N/A'
