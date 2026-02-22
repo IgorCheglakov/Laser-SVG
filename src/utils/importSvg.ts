@@ -292,14 +292,15 @@ function convertPathToPoints(d: string): Point[] {
         }
         currentPoint.vertexType = 'corner'
       }
+      const hasPrevControlHandle = !isNaN(cmd.values[2]) && !isNaN(cmd.values[3])
       currentPoint = {
         x: cmd.values[4],
         y: cmd.values[5],
-        vertexType: 'straight',
-        prevControlHandle: {
+        vertexType: hasPrevControlHandle ? 'corner' : 'straight',
+        prevControlHandle: hasPrevControlHandle ? {
           x: cmd.values[2],
           y: cmd.values[3],
-        },
+        } : undefined,
       }
       if (!isNaN(currentPoint.x) && !isNaN(currentPoint.y)) {
         points.push(currentPoint)
@@ -309,15 +310,17 @@ function convertPathToPoints(d: string): Point[] {
         const first = points[0]
         const last = currentPoint
         
-        // Link last point's nextControlHandle to first point's prevControlHandle
+        // Bidirectional linking of control handles for closed shapes
+        // Copy first.prevControlHandle to last.nextControlHandle
         if (first.prevControlHandle) {
           last.nextControlHandle = { x: first.prevControlHandle.x, y: first.prevControlHandle.y }
           last.vertexType = 'corner'
         }
         
-        // Link first point's prevControlHandle to last point's nextControlHandle
+        // Copy last.nextControlHandle to first.prevControlHandle  
         if (last.nextControlHandle) {
           first.prevControlHandle = { x: last.nextControlHandle.x, y: last.nextControlHandle.y }
+          first.vertexType = 'corner'
         }
       }
     }
