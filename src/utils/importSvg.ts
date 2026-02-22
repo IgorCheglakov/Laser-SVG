@@ -9,7 +9,7 @@
 import type { PointElement, SVGElement, Point } from '@/types-app/index'
 import type { VertexType } from '@/types-app/point'
 import { generateId } from '@/utils/id'
-import { COLOR_PALETTE } from '@constants/index'
+import { COLOR_PALETTE, DEFAULTS } from '@constants/index'
 
 const STANDARD_STROKE_WIDTH = 0.25
 const TIMESTAMP_TOLERANCE_MS = 2000
@@ -404,12 +404,20 @@ function getSvgDimensions(svg: Element): { width: number; height: number; viewBo
 
 const DEFAULT_ARTBOARD_SIZE = 1000
 
-function calculateScaleFactor(svgWidth: number, svgHeight: number): number {
-  // Scale to fit within 1000x1000 while preserving aspect ratio
+function calculateScaleFactor(svgWidthPx: number, svgHeightPx: number): number {
+  // SVG dimensions are in pixels, convert to mm
+  const svgWidthMm = svgWidthPx * DEFAULTS.PX_TO_MM
+  const svgHeightMm = svgHeightPx * DEFAULTS.PX_TO_MM
+  
+  // Scale to fit within 1000x1000 mm while preserving aspect ratio
   const targetSize = DEFAULT_ARTBOARD_SIZE
-  const scaleX = targetSize / svgWidth
-  const scaleY = targetSize / svgHeight
-  return Math.min(scaleX, scaleY)
+  const scaleX = targetSize / svgWidthMm
+  const scaleY = targetSize / svgHeightMm
+  const scale = Math.min(scaleX, scaleY)
+  
+  console.log(`[Import] SVG size: ${svgWidthPx}x${svgHeightPx}px = ${svgWidthMm.toFixed(2)}x${svgHeightMm.toFixed(2)}mm, scale: ${scale.toFixed(4)}`)
+  
+  return scale
 }
 
 function scalePoints(points: Point[], scaleFactor: number): Point[] {
