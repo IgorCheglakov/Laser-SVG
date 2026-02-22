@@ -1228,8 +1228,18 @@ export const Canvas: React.FC = () => {
                 y={-10000}
                 width={20000}
                 height={20000}
+                fill="url(#gridBold)"
+                opacity={0.15}
+              />
+            )}
+            {view.scale < 1 && (
+              <rect
+                x={-10000}
+                y={-10000}
+                width={20000}
+                height={20000}
                 fill="url(#gridDec)"
-                opacity={0.6}
+                opacity={0.25}
               />
             )}
           </>
@@ -1276,8 +1286,19 @@ export const Canvas: React.FC = () => {
                 y={0}
                 width={artboardWidthPx}
                 height={artboardHeightPx}
+                fill="url(#gridBold)"
+                opacity={0.15}
+                pointerEvents="none"
+              />
+            )}
+            {view.scale < 1 && (
+              <rect
+                x={0}
+                y={0}
+                width={artboardWidthPx}
+                height={artboardHeightPx}
                 fill="url(#gridDec)"
-                opacity={0.6}
+                opacity={0.25}
                 pointerEvents="none"
               />
             )}
