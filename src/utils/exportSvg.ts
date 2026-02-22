@@ -24,15 +24,15 @@ function generatePathData(points: PointElement['points'], isClosed: boolean): st
     } else {
       const prev = points[i - 1]
       
-      // Use cp1 from previous point (outgoing) and cp2 from current point (incoming)
-      const hasCp1 = prev.cp1 && (prev.vertexType === 'corner' || prev.vertexType === 'smooth')
-      const hasCp2 = p.cp2 && (p.vertexType === 'corner' || p.vertexType === 'smooth')
-      
-      if (hasCp1 || hasCp2) {
-        const cp1x = prev.cp1 ? prev.cp1.x : px
-        const cp1y = prev.cp1 ? prev.cp1.y : py
-        const cp2x = p.cp2 ? p.cp2.x : px
-        const cp2y = p.cp2 ? p.cp2.y : py
+    // Use nextControlHandle from previous point (outgoing) and prevControlHandle from current point (incoming)
+    const hasCp1 = prev.nextControlHandle && (prev.vertexType === 'corner' || prev.vertexType === 'smooth')
+    const hasCp2 = p.prevControlHandle && (p.vertexType === 'corner' || p.vertexType === 'smooth')
+    
+    if (hasCp1 || hasCp2) {
+      const cp1x = prev.nextControlHandle ? prev.nextControlHandle.x : px
+      const cp1y = prev.nextControlHandle ? prev.nextControlHandle.y : py
+      const cp2x = p.prevControlHandle ? p.prevControlHandle.x : px
+      const cp2y = p.prevControlHandle ? p.prevControlHandle.y : py
         d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${px} ${py}`
       } else {
         d += ` L ${px} ${py}`
@@ -45,14 +45,15 @@ function generatePathData(points: PointElement['points'], isClosed: boolean): st
     const first = points[0]
     const last = points[points.length - 1]
     
-    const hasCp1 = last.cp1 && (last.vertexType === 'corner' || last.vertexType === 'smooth')
-    const hasCp2 = first.cp2 && (first.vertexType === 'corner' || first.vertexType === 'smooth')
+    // Use nextControlHandle from last (outgoing) and prevControlHandle from first (incoming)
+    const hasCp1 = last.nextControlHandle && (last.vertexType === 'corner' || last.vertexType === 'smooth')
+    const hasCp2 = first.prevControlHandle && (first.vertexType === 'corner' || first.vertexType === 'smooth')
     
     if (hasCp1 || hasCp2) {
-      const cp1x = last.cp1 ? last.cp1.x : first.x
-      const cp1y = last.cp1 ? last.cp1.y : first.y
-      const cp2x = first.cp2 ? first.cp2.x : first.x
-      const cp2y = first.cp2 ? first.cp2.y : first.y
+      const cp1x = last.nextControlHandle ? last.nextControlHandle.x : first.x
+      const cp1y = last.nextControlHandle ? last.nextControlHandle.y : first.y
+      const cp2x = first.prevControlHandle ? first.prevControlHandle.x : first.x
+      const cp2y = first.prevControlHandle ? first.prevControlHandle.y : first.y
       d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${first.x} ${first.y}`
     }
     
@@ -84,7 +85,7 @@ export function exportToSVG(elements: SVGElement[], width: number, height: numbe
     if (!d) continue
     
     const stroke = pointEl.stroke || '#000000'
-    const strokeWidth = pointEl.strokeWidth || 1
+    const strokeWidth = pointEl.strokeWidth || 0.5
     
     svgLines.push(`    <path`)
     svgLines.push(`      d="${d}"`)

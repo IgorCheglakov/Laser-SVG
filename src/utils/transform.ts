@@ -33,13 +33,13 @@ export interface Point {
   x: number
   y: number
   vertexType?: 'straight' | 'corner' | 'smooth'
-  cp1?: { 
+  prevControlHandle?: { 
     x: number; 
     y: number; 
     targetVertexIndex?: number | null
     siblingIndex?: number | null
   }
-  cp2?: { 
+  nextControlHandle?: { 
     x: number; 
     y: number; 
     targetVertexIndex?: number | null
@@ -142,7 +142,7 @@ function getHandlePosition(box: InitialSize, handle: TransformHandle): Point {
  * multiplied by a coefficient calculated as:
  * coefficient = |point - pivot| / |handle - pivot|
  * 
- * @param points - Original points of the element (including cp1, cp2)
+ * @param points - Original points of the element (including prevControlHandle, nextControlHandle)
  * @param box - Initial bounding box
  * @param delta - Mouse movement delta {dx, dy} in mm
  * @param handle - Parsed transform handle
@@ -197,23 +197,23 @@ export function transformPoints(
       vertexType: p.vertexType,
     }
     
-    if (p.cp1) {
-      let newCp1X = p.cp1.x
-      let newCp1Y = p.cp1.y
+    if (p.prevControlHandle) {
+      let newCp1X = p.prevControlHandle.x
+      let newCp1Y = p.prevControlHandle.y
       
       if (handle.horizontal) {
         const handleDeltaX = handlePos.x - pivot.x
         if (handleDeltaX !== 0) {
           let coefficientX = fromCenter 
-            ? (p.cp1.x - pivot.x) / handleDeltaX 
-            : Math.abs(p.cp1.x - pivot.x) / Math.abs(handleDeltaX)
+            ? (p.prevControlHandle.x - pivot.x) / handleDeltaX 
+            : Math.abs(p.prevControlHandle.x - pivot.x) / Math.abs(handleDeltaX)
           
-          // Flipping the sign if cp1.x and handle are on opposite sides of pivot
-          const sameSideX = (handlePos.x > pivot.x && p.cp1.x > pivot.x) || 
-                            (handlePos.x < pivot.x && p.cp1.x < pivot.x)
+          // Flipping the sign if prevControlHandle.x and handle are on opposite sides of pivot
+          const sameSideX = (handlePos.x > pivot.x && p.prevControlHandle.x > pivot.x) || 
+                            (handlePos.x < pivot.x && p.prevControlHandle.x < pivot.x)
           if (!sameSideX) coefficientX = -coefficientX
           
-          newCp1X = p.cp1.x + coefficientX * delta.dx
+          newCp1X = p.prevControlHandle.x + coefficientX * delta.dx
         }
       }
       
@@ -221,43 +221,43 @@ export function transformPoints(
         const handleDeltaY = handlePos.y - pivot.y
         if (handleDeltaY !== 0) {
           let coefficientY = fromCenter 
-            ? (p.cp1.y - pivot.y) / handleDeltaY 
-            : Math.abs(p.cp1.y - pivot.y) / Math.abs(handleDeltaY)
+            ? (p.prevControlHandle.y - pivot.y) / handleDeltaY 
+            : Math.abs(p.prevControlHandle.y - pivot.y) / Math.abs(handleDeltaY)
           
-          // Flipping the sign if cp1.y and handle are on opposite sides of pivot
-          const sameSideY = (handlePos.y > pivot.y && p.cp1.y > pivot.y) || 
-                            (handlePos.y < pivot.y && p.cp1.y < pivot.y)
+          // Flipping the sign if prevControlHandle.y and handle are on opposite sides of pivot
+          const sameSideY = (handlePos.y > pivot.y && p.prevControlHandle.y > pivot.y) || 
+                            (handlePos.y < pivot.y && p.prevControlHandle.y < pivot.y)
           if (!sameSideY) coefficientY = -coefficientY
           
-          newCp1Y = p.cp1.y + coefficientY * delta.dy
+          newCp1Y = p.prevControlHandle.y + coefficientY * delta.dy
         }
       }
       
-      newPoint.cp1 = { 
+      newPoint.prevControlHandle = { 
         x: newCp1X, 
         y: newCp1Y,
-        targetVertexIndex: p.cp1.targetVertexIndex,
-        siblingIndex: p.cp1.siblingIndex,
+        targetVertexIndex: p.prevControlHandle.targetVertexIndex,
+        siblingIndex: p.prevControlHandle.siblingIndex,
       }
     }
     
-    if (p.cp2) {
-      let newCp2X = p.cp2.x
-      let newCp2Y = p.cp2.y
+    if (p.nextControlHandle) {
+      let newCp2X = p.nextControlHandle.x
+      let newCp2Y = p.nextControlHandle.y
       
       if (handle.horizontal) {
         const handleDeltaX = handlePos.x - pivot.x
         if (handleDeltaX !== 0) {
           let coefficientX = fromCenter 
-            ? (p.cp2.x - pivot.x) / handleDeltaX 
-            : Math.abs(p.cp2.x - pivot.x) / Math.abs(handleDeltaX)
+            ? (p.nextControlHandle.x - pivot.x) / handleDeltaX 
+            : Math.abs(p.nextControlHandle.x - pivot.x) / Math.abs(handleDeltaX)
           
-          // Flipping the sign if cp2.x and handle are on opposite sides of pivot
-          const sameSideX = (handlePos.x > pivot.x && p.cp2.x > pivot.x) || 
-                            (handlePos.x < pivot.x && p.cp2.x < pivot.x)
+          // Flipping the sign if nextControlHandle.x and handle are on opposite sides of pivot
+          const sameSideX = (handlePos.x > pivot.x && p.nextControlHandle.x > pivot.x) || 
+                            (handlePos.x < pivot.x && p.nextControlHandle.x < pivot.x)
           if (!sameSideX) coefficientX = -coefficientX
           
-          newCp2X = p.cp2.x + coefficientX * delta.dx
+          newCp2X = p.nextControlHandle.x + coefficientX * delta.dx
         }
       }
       
@@ -265,23 +265,23 @@ export function transformPoints(
         const handleDeltaY = handlePos.y - pivot.y
         if (handleDeltaY !== 0) {
           let coefficientY = fromCenter 
-            ? (p.cp2.y - pivot.y) / handleDeltaY 
-            : Math.abs(p.cp2.y - pivot.y) / Math.abs(handleDeltaY)
+            ? (p.nextControlHandle.y - pivot.y) / handleDeltaY 
+            : Math.abs(p.nextControlHandle.y - pivot.y) / Math.abs(handleDeltaY)
           
-          // Flipping the sign if cp2.y and handle are on opposite sides of pivot
-          const sameSideY = (handlePos.y > pivot.y && p.cp2.y > pivot.y) || 
-                            (handlePos.y < pivot.y && p.cp2.y < pivot.y)
+          // Flipping the sign if nextControlHandle.y and handle are on opposite sides of pivot
+          const sameSideY = (handlePos.y > pivot.y && p.nextControlHandle.y > pivot.y) || 
+                            (handlePos.y < pivot.y && p.nextControlHandle.y < pivot.y)
           if (!sameSideY) coefficientY = -coefficientY
           
-          newCp2Y = p.cp2.y + coefficientY * delta.dy
+          newCp2Y = p.nextControlHandle.y + coefficientY * delta.dy
         }
       }
       
-      newPoint.cp2 = { 
+      newPoint.nextControlHandle = { 
         x: newCp2X, 
         y: newCp2Y,
-        targetVertexIndex: p.cp2.targetVertexIndex,
-        siblingIndex: p.cp2.siblingIndex,
+        targetVertexIndex: p.nextControlHandle.targetVertexIndex,
+        siblingIndex: p.nextControlHandle.siblingIndex,
       }
     }
     
@@ -300,17 +300,17 @@ export function flipPointsHorizontal(points: Point[], box: InitialSize): Point[]
       y: p.y,
       vertexType: p.vertexType,
     }
-    if (p.cp1) newPoint.cp1 = { 
-      x: 2 * centerX - p.cp1.x, 
-      y: p.cp1.y,
-      targetVertexIndex: p.cp1.targetVertexIndex,
-      siblingIndex: p.cp1.siblingIndex,
+    if (p.prevControlHandle) newPoint.prevControlHandle = { 
+      x: 2 * centerX - p.prevControlHandle.x, 
+      y: p.prevControlHandle.y,
+      targetVertexIndex: p.prevControlHandle.targetVertexIndex,
+      siblingIndex: p.prevControlHandle.siblingIndex,
     }
-    if (p.cp2) newPoint.cp2 = { 
-      x: 2 * centerX - p.cp2.x, 
-      y: p.cp2.y,
-      targetVertexIndex: p.cp2.targetVertexIndex,
-      siblingIndex: p.cp2.siblingIndex,
+    if (p.nextControlHandle) newPoint.nextControlHandle = { 
+      x: 2 * centerX - p.nextControlHandle.x, 
+      y: p.nextControlHandle.y,
+      targetVertexIndex: p.nextControlHandle.targetVertexIndex,
+      siblingIndex: p.nextControlHandle.siblingIndex,
     }
     return newPoint
   })
@@ -327,17 +327,17 @@ export function flipPointsVertical(points: Point[], box: InitialSize): Point[] {
       y: 2 * centerY - p.y,
       vertexType: p.vertexType,
     }
-    if (p.cp1) newPoint.cp1 = { 
-      x: p.cp1.x, 
-      y: 2 * centerY - p.cp1.y,
-      targetVertexIndex: p.cp1.targetVertexIndex,
-      siblingIndex: p.cp1.siblingIndex,
+    if (p.prevControlHandle) newPoint.prevControlHandle = { 
+      x: p.prevControlHandle.x, 
+      y: 2 * centerY - p.prevControlHandle.y,
+      targetVertexIndex: p.prevControlHandle.targetVertexIndex,
+      siblingIndex: p.prevControlHandle.siblingIndex,
     }
-    if (p.cp2) newPoint.cp2 = { 
-      x: p.cp2.x, 
-      y: 2 * centerY - p.cp2.y,
-      targetVertexIndex: p.cp2.targetVertexIndex,
-      siblingIndex: p.cp2.siblingIndex,
+    if (p.nextControlHandle) newPoint.nextControlHandle = { 
+      x: p.nextControlHandle.x, 
+      y: 2 * centerY - p.nextControlHandle.y,
+      targetVertexIndex: p.nextControlHandle.targetVertexIndex,
+      siblingIndex: p.nextControlHandle.siblingIndex,
     }
     return newPoint
   })
@@ -367,25 +367,25 @@ export function rotatePoints(
       vertexType: p.vertexType,
     }
 
-    if (p.cp1) {
-      const cp1dx = p.cp1.x - center.x
-      const cp1dy = p.cp1.y - center.y
-      newPoint.cp1 = {
-        x: center.x + cp1dx * cos - cp1dy * sin,
-        y: center.y + cp1dx * sin + cp1dy * cos,
-        targetVertexIndex: p.cp1.targetVertexIndex,
-        siblingIndex: p.cp1.siblingIndex,
+    if (p.prevControlHandle) {
+      const prevControlHandledx = p.prevControlHandle.x - center.x
+      const prevControlHandledy = p.prevControlHandle.y - center.y
+      newPoint.prevControlHandle = {
+        x: center.x + prevControlHandledx * cos - prevControlHandledy * sin,
+        y: center.y + prevControlHandledx * sin + prevControlHandledy * cos,
+        targetVertexIndex: p.prevControlHandle.targetVertexIndex,
+        siblingIndex: p.prevControlHandle.siblingIndex,
       }
     }
 
-    if (p.cp2) {
-      const cp2dx = p.cp2.x - center.x
-      const cp2dy = p.cp2.y - center.y
-      newPoint.cp2 = {
-        x: center.x + cp2dx * cos - cp2dy * sin,
-        y: center.y + cp2dx * sin + cp2dy * cos,
-        targetVertexIndex: p.cp2.targetVertexIndex,
-        siblingIndex: p.cp2.siblingIndex,
+    if (p.nextControlHandle) {
+      const nextControlHandledx = p.nextControlHandle.x - center.x
+      const nextControlHandledy = p.nextControlHandle.y - center.y
+      newPoint.nextControlHandle = {
+        x: center.x + nextControlHandledx * cos - nextControlHandledy * sin,
+        y: center.y + nextControlHandledx * sin + nextControlHandledy * cos,
+        targetVertexIndex: p.nextControlHandle.targetVertexIndex,
+        siblingIndex: p.nextControlHandle.siblingIndex,
       }
     }
 

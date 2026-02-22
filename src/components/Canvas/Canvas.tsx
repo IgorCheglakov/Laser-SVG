@@ -51,7 +51,7 @@ export const Canvas: React.FC = () => {
   const isControlMovingRef = useRef(false)
   const controlMoveElementIdRef = useRef<string>('')
   const controlMoveVertexIndexRef = useRef<number>(0)
-  const controlMoveTypeRef = useRef<'cp1' | 'cp2'>('cp1')
+  const controlMoveTypeRef = useRef<'prevControlHandle' | 'nextControlHandle'>('prevControlHandle')
   const controlMoveStartRef = useRef<Point>({ x: 0, y: 0 })
   const initialControlPositionsRef = useRef<Map<string, Point[]>>(new Map())
   
@@ -111,17 +111,17 @@ export const Canvas: React.FC = () => {
       maxX = Math.max(maxX, p.x)
       maxY = Math.max(maxY, p.y)
       
-      if (p.cp1) {
-        minX = Math.min(minX, p.cp1.x)
-        minY = Math.min(minY, p.cp1.y)
-        maxX = Math.max(maxX, p.cp1.x)
-        maxY = Math.max(maxY, p.cp1.y)
+      if (p.prevControlHandle) {
+        minX = Math.min(minX, p.prevControlHandle.x)
+        minY = Math.min(minY, p.prevControlHandle.y)
+        maxX = Math.max(maxX, p.prevControlHandle.x)
+        maxY = Math.max(maxY, p.prevControlHandle.y)
       }
-      if (p.cp2) {
-        minX = Math.min(minX, p.cp2.x)
-        minY = Math.min(minY, p.cp2.y)
-        maxX = Math.max(maxX, p.cp2.x)
-        maxY = Math.max(maxY, p.cp2.y)
+      if (p.nextControlHandle) {
+        minX = Math.min(minX, p.nextControlHandle.x)
+        minY = Math.min(minY, p.nextControlHandle.y)
+        maxX = Math.max(maxX, p.nextControlHandle.x)
+        maxY = Math.max(maxY, p.nextControlHandle.y)
       }
     }
     
@@ -387,7 +387,7 @@ export const Canvas: React.FC = () => {
   /**
    * Handle control point drag start
    */
-  const handleControlDragStart = useCallback((elementId: string, vertexIndex: number, controlType: 'cp1' | 'cp2', clientPoint: Point) => {
+  const handleControlDragStart = useCallback((elementId: string, vertexIndex: number, controlType: 'prevControlHandle' | 'nextControlHandle', clientPoint: Point) => {
     isControlMovingRef.current = true
     controlMoveElementIdRef.current = elementId
     controlMoveVertexIndexRef.current = vertexIndex
@@ -631,8 +631,8 @@ export const Canvas: React.FC = () => {
           ...p,
           x: p.x + deltaX,
           y: p.y + deltaY,
-          cp1: p.cp1 ? { ...p.cp1, x: p.cp1.x + deltaX, y: p.cp1.y + deltaY } : undefined,
-          cp2: p.cp2 ? { ...p.cp2, x: p.cp2.x + deltaX, y: p.cp2.y + deltaY } : undefined,
+          prevControlHandle: p.prevControlHandle ? { ...p.prevControlHandle, x: p.prevControlHandle.x + deltaX, y: p.prevControlHandle.y + deltaY } : undefined,
+          nextControlHandle: p.nextControlHandle ? { ...p.nextControlHandle, x: p.nextControlHandle.x + deltaX, y: p.nextControlHandle.y + deltaY } : undefined,
         }))
         
         updateElementNoHistory(id, { points: newPoints } as Partial<SVGElement>)
@@ -671,8 +671,8 @@ export const Canvas: React.FC = () => {
             ...initialP,
             x: initialP.x + dx,
             y: initialP.y + dy,
-            cp1: initialP.cp1 ? { ...initialP.cp1, x: initialP.cp1.x + dx, y: initialP.cp1.y + dy } : undefined,
-            cp2: initialP.cp2 ? { ...initialP.cp2, x: initialP.cp2.x + dx, y: initialP.cp2.y + dy } : undefined,
+            prevControlHandle: initialP.prevControlHandle ? { ...initialP.prevControlHandle, x: initialP.prevControlHandle.x + dx, y: initialP.prevControlHandle.y + dy } : undefined,
+            nextControlHandle: initialP.nextControlHandle ? { ...initialP.nextControlHandle, x: initialP.nextControlHandle.x + dx, y: initialP.nextControlHandle.y + dy } : undefined,
           }
         }
       }
@@ -708,9 +708,9 @@ export const Canvas: React.FC = () => {
       
       if (vertexIndex >= 0 && vertexIndex < newPoints.length) {
         const initialPoint = initialPositions[vertexIndex]
-        const targetCp = controlType === 'cp1' ? initialPoint.cp1 : initialPoint.cp2
+        const targetCp = controlType === 'prevControlHandle' ? initialPoint.prevControlHandle : initialPoint.nextControlHandle
         const vertexType = initialPoint.vertexType
-        const siblingCp = controlType === 'cp1' ? initialPoint.cp2 : initialPoint.cp1
+        const siblingCp = controlType === 'prevControlHandle' ? initialPoint.nextControlHandle : initialPoint.prevControlHandle
         const vertex = pointEl.points[vertexIndex]
         
         if (targetCp) {
@@ -739,33 +739,27 @@ export const Canvas: React.FC = () => {
               siblingCpUpdate = {
                 x: vertex.x + Math.cos(angleSibling * Math.PI / 180) * distSibling,
                 y: vertex.y + Math.sin(angleSibling * Math.PI / 180) * distSibling,
-                targetVertexIndex: siblingCp.targetVertexIndex,
-                siblingIndex: siblingCp.siblingIndex,
               }
             }
           }
           
-          if (controlType === 'cp1') {
+          if (controlType === 'prevControlHandle') {
             newPoints[vertexIndex] = {
               ...newPoints[vertexIndex],
-              cp1: {
+              prevControlHandle: {
                 x: newCpX,
                 y: newCpY,
-                targetVertexIndex: targetCp.targetVertexIndex,
-                siblingIndex: targetCp.siblingIndex,
               },
-              ...(siblingCpUpdate && { cp2: siblingCpUpdate }),
+              ...(siblingCpUpdate && { nextControlHandle: siblingCpUpdate }),
             }
           } else {
             newPoints[vertexIndex] = {
               ...newPoints[vertexIndex],
-              cp2: {
+              nextControlHandle: {
                 x: newCpX,
                 y: newCpY,
-                targetVertexIndex: targetCp.targetVertexIndex,
-                siblingIndex: targetCp.siblingIndex,
               },
-              ...(siblingCpUpdate && { cp1: siblingCpUpdate }),
+              ...(siblingCpUpdate && { prevControlHandle: siblingCpUpdate }),
             }
           }
         }
@@ -924,29 +918,29 @@ export const Canvas: React.FC = () => {
                 x: centerX, 
                 y: centerY - ry, 
                 vertexType: 'smooth',
-                cp1: { x: centerX - rx * k, y: centerY - ry, targetVertexIndex: 1, siblingIndex: 1 },
-                cp2: { x: centerX + rx * k, y: centerY - ry, targetVertexIndex: 3, siblingIndex: 0 }
+                prevControlHandle: { x: centerX - rx * k, y: centerY - ry },
+                nextControlHandle: { x: centerX + rx * k, y: centerY - ry }
               },
               { 
                 x: centerX + rx, 
                 y: centerY, 
                 vertexType: 'smooth',
-                cp1: { x: centerX + rx, y: centerY - ry * k, targetVertexIndex: 2, siblingIndex: 1 },
-                cp2: { x: centerX + rx, y: centerY + ry * k, targetVertexIndex: 0, siblingIndex: 2 }
+                prevControlHandle: { x: centerX + rx, y: centerY - ry * k },
+                nextControlHandle: { x: centerX + rx, y: centerY + ry * k }
               },
               { 
                 x: centerX, 
                 y: centerY + ry, 
                 vertexType: 'smooth',
-                cp1: { x: centerX + rx * k, y: centerY + ry, targetVertexIndex: 3, siblingIndex: 2 },
-                cp2: { x: centerX - rx * k, y: centerY + ry, targetVertexIndex: 1, siblingIndex: 3 }
+                prevControlHandle: { x: centerX + rx * k, y: centerY + ry },
+                nextControlHandle: { x: centerX - rx * k, y: centerY + ry }
               },
               { 
                 x: centerX - rx, 
                 y: centerY, 
                 vertexType: 'smooth',
-                cp1: { x: centerX - rx, y: centerY + ry * k, targetVertexIndex: 0, siblingIndex: 3 },
-                cp2: { x: centerX - rx, y: centerY - ry * k, targetVertexIndex: 2, siblingIndex: 0 }
+                prevControlHandle: { x: centerX - rx, y: centerY + ry * k },
+                nextControlHandle: { x: centerX - rx, y: centerY - ry * k }
               },
             ]
           }
@@ -1030,7 +1024,7 @@ export const Canvas: React.FC = () => {
       isControlMovingRef.current = false
       controlMoveElementIdRef.current = ''
       controlMoveVertexIndexRef.current = 0
-      controlMoveTypeRef.current = 'cp1'
+      controlMoveTypeRef.current = 'prevControlHandle'
       controlMoveStartRef.current = { x: 0, y: 0 }
       initialControlPositionsRef.current.clear()
     }
@@ -1101,7 +1095,7 @@ export const Canvas: React.FC = () => {
         isControlMovingRef.current = false
         controlMoveElementIdRef.current = ''
         controlMoveVertexIndexRef.current = 0
-        controlMoveTypeRef.current = 'cp1'
+        controlMoveTypeRef.current = 'prevControlHandle'
         controlMoveStartRef.current = { x: 0, y: 0 }
         initialControlPositionsRef.current.clear()
       }
@@ -1378,15 +1372,15 @@ function getCurveSegments(points: Point[], isClosed: boolean): CurveSegment[] {
     if (i === len - 1 && !isClosed) continue
     
     // For segment from p1 to p2:
-    // - cp1 should be cp2 of p1 (outgoing from p1)
-    // - cp2 should be cp1 of p2 (incoming to p2)
-    const hasCp1 = (p1.vertexType === 'corner' || p1.vertexType === 'smooth') && p1.cp2
-    const hasCp2 = (p2.vertexType === 'corner' || p2.vertexType === 'smooth') && p2.cp1
+    // - cp1 (entering curve at p1) = p1.nextControlHandle (exits from p1 towards p2)
+    // - cp2 (exiting curve at p2) = p2.prevControlHandle (enters p2 from p1)
+    const hasCp1 = (p1.vertexType === 'corner' || p1.vertexType === 'smooth') && p1.nextControlHandle
+    const hasCp2 = (p2.vertexType === 'corner' || p2.vertexType === 'smooth') && p2.prevControlHandle
     
     // If either endpoint has control points, use curve logic
     if (hasCp1 || hasCp2) {
-      const cp1Point = hasCp1 ? { x: p1.cp2!.x, y: p1.cp2!.y } : p1
-      const cp2Point = hasCp2 ? { x: p2.cp1!.x, y: p2.cp1!.y } : p2
+      const cp1Point = hasCp1 ? { x: p1.nextControlHandle!.x, y: p1.nextControlHandle!.y } : p1
+      const cp2Point = hasCp2 ? { x: p2.prevControlHandle!.x, y: p2.prevControlHandle!.y } : p2
       
       segments.push({
         p1,

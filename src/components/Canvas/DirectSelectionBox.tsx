@@ -18,7 +18,7 @@ export interface DirectSelectionBoxProps {
   selectedIds: string[]
   scale: number
   onVertexDragStart?: (elementId: string, vertexIndices: number[], startPoint: Point) => void
-  onControlDragStart?: (elementId: string, vertexIndex: number, controlType: 'cp1' | 'cp2', startPoint: Point) => void
+  onControlDragStart?: (elementId: string, vertexIndex: number, controlType: 'prevControlHandle' | 'nextControlHandle', startPoint: Point) => void
   selectedVertices?: Set<string>
   onVertexSelect?: (elementId: string, vertexIndex: number, addToSelection: boolean) => void
 }
@@ -105,7 +105,7 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
     onVertexDragStart?.(elementId, indices, { x: e.clientX, y: e.clientY })
   }
 
-  const handleControlMouseDown = (elementId: string, vertexIndex: number, controlType: 'cp1' | 'cp2') => (e: React.MouseEvent) => {
+  const handleControlMouseDown = (elementId: string, vertexIndex: number, controlType: 'prevControlHandle' | 'nextControlHandle') => (e: React.MouseEvent) => {
     e.stopPropagation()
     onControlDragStart?.(elementId, vertexIndex, controlType, { x: e.clientX, y: e.clientY })
   }
@@ -129,50 +129,50 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
               
               return (
                 <g key={`vertex-${index}`}>
-                  {showHandles && p.cp1 && p.cp1.targetVertexIndex !== null && (
+                  {showHandles && p.prevControlHandle && (
                     <>
                       <line
                         x1={px}
                         y1={py}
-                        x2={p.cp1.x * DEFAULTS.MM_TO_PX}
-                        y2={p.cp1.y * DEFAULTS.MM_TO_PX}
+                        x2={p.prevControlHandle.x * DEFAULTS.MM_TO_PX}
+                        y2={p.prevControlHandle.y * DEFAULTS.MM_TO_PX}
                         stroke={BEZIER_HANDLE_COLOR}
                         strokeWidth={0.3}
                         vectorEffect="non-scaling-stroke"
                         style={{ pointerEvents: 'none' }}
                       />
                       <rect
-                        x={p.cp1.x * DEFAULTS.MM_TO_PX - halfControlHandle}
-                        y={p.cp1.y * DEFAULTS.MM_TO_PX - halfControlHandle}
+                        x={p.prevControlHandle.x * DEFAULTS.MM_TO_PX - halfControlHandle}
+                        y={p.prevControlHandle.y * DEFAULTS.MM_TO_PX - halfControlHandle}
                         width={controlHandleSize}
                         height={controlHandleSize}
                         fill={BEZIER_HANDLE_COLOR}
                         style={{ pointerEvents: 'all', cursor: 'move' }}
-                        onMouseDown={handleControlMouseDown(element.id, index, 'cp1')}
+                        onMouseDown={handleControlMouseDown(element.id, index, 'prevControlHandle')}
                       />
                     </>
                   )}
                   
-                  {showHandles && p.cp2 && p.cp2.targetVertexIndex !== null && (
+                  {showHandles && p.nextControlHandle && (
                     <>
                       <line
                         x1={px}
                         y1={py}
-                        x2={p.cp2.x * DEFAULTS.MM_TO_PX}
-                        y2={p.cp2.y * DEFAULTS.MM_TO_PX}
+                        x2={p.nextControlHandle.x * DEFAULTS.MM_TO_PX}
+                        y2={p.nextControlHandle.y * DEFAULTS.MM_TO_PX}
                         stroke={BEZIER_HANDLE_COLOR}
                         strokeWidth={0.3}
                         vectorEffect="non-scaling-stroke"
                         style={{ pointerEvents: 'none' }}
                       />
                       <rect
-                        x={p.cp2.x * DEFAULTS.MM_TO_PX - halfControlHandle}
-                        y={p.cp2.y * DEFAULTS.MM_TO_PX - halfControlHandle}
+                        x={p.nextControlHandle.x * DEFAULTS.MM_TO_PX - halfControlHandle}
+                        y={p.nextControlHandle.y * DEFAULTS.MM_TO_PX - halfControlHandle}
                         width={controlHandleSize}
                         height={controlHandleSize}
                         fill={BEZIER_HANDLE_COLOR}
                         style={{ pointerEvents: 'all', cursor: 'move' }}
-                        onMouseDown={handleControlMouseDown(element.id, index, 'cp2')}
+                        onMouseDown={handleControlMouseDown(element.id, index, 'nextControlHandle')}
                       />
                     </>
                   )}

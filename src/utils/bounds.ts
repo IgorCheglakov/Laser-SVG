@@ -35,12 +35,12 @@ function getCurveSegments(points: Point[], isClosed: boolean): { p1: Point; cp1:
     
     if (i === len - 1 && !isClosed) continue
     
-    const hasCp1 = (p1.vertexType === 'corner' || p1.vertexType === 'smooth') && p1.cp1
-    const hasCp2 = (p2.vertexType === 'corner' || p2.vertexType === 'smooth') && p2.cp2
+    const hasCp1 = (p1.vertexType === 'corner' || p1.vertexType === 'smooth') && p1.nextControlHandle
+    const hasCp2 = (p2.vertexType === 'corner' || p2.vertexType === 'smooth') && p2.prevControlHandle
     
     if (hasCp1 || hasCp2) {
-      const cp1Point = hasCp1 ? { x: p1.cp1!.x, y: p1.cp1!.y } : p1
-      const cp2Point = hasCp2 ? { x: p2.cp2!.x, y: p2.cp2!.y } : p2
+      const cp1Point = hasCp1 ? { x: p1.nextControlHandle!.x, y: p1.nextControlHandle!.y } : p1
+      const cp2Point = hasCp2 ? { x: p2.prevControlHandle!.x, y: p2.prevControlHandle!.y } : p2
       
       segments.push({
         p1,
