@@ -307,13 +307,17 @@ function convertPathToPoints(d: string): Point[] {
     } else if (cmd.command === 'Z') {
       if (points.length > 2 && currentPoint) {
         const first = points[0]
-        if (first && currentPoint) {
-          currentPoint.nextControlHandle = first.prevControlHandle 
-            ? { x: first.prevControlHandle.x, y: first.prevControlHandle.y }
-            : undefined
-          if (currentPoint.nextControlHandle) {
-            currentPoint.vertexType = 'corner'
-          }
+        const last = currentPoint
+        
+        // Link last point's nextControlHandle to first point's prevControlHandle
+        if (first.prevControlHandle) {
+          last.nextControlHandle = { x: first.prevControlHandle.x, y: first.prevControlHandle.y }
+          last.vertexType = 'corner'
+        }
+        
+        // Link first point's prevControlHandle to last point's nextControlHandle
+        if (last.nextControlHandle) {
+          first.prevControlHandle = { x: last.nextControlHandle.x, y: last.nextControlHandle.y }
         }
       }
     }
@@ -371,7 +375,7 @@ function isLaserSvgCompatible(svg: Element, fileTimestamp: number): boolean {
   return diff <= TIMESTAMP_TOLERANCE_MS
 }
 
-function getSvgDimensions(svg: Element): { width: number; height: number; viewBox: { x: number; y: number; width: number; height: number } | null } {
+function getSvgDimensions(svg: Element): { width: number; height: number; viewBox: { x: number; y: number; width: number; height: number } | null; unit: string | null } {
   // Get viewBox first (preferred)
   const viewBoxAttr = svg.getAttribute('viewBox')
   let viewBox: { x: number; y: number; width: number; height: number } | null = null
@@ -383,9 +387,30 @@ function getSvgDimensions(svg: Element): { width: number; height: number; viewBo
     }
   }
   
-  // Get width/height
-  let width = parseFloat(svg.getAttribute('width') || '')
-  let height = parseFloat(svg.getAttribute('height') || '')
+  // Get width/height with unit detection
+  const widthAttr = svg.getAttribute('width')
+  const heightAttr = svg.getAttribute('height')
+  
+  // Extract unit (mm, px, etc.)
+  let unit: string | null = null
+  let width = NaN
+  let height = NaN
+  
+  if (widthAttr) {
+    const widthMatch = widthAttr.match(/^([\d.]+)\s*(px|mm|cm|in)?$/i)
+    if (widthMatch) {
+      width = parseFloat(widthMatch[1])
+      unit = widthMatch[2] || null
+    }
+  }
+  
+  if (heightAttr) {
+    const heightMatch = heightAttr.match(/^([\d.]+)\s*(px|mm|cm|in)?$/i)
+    if (heightMatch) {
+      height = parseFloat(heightMatch[1])
+      if (!unit) unit = heightMatch[2] || null
+    }
+  }
   
   // If no width/height but have viewBox, use viewBox
   if ((isNaN(width) || isNaN(height)) && viewBox) {
@@ -396,18 +421,37 @@ function getSvgDimensions(svg: Element): { width: number; height: number; viewBo
   // Default to 1000 if still not found
   if (isNaN(width)) width = 1000
   if (isNaN(height)) height = 1000
+  if (!unit) unit = 'px'
   
-  console.log(`[Import] SVG dimensions: ${width}x${height}, viewBox:`, viewBox)
+  console.log(`[Import] SVG dimensions: ${width}x${height}${unit}, viewBox:`, viewBox)
   
-  return { width, height, viewBox }
+  return { width, height, viewBox, unit }
 }
 
 const DEFAULT_ARTBOARD_SIZE = 1000
 
-function calculateScaleFactor(svgWidthPx: number, svgHeightPx: number): number {
-  // SVG dimensions are in pixels, convert to mm
-  const svgWidthMm = svgWidthPx * DEFAULTS.PX_TO_MM
-  const svgHeightMm = svgHeightPx * DEFAULTS.PX_TO_MM
+function calculateScaleFactor(svgWidth: number, svgHeight: number, unit: string | null): number {
+  // If dimensions are in mm or viewBox is in mm (our app uses mm), no scaling needed
+  if (unit === 'mm') {
+    console.log(`[Import] Dimensions in mm, no scaling needed`)
+    return 1
+  }
+  
+  // For other units (px, cm, in) or no unit, convert to mm
+  let svgWidthMm = svgWidth
+  let svgHeightMm = svgHeight
+  
+  if (unit === 'cm') {
+    svgWidthMm = svgWidth * 10
+    svgHeightMm = svgHeight * 10
+  } else if (unit === 'in') {
+    svgWidthMm = svgWidth * 25.4
+    svgHeightMm = svgHeight * 25.4
+  } else {
+    // Assume px, convert using DPI
+    svgWidthMm = svgWidth * DEFAULTS.PX_TO_MM
+    svgHeightMm = svgHeight * DEFAULTS.PX_TO_MM
+  }
   
   // Scale to fit within 1000x1000 mm while preserving aspect ratio
   const targetSize = DEFAULT_ARTBOARD_SIZE
@@ -415,7 +459,7 @@ function calculateScaleFactor(svgWidthPx: number, svgHeightPx: number): number {
   const scaleY = targetSize / svgHeightMm
   const scale = Math.min(scaleX, scaleY)
   
-  console.log(`[Import] SVG size: ${svgWidthPx}x${svgHeightPx}px = ${svgWidthMm.toFixed(2)}x${svgHeightMm.toFixed(2)}mm, scale: ${scale.toFixed(4)}`)
+  console.log(`[Import] SVG size: ${svgWidth}x${svgHeight}${unit || ''} = ${svgWidthMm.toFixed(2)}x${svgHeightMm.toFixed(2)}mm, scale: ${scale.toFixed(4)}`)
   
   return scale
 }
@@ -563,8 +607,8 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
     }
 
     // Get SVG dimensions and calculate scale factor
-    const { width: svgWidth, height: svgHeight } = getSvgDimensions(svg)
-    const scaleFactor = calculateScaleFactor(svgWidth, svgHeight)
+    const { width: svgWidth, height: svgHeight, unit } = getSvgDimensions(svg)
+    const scaleFactor = calculateScaleFactor(svgWidth, svgHeight, unit)
     console.log(`[Import] Scale factor: ${scaleFactor}`)
 
     if (fileTimestamp && isLaserSvgCompatible(svg, fileTimestamp)) {
