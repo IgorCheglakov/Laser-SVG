@@ -1537,7 +1537,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({ element, isPreview, isSel
   const commonProps = {
     fill: 'none',
     stroke: isSelected ? '#007acc' : (element.stroke || '#000000'),
-    strokeWidth: isSelected ? 0.5 : 0.5,
+    strokeWidth: 1,
     vectorEffect: 'non-scaling-stroke' as const,
     opacity: isPreview ? 0.7 : 1,
     strokeDasharray: isPreview ? '2,2' : undefined,
