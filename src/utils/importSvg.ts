@@ -303,9 +303,20 @@ function getSvgElementAttributes(el: Element): {
   fill: string | null
   name: string
 } {
-  const stroke = el.getAttribute('stroke') || '#000000'
+  let stroke = el.getAttribute('stroke')
   const strokeWidth = parseFloat(el.getAttribute('stroke-width') || '') || STANDARD_STROKE_WIDTH
   const fill = el.getAttribute('fill')
+  
+  // If no stroke but has fill, use fill as stroke (convert filled shape to outline)
+  if (!stroke && fill && fill !== 'none') {
+    stroke = fill
+  }
+  
+  // Default to black if no stroke
+  if (!stroke || stroke === 'none') {
+    stroke = '#000000'
+  }
+  
   const name = el.getAttribute('data-name') || el.getAttribute('id') || ''
 
   return {
@@ -431,7 +442,9 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
             const d = el.getAttribute('d')
             if (d) {
               points = convertPathToPoints(d)
-              isClosed = d.toUpperCase().includes('Z')
+              const fill = el.getAttribute('fill')
+              // Closed if has Z or has fill (filled shape)
+              isClosed = d.toUpperCase().includes('Z') || (!!fill && fill !== 'none')
             }
             break
           }
@@ -444,9 +457,10 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
 
         const attrs = getSvgElementAttributes(el)
         
-        if (attrs.fill && attrs.fill !== 'none') {
-          console.log(`[Import] Skipping ${el.tagName}: has fill (not supported)`)
-          return
+        // Use fill color as stroke if no stroke (convert filled shape to outline)
+        let finalStroke = attrs.stroke
+        if ((!el.getAttribute('stroke') || el.getAttribute('stroke') === 'none') && attrs.fill && attrs.fill !== 'none') {
+          finalStroke = colorToPalette(attrs.fill)
         }
 
         const name = attrs.name || `${el.tagName} ${elementIndex + 1}`
@@ -458,7 +472,7 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
           visible: true,
           locked: false,
           points,
-          stroke: attrs.stroke,
+          stroke: finalStroke,
           strokeWidth: attrs.strokeWidth,
           isClosedShape: isClosed,
         }
