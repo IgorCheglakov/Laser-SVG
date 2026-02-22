@@ -371,6 +371,70 @@ function isLaserSvgCompatible(svg: Element, fileTimestamp: number): boolean {
   return diff <= TIMESTAMP_TOLERANCE_MS
 }
 
+function getSvgDimensions(svg: Element): { width: number; height: number; viewBox: { x: number; y: number; width: number; height: number } | null } {
+  // Get viewBox first (preferred)
+  const viewBoxAttr = svg.getAttribute('viewBox')
+  let viewBox: { x: number; y: number; width: number; height: number } | null = null
+  
+  if (viewBoxAttr) {
+    const parts = viewBoxAttr.split(/[\s,]+/).map(Number)
+    if (parts.length === 4 && !parts.some(isNaN)) {
+      viewBox = { x: parts[0], y: parts[1], width: parts[2], height: parts[3] }
+    }
+  }
+  
+  // Get width/height
+  let width = parseFloat(svg.getAttribute('width') || '')
+  let height = parseFloat(svg.getAttribute('height') || '')
+  
+  // If no width/height but have viewBox, use viewBox
+  if ((isNaN(width) || isNaN(height)) && viewBox) {
+    width = viewBox.width
+    height = viewBox.height
+  }
+  
+  // Default to 1000 if still not found
+  if (isNaN(width)) width = 1000
+  if (isNaN(height)) height = 1000
+  
+  console.log(`[Import] SVG dimensions: ${width}x${height}, viewBox:`, viewBox)
+  
+  return { width, height, viewBox }
+}
+
+const DEFAULT_ARTBOARD_SIZE = 1000
+
+function calculateScaleFactor(svgWidth: number, svgHeight: number): number {
+  // Scale to fit within 1000x1000 while preserving aspect ratio
+  const targetSize = DEFAULT_ARTBOARD_SIZE
+  const scaleX = targetSize / svgWidth
+  const scaleY = targetSize / svgHeight
+  return Math.min(scaleX, scaleY)
+}
+
+function scalePoints(points: Point[], scaleFactor: number): Point[] {
+  return points.map(p => {
+    const scaled: Point = {
+      x: p.x * scaleFactor,
+      y: p.y * scaleFactor,
+      vertexType: p.vertexType,
+    }
+    if (p.prevControlHandle) {
+      scaled.prevControlHandle = {
+        x: p.prevControlHandle.x * scaleFactor,
+        y: p.prevControlHandle.y * scaleFactor,
+      }
+    }
+    if (p.nextControlHandle) {
+      scaled.nextControlHandle = {
+        x: p.nextControlHandle.x * scaleFactor,
+        y: p.nextControlHandle.y * scaleFactor,
+      }
+    }
+    return scaled
+  })
+}
+
 export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGElement[] {
   console.log('[Import] Starting importFromSVG, content length:', svgContent.length, 'fileTimestamp:', fileTimestamp)
   
@@ -394,6 +458,11 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
       console.error('[Import] Invalid SVG: no svg element found')
       return []
     }
+
+    // Get SVG dimensions and calculate scale factor
+    const { width: svgWidth, height: svgHeight } = getSvgDimensions(svg)
+    const scaleFactor = calculateScaleFactor(svgWidth, svgHeight)
+    console.log(`[Import] Scale factor: ${scaleFactor}`)
 
     if (fileTimestamp && isLaserSvgCompatible(svg, fileTimestamp)) {
       console.log('[Import] File is LaserSVG compatible, using fast path')
@@ -496,7 +565,7 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
           name,
           visible: true,
           locked: false,
-          points,
+          points: scalePoints(points, scaleFactor),
           stroke: finalStroke,
           strokeWidth: attrs.strokeWidth,
           isClosedShape: isClosed,
