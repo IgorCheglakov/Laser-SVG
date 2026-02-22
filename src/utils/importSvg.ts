@@ -501,31 +501,21 @@ export function centerElements(elements: SVGElement[], _viewState: { scale: numb
 
   if (minX === Infinity) return elements
 
+  const elementsWidth = maxX - minX
+  const elementsHeight = maxY - minY
+
+  if (elementsWidth > artboardWidth || elementsHeight > artboardHeight) {
+    return elements
+  }
+
   const elementsCenterX = (minX + maxX) / 2
   const elementsCenterY = (minY + maxY) / 2
 
   const viewCenterX = artboardWidth / 2
   const viewCenterY = artboardHeight / 2
 
-  let offsetX = viewCenterX - elementsCenterX
-  let offsetY = viewCenterY - elementsCenterY
-
-  if (minX + offsetX < 0) {
-    offsetX = -minX
-  }
-  if (minY + offsetY < 0) {
-    offsetY = -minY
-  }
-  if (maxX + offsetX > artboardWidth) {
-    offsetX = artboardWidth - maxX
-  }
-  if (maxY + offsetY > artboardHeight) {
-    offsetY = artboardHeight - maxY
-  }
-
-  if (offsetX === 0 && offsetY === 0) {
-    return elements
-  }
+  const offsetX = viewCenterX - elementsCenterX
+  const offsetY = viewCenterY - elementsCenterY
 
   return elements.map(el => {
     if ('points' in el && el.points) {
