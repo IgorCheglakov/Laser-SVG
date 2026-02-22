@@ -85,7 +85,7 @@ export function exportToSVG(elements: SVGElement[], width: number, height: numbe
     if (!d) continue
     
     const stroke = pointEl.stroke || '#000000'
-    const strokeWidth = pointEl.strokeWidth || 0.5
+    const strokeWidth = pointEl.strokeWidth || 0.25
     
     svgLines.push(`    <path`)
     svgLines.push(`      d="${d}"`)
