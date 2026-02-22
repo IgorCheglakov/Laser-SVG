@@ -190,7 +190,9 @@ ipcMain.handle('file:open', async () => {
   
   try {
     const content = fs.readFileSync(filePath, 'utf-8')
-    return { content, path: filePath }
+    const stats = fs.statSync(filePath)
+    const timestamp = Math.floor(stats.mtimeMs)
+    return { content, path: filePath, timestamp }
   } catch (error) {
     console.error('Error opening file:', error)
     return null

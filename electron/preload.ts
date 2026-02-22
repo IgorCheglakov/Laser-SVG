@@ -20,7 +20,7 @@ export interface ElectronAPI {
   removeMenuListener: () => void
   /** File operations */
   saveFile: (content: string, defaultPath?: string) => Promise<string | null>
-  openFile: () => Promise<{ content: string; path: string } | null>
+  openFile: () => Promise<{ content: string; path: string; timestamp: number } | null>
 }
 
 const api: ElectronAPI = {

@@ -10,6 +10,7 @@ import { useEditorStore, undo, redo } from '@store/index'
 import { HOTKEYS } from '@constants/index'
 import { exportToSVG } from '@/utils/exportSvg'
 import { importFromSVG } from '@/utils/importSvg'
+import type { SVGElement, PointElement } from '@/types-app/index'
 
 /**
  * Global keyboard shortcuts handler
@@ -211,12 +212,13 @@ const useMenuActions = () => {
             console.log('[App] Open file action triggered')
             window.electronAPI?.openFile().then((result) => {
               if (result) {
-                console.log('[App] File opened:', result.path, 'content length:', result.content.length)
+                console.log('[App] File opened:', result.path, 'content length:', result.content.length, 'timestamp:', result.timestamp)
                 console.log('[App] Content preview:', result.content.substring(0, 200))
-                const importedElements = importFromSVG(result.content)
+                const importedElements = importFromSVG(result.content, result.timestamp)
                 console.log('[App] Imported elements count:', importedElements.length)
-                importedElements.forEach(element => {
-                  console.log('[App] Adding element:', element.name, 'points:', 'points' in element ? (element as any).points?.length : 'N/A')
+                importedElements.forEach((element: SVGElement) => {
+                  const points = 'points' in element ? (element as PointElement).points?.length : 'N/A'
+                  console.log('[App] Adding element:', element.name, 'points:', points)
                   addElement(element)
                 })
                 console.log('[App] All elements added')
