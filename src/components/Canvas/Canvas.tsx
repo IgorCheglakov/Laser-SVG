@@ -1098,6 +1098,7 @@ export const Canvas: React.FC = () => {
         if (activeTool === 'directSelection') {
           // Select vertices within the selection box
           const newSelectedVertices = new Set<string>()
+          const elementsWithSelectedVertices: string[] = []
           
           for (const el of elements) {
             if (!('points' in el)) continue
@@ -1107,6 +1108,9 @@ export const Canvas: React.FC = () => {
               if (p.x >= boxX && p.x <= boxX + boxWidth && 
                   p.y >= boxY && p.y <= boxY + boxHeight) {
                 newSelectedVertices.add(`${el.id}:${index}`)
+                if (!elementsWithSelectedVertices.includes(el.id)) {
+                  elementsWithSelectedVertices.push(el.id)
+                }
               }
             })
           }
@@ -1116,8 +1120,12 @@ export const Canvas: React.FC = () => {
               const next = new Set(selectedVertices)
               newSelectedVertices.forEach(v => next.add(v))
               setSelectedVertices(next)
+              // Also add elements to selectedIds
+              const newSelectedIds = [...new Set([...selectedIds, ...elementsWithSelectedVertices])]
+              setSelectedIds(newSelectedIds)
             } else {
               setSelectedVertices(newSelectedVertices)
+              setSelectedIds(elementsWithSelectedVertices)
             }
           } else if (!(e.ctrlKey || e.metaKey)) {
             setSelectedVertices(new Set())
