@@ -793,6 +793,9 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
           isClosedShape: isClosed,
         }
 
+        const elementBounds = calculateBounds(pointElement.points)
+        console.log(`[Import] Element "${name}" position on canvas: x=${elementBounds.x.toFixed(2)}, y=${elementBounds.y.toFixed(2)}, width=${elementBounds.width.toFixed(2)}, height=${elementBounds.height.toFixed(2)}`)
+
         elements.push(pointElement)
         elementIndex++
         console.log(`[Import] Added ${el.tagName}: ${name}, points: ${points.length}, closed: ${isClosed}`)
