@@ -10,6 +10,7 @@ import { UI_STRINGS, COLOR_PALETTE, getContrastColor } from '@constants/index'
 import { Square, Circle, Minus } from 'lucide-react'
 import type { PointElement, SVGElement } from '@/types-app/index'
 import { convertToCorner, convertToStraight, convertToSmooth } from '@/types-app/point'
+import { transformPoints, parseHandle } from '@/utils/transform'
 
 /**
  * Vertex Properties Panel for Direct Selection tool
@@ -397,15 +398,14 @@ export const Panels: React.FC = () => {
       return
     }
     
-    const scaleX = value / bounds.width
+    const deltaW = value - bounds.width
     const selectedElement = elements.find(el => el.id === selectedIds[0])
     if (!selectedElement || !('points' in selectedElement)) return
     
     const pointEl = selectedElement as PointElement
-    const newPoints = pointEl.points.map(p => ({
-      ...p,
-      x: bounds.x + (p.x - bounds.x) * scaleX,
-    }))
+    const handle = parseHandle('e')
+    const delta = { dx: deltaW, dy: 0 }
+    const newPoints = transformPoints(pointEl.points, bounds, delta, handle, false)
     updateElement(selectedElement.id, { points: newPoints } as Partial<SVGElement>)
     setLocalValues(prev => ({ ...prev, width: value.toFixed(1) }))
   }
@@ -418,15 +418,14 @@ export const Panels: React.FC = () => {
       return
     }
     
-    const scaleY = value / bounds.height
+    const deltaH = value - bounds.height
     const selectedElement = elements.find(el => el.id === selectedIds[0])
     if (!selectedElement || !('points' in selectedElement)) return
     
     const pointEl = selectedElement as PointElement
-    const newPoints = pointEl.points.map(p => ({
-      ...p,
-      y: bounds.y + (p.y - bounds.y) * scaleY,
-    }))
+    const handle = parseHandle('s')
+    const delta = { dx: 0, dy: deltaH }
+    const newPoints = transformPoints(pointEl.points, bounds, delta, handle, false)
     updateElement(selectedElement.id, { points: newPoints } as Partial<SVGElement>)
     setLocalValues(prev => ({ ...prev, height: value.toFixed(1) }))
   }
