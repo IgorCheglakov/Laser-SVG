@@ -597,6 +597,13 @@ export function cropElementsToBounds(
   })
 }
 
+/**
+ * Check if SVG content has isLaserSvgCompatible tag (without full parsing)
+ */
+export function isSvgLaserCompatible(svgContent: string): boolean {
+  return svgContent.includes('isLaserSvgCompatible')
+}
+
 export function centerElements(
   elements: SVGElement[], 
   targetCenterX: number, 

@@ -9,6 +9,7 @@ declare global {
       removeMenuListener: () => void
       saveFile: (content: string, defaultPath?: string) => Promise<string | null>
       openFile: () => Promise<{ content: string; path: string; timestamp: number } | null>
+      showMessageBox: (options: { type?: string; title?: string; message: string; buttons?: string[] }) => Promise<{ response: number }>
     }
   }
 }

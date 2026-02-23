@@ -21,6 +21,8 @@ export interface ElectronAPI {
   /** File operations */
   saveFile: (content: string, defaultPath?: string) => Promise<string | null>
   openFile: () => Promise<{ content: string; path: string; timestamp: number } | null>
+  /** Dialog operations */
+  showMessageBox: (options: { type?: string; title?: string; message: string; buttons?: string[] }) => Promise<{ response: number }>
 }
 
 const api: ElectronAPI = {
@@ -36,6 +38,8 @@ const api: ElectronAPI = {
     ipcRenderer.invoke('file:save', content, defaultPath),
   openFile: () => 
     ipcRenderer.invoke('file:open'),
+  showMessageBox: (options) => 
+    ipcRenderer.invoke('dialog:showMessageBox', options),
 }
 
 // Expose the API to the renderer process

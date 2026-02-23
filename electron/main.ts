@@ -198,3 +198,14 @@ ipcMain.handle('file:open', async () => {
     return null
   }
 })
+
+// Show message box handler
+ipcMain.handle('dialog:showMessageBox', async (_event, options: { type?: 'none' | 'info' | 'error' | 'question' | 'warning'; title?: string; message: string; buttons?: string[] }) => {
+  const result = await dialog.showMessageBox({
+    type: options.type || 'info',
+    title: options.title || 'LaserSVG Editor',
+    message: options.message,
+    buttons: options.buttons || ['OK'],
+  })
+  return { response: result.response }
+})
