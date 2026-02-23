@@ -361,8 +361,8 @@ export const Panels: React.FC = () => {
     
     const pointEl = selectedElement as PointElement
     const newPoints = pointEl.points.map(p => ({
+      ...p,
       x: p.x + deltaX,
-      y: p.y,
     }))
     updateElement(selectedElement.id, { points: newPoints } as Partial<SVGElement>)
     setLocalValues(prev => ({ ...prev, x: value.toFixed(1) }))
@@ -382,7 +382,7 @@ export const Panels: React.FC = () => {
     
     const pointEl = selectedElement as PointElement
     const newPoints = pointEl.points.map(p => ({
-      x: p.x,
+      ...p,
       y: p.y + deltaY,
     }))
     updateElement(selectedElement.id, { points: newPoints } as Partial<SVGElement>)
@@ -403,8 +403,8 @@ export const Panels: React.FC = () => {
     
     const pointEl = selectedElement as PointElement
     const newPoints = pointEl.points.map(p => ({
+      ...p,
       x: bounds.x + (p.x - bounds.x) * scaleX,
-      y: p.y,
     }))
     updateElement(selectedElement.id, { points: newPoints } as Partial<SVGElement>)
     setLocalValues(prev => ({ ...prev, width: value.toFixed(1) }))
@@ -424,7 +424,7 @@ export const Panels: React.FC = () => {
     
     const pointEl = selectedElement as PointElement
     const newPoints = pointEl.points.map(p => ({
-      x: p.x,
+      ...p,
       y: bounds.y + (p.y - bounds.y) * scaleY,
     }))
     updateElement(selectedElement.id, { points: newPoints } as Partial<SVGElement>)
