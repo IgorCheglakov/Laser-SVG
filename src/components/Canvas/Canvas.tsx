@@ -29,6 +29,7 @@ export const Canvas: React.FC = () => {
   const [previewElement, setPreviewElement] = useState<PointElement | null>(null)
   const [hoveredElementId, setHoveredElementId] = useState<string | null>(null)
   const [debugSamples, setDebugSamples] = useState<Point[]>([])
+  const [selectionBox, setSelectionBox] = useState<{ start: Point; end: Point } | null>(null)
   const startPointRef = useRef<Point>({ x: 0, y: 0 })
   const isDrawingRef = useRef(false)
   const isMovingRef = useRef(false)
@@ -480,6 +481,8 @@ export const Canvas: React.FC = () => {
         } else {
           if (!e.ctrlKey && !e.metaKey) {
             setSelectedIds([])
+            // Start selection box
+            setSelectionBox({ start: { x: e.clientX, y: e.clientY }, end: { x: e.clientX, y: e.clientY } })
           }
         }
       } else if (activeTool === 'directSelection') {
@@ -500,6 +503,8 @@ export const Canvas: React.FC = () => {
         } else {
           if (!e.ctrlKey && !e.metaKey) {
             setSelectedIds([])
+            // Start selection box
+            setSelectionBox({ start: { x: e.clientX, y: e.clientY }, end: { x: e.clientX, y: e.clientY } })
           }
         }
       } else if (activeTool === 'rectangle' || activeTool === 'ellipse' || activeTool === 'line' || activeTool === 'trapezoid') {
@@ -582,7 +587,7 @@ export const Canvas: React.FC = () => {
       
       tool.onMouseDown(e, toolContext)
     }
-  }, [activeTool, tool, toolContext, screenToCanvas, snapToGrid, findElementAtPoint, selectedIds, setSelectedIds, elements])
+  }, [activeTool, tool, toolContext, screenToCanvas, snapToGrid, findElementAtPoint, selectedIds, setSelectedIds, setSelectionBox, elements])
 
   /**
    * Handle mouse move
@@ -599,6 +604,11 @@ export const Canvas: React.FC = () => {
     
     // Track hovered element for cursor change
     if (activeTool === 'selection' || activeTool === 'directSelection') {
+      // Update selection box if it's being drawn
+      if (selectionBox) {
+        setSelectionBox(prev => prev ? { ...prev, end: { x: e.clientX, y: e.clientY } } : null)
+      }
+      
       const point = screenToCanvas(e.clientX, e.clientY)
       const hovered = findElementAtPoint(point)
       setHoveredElementId(hovered ? hovered.id : null)
@@ -998,7 +1008,7 @@ export const Canvas: React.FC = () => {
     }
     
     tool.onMouseMove(e, toolContext)
-  }, [isPanning, panStart, pan, isResizingRef, isMovingRef, isRotatingRef, rotationStartRef, rotationShiftRef, resizeHandleRef, resizeStartRef, initialBoxRef, selectedIds, elements, previewElement, activeTool, tool, toolContext, screenToCanvas, snapToGrid, updateElementNoHistory, calculateAngle, settings, findElementAtPoint, setHoveredElementId])
+  }, [isPanning, panStart, pan, isResizingRef, isMovingRef, isRotatingRef, rotationStartRef, rotationShiftRef, resizeHandleRef, resizeStartRef, initialBoxRef, selectedIds, elements, previewElement, activeTool, tool, toolContext, screenToCanvas, snapToGrid, updateElementNoHistory, calculateAngle, settings, findElementAtPoint, setHoveredElementId, selectionBox, setSelectionBox])
 
   /**
    * Handle mouse up
@@ -1072,8 +1082,51 @@ export const Canvas: React.FC = () => {
       setPreviewElement(null)
     }
     
+    // Handle selection box
+    if (selectionBox && (activeTool === 'selection' || activeTool === 'directSelection')) {
+      // Convert screen coordinates to canvas coordinates
+      const startCanvas = screenToCanvas(selectionBox.start.x, selectionBox.start.y)
+      const endCanvas = screenToCanvas(selectionBox.end.x, selectionBox.end.y)
+      
+      // Calculate selection box bounds in canvas coordinates
+      const boxX = Math.min(startCanvas.x, endCanvas.x)
+      const boxY = Math.min(startCanvas.y, endCanvas.y)
+      const boxWidth = Math.abs(endCanvas.x - startCanvas.x)
+      const boxHeight = Math.abs(endCanvas.y - startCanvas.y)
+      
+      if (boxWidth > 5 || boxHeight > 5) {
+        // Find elements that have at least one vertex within the selection box
+        const selectedElements: string[] = []
+        
+        for (const el of elements) {
+          if (!('points' in el)) continue
+          const pointEl = el as PointElement
+          
+          for (const p of pointEl.points) {
+            if (p.x >= boxX && p.x <= boxX + boxWidth && 
+                p.y >= boxY && p.y <= boxY + boxHeight) {
+              selectedElements.push(el.id)
+              break
+            }
+          }
+        }
+        
+        if (selectedElements.length > 0) {
+          if (e.ctrlKey || e.metaKey) {
+            // Add to existing selection
+            const newSelection = [...new Set([...selectedIds, ...selectedElements])]
+            setSelectedIds(newSelection)
+          } else {
+            setSelectedIds(selectedElements)
+          }
+        }
+      }
+      
+      setSelectionBox(null)
+    }
+    
     tool.onMouseUp(e, toolContext)
-  }, [isPanning, previewElement, tool, toolContext, addElement, calculateBounds])
+  }, [isPanning, previewElement, tool, toolContext, addElement, calculateBounds, selectionBox, activeTool, screenToCanvas, selectedIds, setSelectedIds, elements])
 
   /**
    * Handle context menu
@@ -1410,6 +1463,21 @@ export const Canvas: React.FC = () => {
           offsetY={view.offsetY}
           containerWidth={containerRef.current.clientWidth}
           containerHeight={containerRef.current.clientHeight}
+        />
+      )}
+
+      {selectionBox && (
+        <div
+          style={{
+            position: 'absolute',
+            left: Math.min(selectionBox.start.x, selectionBox.end.x),
+            top: Math.min(selectionBox.start.y, selectionBox.end.y),
+            width: Math.abs(selectionBox.end.x - selectionBox.start.x),
+            height: Math.abs(selectionBox.end.y - selectionBox.start.y),
+            border: '1px dashed #00ff00',
+            backgroundColor: 'rgba(0, 255, 0, 0.1)',
+            pointerEvents: 'none',
+          }}
         />
       )}
     </div>
