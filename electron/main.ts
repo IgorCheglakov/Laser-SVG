@@ -42,7 +42,7 @@ const createMenu = (mainWindow: BrowserWindow): Menu => {
       label: 'File',
       submenu: [
         { label: 'New', accelerator: 'CmdOrCtrl+N', click: () => sendMenuAction('new') },
-        { label: 'Open', accelerator: 'CmdOrCtrl+O', click: () => sendMenuAction('open') },
+        { label: 'Add to current document', accelerator: 'CmdOrCtrl+Shift+O', click: () => sendMenuAction('open') },
         { label: 'Save', accelerator: 'CmdOrCtrl+S', click: () => sendMenuAction('save') },
         { type: 'separator' },
         { label: 'Exit', click: () => app.quit() },
