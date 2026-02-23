@@ -532,6 +532,69 @@ function calculateBounds(points: Point[]): { x: number; y: number; width: number
   }
 }
 
+export function cropElementsToBounds(
+  elements: SVGElement[],
+  artboardWidth: number,
+  artboardHeight: number
+): SVGElement[] {
+  if (elements.length === 0) return elements
+
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+
+  for (const el of elements) {
+    if ('points' in el && el.points) {
+      const bounds = calculateBounds(el.points)
+      minX = Math.min(minX, bounds.x)
+      minY = Math.min(minY, bounds.y)
+      maxX = Math.max(maxX, bounds.x + bounds.width)
+      maxY = Math.max(maxY, bounds.y + bounds.height)
+    }
+  }
+
+  if (minX === Infinity) return elements
+
+  const elementsWidth = maxX - minX
+  const elementsHeight = maxY - minY
+
+  if (elementsWidth <= artboardWidth && elementsHeight <= artboardHeight) {
+    return elements
+  }
+
+  const scaleX = artboardWidth / elementsWidth
+  const scaleY = artboardHeight / elementsHeight
+  const scale = Math.min(scaleX, scaleY, 1)
+
+  const centerX = (minX + maxX) / 2
+  const centerY = (minY + maxY) / 2
+  const scaledWidth = elementsWidth * scale
+  const scaledHeight = elementsHeight * scale
+  const newMinX = centerX - scaledWidth / 2
+  const newMinY = centerY - scaledHeight / 2
+
+  return elements.map(el => {
+    if ('points' in el && el.points) {
+      const newPoints = el.points.map(p => ({
+        ...p,
+        x: (p.x - minX) * scale + newMinX,
+        y: (p.y - minY) * scale + newMinY,
+        prevControlHandle: p.prevControlHandle ? {
+          x: (p.prevControlHandle.x - minX) * scale + newMinX,
+          y: (p.prevControlHandle.y - minY) * scale + newMinY,
+        } : undefined,
+        nextControlHandle: p.nextControlHandle ? {
+          x: (p.nextControlHandle.x - minX) * scale + newMinX,
+          y: (p.nextControlHandle.y - minY) * scale + newMinY,
+        } : undefined,
+      }))
+      return { ...el, points: newPoints }
+    }
+    return el
+  })
+}
+
 export function centerElements(
   elements: SVGElement[], 
   targetCenterX: number, 

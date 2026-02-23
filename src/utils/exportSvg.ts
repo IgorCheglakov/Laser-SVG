@@ -4,63 +4,7 @@
  * Converts PointElement array to SVG string compatible with Lightburn.
  */
 
-import type { PointElement, SVGElement, Point } from '@/types-app/index'
-
-/**
- * Calculate bounding box for a single point with Bezier control handles
- */
-function getPointBounds(p: Point): { minX: number; minY: number; maxX: number; maxY: number } {
-  let minX = p.x
-  let minY = p.y
-  let maxX = p.x
-  let maxY = p.y
-  
-  if (p.prevControlHandle) {
-    minX = Math.min(minX, p.prevControlHandle.x)
-    minY = Math.min(minY, p.prevControlHandle.y)
-    maxX = Math.max(maxX, p.prevControlHandle.x)
-    maxY = Math.max(maxY, p.prevControlHandle.y)
-  }
-  if (p.nextControlHandle) {
-    minX = Math.min(minX, p.nextControlHandle.x)
-    minY = Math.min(minY, p.nextControlHandle.y)
-    maxX = Math.max(maxX, p.nextControlHandle.x)
-    maxY = Math.max(maxY, p.nextControlHandle.y)
-  }
-  
-  return { minX, minY, maxX, maxY }
-}
-
-/**
- * Calculate bounding box for all elements
- */
-function calculateElementsBounds(elements: SVGElement[]): { x: number; y: number; width: number; height: number } | null {
-  let minX = Infinity
-  let minY = Infinity
-  let maxX = -Infinity
-  let maxY = -Infinity
-  
-  for (const element of elements) {
-    if (!('points' in element) || !element.points || !element.visible) continue
-    
-    for (const p of element.points) {
-      const bounds = getPointBounds(p)
-      minX = Math.min(minX, bounds.minX)
-      minY = Math.min(minY, bounds.minY)
-      maxX = Math.max(maxX, bounds.maxX)
-      maxY = Math.max(maxY, bounds.maxY)
-    }
-  }
-  
-  if (minX === Infinity) return null
-  
-  return {
-    x: minX,
-    y: minY,
-    width: maxX - minX,
-    height: maxY - minY,
-  }
-}
+import type { PointElement, SVGElement } from '@/types-app/index'
 
 /**
  * Generate SVG path data for points with Bezier curve support
@@ -125,23 +69,10 @@ function generatePathData(points: PointElement['points'], isClosed: boolean): st
 export function exportToSVG(elements: SVGElement[], _width: number, _height: number): string {
   const timestamp = Date.now()
   
-  // Calculate bounding box of all elements
-  const bounds = calculateElementsBounds(elements)
-  
-  // Determine canvas size - use bounds if available, otherwise use defaults
-  let canvasX = 0
-  let canvasY = 0
-  let canvasWidth = 1000
-  let canvasHeight = 1000
-  
-  if (bounds) {
-    // Add small padding
-    const padding = 1
-    canvasX = bounds.x - padding
-    canvasY = bounds.y - padding
-    canvasWidth = bounds.width + padding * 2
-    canvasHeight = bounds.height + padding * 2
-  }
+  const canvasX = 0
+  const canvasY = 0
+  const canvasWidth = 1000
+  const canvasHeight = 1000
   
   const svgLines: string[] = [
     `<?xml version="1.0" encoding="UTF-8"?>`,
