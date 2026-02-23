@@ -1517,8 +1517,8 @@ export const Canvas: React.FC = () => {
               top,
               width,
               height,
-              border: '1px dashed #00ff00',
-              backgroundColor: 'rgba(0, 255, 0, 0.1)',
+              border: '1px dashed #0066ff',
+              backgroundColor: 'rgba(0, 102, 255, 0.1)',
               pointerEvents: 'none',
             }}
           />
