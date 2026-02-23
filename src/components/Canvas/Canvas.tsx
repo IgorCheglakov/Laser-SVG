@@ -1466,20 +1466,28 @@ export const Canvas: React.FC = () => {
         />
       )}
 
-      {selectionBox && (
-        <div
-          style={{
-            position: 'absolute',
-            left: Math.min(selectionBox.start.x, selectionBox.end.x),
-            top: Math.min(selectionBox.start.y, selectionBox.end.y),
-            width: Math.abs(selectionBox.end.x - selectionBox.start.x),
-            height: Math.abs(selectionBox.end.y - selectionBox.start.y),
-            border: '1px dashed #00ff00',
-            backgroundColor: 'rgba(0, 255, 0, 0.1)',
-            pointerEvents: 'none',
-          }}
-        />
-      )}
+      {selectionBox && containerRef.current && (() => {
+        const rect = containerRef.current.getBoundingClientRect()
+        const left = Math.min(selectionBox.start.x, selectionBox.end.x) - rect.left
+        const top = Math.min(selectionBox.start.y, selectionBox.end.y) - rect.top
+        const width = Math.abs(selectionBox.end.x - selectionBox.start.x)
+        const height = Math.abs(selectionBox.end.y - selectionBox.start.y)
+        
+        return (
+          <div
+            style={{
+              position: 'absolute',
+              left,
+              top,
+              width,
+              height,
+              border: '1px dashed #00ff00',
+              backgroundColor: 'rgba(0, 255, 0, 0.1)',
+              pointerEvents: 'none',
+            }}
+          />
+        )
+      })()}
     </div>
   )
 }
