@@ -8,7 +8,7 @@ import { useMemo, useState } from 'react'
 import { useEditorStore } from '@store/index'
 import { UI_STRINGS, COLOR_PALETTE, getContrastColor } from '@constants/index'
 import { Square, Circle, Minus } from 'lucide-react'
-import type { PointElement, SVGElement } from '@/types-app/index'
+import type { PointElement, SVGElement, Point } from '@/types-app/index'
 import { convertToCorner, convertToStraight, convertToSmooth } from '@/types-app/point'
 import { transformPoints, parseHandle } from '@/utils/transform'
 
@@ -143,29 +143,41 @@ const VertexPropertiesPanel: React.FC<{
   }, [selectedVertices, elements])
 
   const handleVertexTypeChange = (newType: 'straight' | 'corner' | 'smooth') => {
+    // Group vertices by element
+    const verticesByElement = new Map<string, number[]>()
+    
     selectedVertices.forEach(key => {
       const [elementId, vertexIndexStr] = key.split(':')
       const vertexIndex = parseInt(vertexIndexStr, 10)
+      
+      if (!verticesByElement.has(elementId)) {
+        verticesByElement.set(elementId, [])
+      }
+      verticesByElement.get(elementId)!.push(vertexIndex)
+    })
+    
+    // Process each element once with all its vertices
+    verticesByElement.forEach((vertexIndices, elementId) => {
       const element = elements.find(el => el.id === elementId)
-      if (element) {
-        let newPoints: PointElement['points']
+      if (!element) return
+      
+      const newPoints = [...element.points]
+      
+      vertexIndices.forEach(vertexIndex => {
+        let converted: Point
         
         if (newType === 'corner') {
-          const converted = convertToCorner(vertexIndex, element.points, element.isClosedShape)
-          newPoints = [...element.points]
-          newPoints[vertexIndex] = converted
+          converted = convertToCorner(vertexIndex, newPoints, element.isClosedShape)
         } else if (newType === 'straight') {
-          const converted = convertToStraight(vertexIndex, element.points, element.isClosedShape)
-          newPoints = [...element.points]
-          newPoints[vertexIndex] = converted
+          converted = convertToStraight(vertexIndex, newPoints, element.isClosedShape)
         } else {
-          const converted = convertToSmooth(vertexIndex, element.points, element.isClosedShape)
-          newPoints = [...element.points]
-          newPoints[vertexIndex] = converted
+          converted = convertToSmooth(vertexIndex, newPoints, element.isClosedShape)
         }
         
-        updateElement(elementId, { points: newPoints } as Partial<SVGElement>)
-      }
+        newPoints[vertexIndex] = converted
+      })
+      
+      updateElement(elementId, { points: newPoints } as Partial<SVGElement>)
     })
   }
 
