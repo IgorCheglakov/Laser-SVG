@@ -220,9 +220,11 @@ const useMenuActions = () => {
                 
                 const croppedElements = cropElementsToBounds(importedElements, settings.artboardWidth, settings.artboardHeight)
                 
-                // Calculate visible center in mm coordinates
-                const visibleCenterX = settings.artboardWidth / 2 - view.offsetX / view.scale / DEFAULTS.MM_TO_PX
-                const visibleCenterY = settings.artboardHeight / 2 - view.offsetY / view.scale / DEFAULTS.MM_TO_PX
+                // Calculate visible center in mm coordinates using screen dimensions from store
+                const centerScreenX = view.screenWidth / 2
+                const centerScreenY = view.screenHeight / 2
+                const visibleCenterX = (centerScreenX - view.offsetX) / view.scale / DEFAULTS.MM_TO_PX
+                const visibleCenterY = (centerScreenY - view.offsetY) / view.scale / DEFAULTS.MM_TO_PX
                 
                 const centeredElements = centerElements(croppedElements, visibleCenterX, visibleCenterY, settings.artboardWidth, settings.artboardHeight)
                 console.log('[App] Imported elements count:', centeredElements.length)

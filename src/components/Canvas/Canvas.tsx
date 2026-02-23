@@ -59,6 +59,7 @@ export const Canvas: React.FC = () => {
     view, 
     settings, 
     setView, 
+    setScreenSize,
     pan,
     elements,
     selectedIds,
@@ -236,6 +237,24 @@ export const Canvas: React.FC = () => {
     container.addEventListener('wheel', onWheel, { passive: false })
     return () => container.removeEventListener('wheel', onWheel)
   }, [handleWheel])
+
+  /**
+   * Update screen size in store on resize
+   */
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const updateSize = () => {
+      setScreenSize(container.clientWidth, container.clientHeight)
+    }
+
+    updateSize()
+
+    const resizeObserver = new ResizeObserver(updateSize)
+    resizeObserver.observe(container)
+    return () => resizeObserver.disconnect()
+  }, [setScreenSize])
 
   /**
    * Calculate bounding box for selected elements
@@ -989,16 +1008,13 @@ export const Canvas: React.FC = () => {
       setIsPanning(false)
       
       // Log visible center coordinates
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect()
-        const centerScreenX = rect.width / 2
-        const centerScreenY = rect.height / 2
-        
-        const centerCanvasX = (centerScreenX - view.offsetX) / view.scale / DEFAULTS.MM_TO_PX
-        const centerCanvasY = (centerScreenY - view.offsetY) / view.scale / DEFAULTS.MM_TO_PX
-        
-        console.log(`[Canvas] Visible center: (${centerCanvasX.toFixed(3)} mm, ${centerCanvasY.toFixed(3)} mm)`)
-      }
+      const centerScreenX = view.screenWidth / 2
+      const centerScreenY = view.screenHeight / 2
+      
+      const centerCanvasX = (centerScreenX - view.offsetX) / view.scale / DEFAULTS.MM_TO_PX
+      const centerCanvasY = (centerScreenY - view.offsetY) / view.scale / DEFAULTS.MM_TO_PX
+      
+      console.log(`[Canvas] Visible center: (${centerCanvasX.toFixed(3)} mm, ${centerCanvasY.toFixed(3)} mm)`)
       
       return
     }

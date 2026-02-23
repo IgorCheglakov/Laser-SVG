@@ -17,6 +17,8 @@ const initialView: ViewState = {
   scale: 1,
   offsetX: 0,
   offsetY: 0,
+  screenWidth: 800,
+  screenHeight: 600,
 }
 
 /**
@@ -144,6 +146,11 @@ export const useEditorStore = create<EditorState>()(
     setView: (view) =>
       set((state) => ({
         view: { ...state.view, ...view },
+      })),
+
+    setScreenSize: (width, height) =>
+      set((state) => ({
+        view: { ...state.view, screenWidth: width, screenHeight: height },
       })),
 
     zoomIn: () =>

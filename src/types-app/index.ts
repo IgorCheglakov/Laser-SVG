@@ -80,6 +80,8 @@ export interface ViewState {
   scale: number
   offsetX: number
   offsetY: number
+  screenWidth: number
+  screenHeight: number
 }
 
 /**
@@ -160,6 +162,7 @@ export interface EditorState {
   
   // View actions
   setView: (view: Partial<ViewState>) => void
+  setScreenSize: (width: number, height: number) => void
   zoomIn: () => void
   zoomOut: () => void
   resetView: () => void
