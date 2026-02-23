@@ -276,13 +276,15 @@ export function convertToSmooth(
         const rad1 = handleAngle1 * Math.PI / 180
         const rad2 = handleAngle2 * Math.PI / 180
         
-        prevHandle = {
-          x: p.x + Math.cos(rad2) * avgDist,
-          y: p.y + Math.sin(rad2) * avgDist,
-        }
+        // nextControlHandle should point towards next vertex (angleToNext direction)
+        // prevControlHandle should point towards previous vertex (opposite direction)
         nextHandle = {
           x: p.x + Math.cos(rad1) * avgDist,
           y: p.y + Math.sin(rad1) * avgDist,
+        }
+        prevHandle = {
+          x: p.x + Math.cos(rad2) * avgDist,
+          y: p.y + Math.sin(rad2) * avgDist,
         }
       }
     } else if (totalPoints > 1) {
@@ -308,12 +310,8 @@ export function convertToSmooth(
         
         const handleLen = dist / 4
         const rad1 = handleAngle * Math.PI / 180
-        const rad2 = normalizeAngle(handleAngle + 180) * Math.PI / 180
         
-        prevHandle = {
-          x: p.x + Math.cos(rad2) * handleLen,
-          y: p.y + Math.sin(rad2) * handleLen,
-        }
+        // For first point of open shape: only nextHandle is relevant (points to next vertex)
         nextHandle = {
           x: p.x + Math.cos(rad1) * handleLen,
           y: p.y + Math.sin(rad1) * handleLen,
@@ -357,13 +355,15 @@ export function convertToSmooth(
         const rad1 = handleAngle1 * Math.PI / 180
         const rad2 = handleAngle2 * Math.PI / 180
         
-        prevHandle = {
-          x: p.x + Math.cos(rad1) * avgDist,
-          y: p.y + Math.sin(rad1) * avgDist,
-        }
+        // nextControlHandle should point towards next vertex (angleToPrev direction for last point)
+        // prevControlHandle should point towards previous vertex (opposite direction)
         nextHandle = {
           x: p.x + Math.cos(rad2) * avgDist,
           y: p.y + Math.sin(rad2) * avgDist,
+        }
+        prevHandle = {
+          x: p.x + Math.cos(rad1) * avgDist,
+          y: p.y + Math.sin(rad1) * avgDist,
         }
       }
     } else {
@@ -389,13 +389,9 @@ export function convertToSmooth(
         
         const handleLen = dist / 4
         const rad1 = handleAngle * Math.PI / 180
-        const rad2 = normalizeAngle(handleAngle + 180) * Math.PI / 180
         
+        // For last point of open shape: only prevHandle is relevant (points to previous vertex)
         prevHandle = {
-          x: p.x + Math.cos(rad2) * handleLen,
-          y: p.y + Math.sin(rad2) * handleLen,
-        }
-        nextHandle = {
           x: p.x + Math.cos(rad1) * handleLen,
           y: p.y + Math.sin(rad1) * handleLen,
         }
@@ -438,13 +434,15 @@ export function convertToSmooth(
       const rad1 = handleAngle1 * Math.PI / 180
       const rad2 = handleAngle2 * Math.PI / 180
       
-      prevHandle = {
-        x: p.x + Math.cos(rad2) * avgDist,
-        y: p.y + Math.sin(rad2) * avgDist,
-      }
+      // nextControlHandle should point towards next vertex
+      // prevControlHandle should point towards previous vertex (opposite direction)
       nextHandle = {
         x: p.x + Math.cos(rad1) * avgDist,
         y: p.y + Math.sin(rad1) * avgDist,
+      }
+      prevHandle = {
+        x: p.x + Math.cos(rad2) * avgDist,
+        y: p.y + Math.sin(rad2) * avgDist,
       }
     }
   }
