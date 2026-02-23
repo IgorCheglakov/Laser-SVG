@@ -361,9 +361,12 @@ export const Panels: React.FC = () => {
     if (!selectedElement || !('points' in selectedElement)) return
     
     const pointEl = selectedElement as PointElement
-    const handle = parseHandle('w')
-    const delta = { dx: deltaX, dy: 0 }
-    const newPoints = transformPoints(pointEl.points, bounds, delta, handle, false)
+    const newPoints = pointEl.points.map(p => ({
+      ...p,
+      x: p.x + deltaX,
+      prevControlHandle: p.prevControlHandle ? { ...p.prevControlHandle, x: p.prevControlHandle.x + deltaX } : undefined,
+      nextControlHandle: p.nextControlHandle ? { ...p.nextControlHandle, x: p.nextControlHandle.x + deltaX } : undefined,
+    }))
     updateElement(selectedElement.id, { points: newPoints } as Partial<SVGElement>)
     setLocalValues(prev => ({ ...prev, x: value.toFixed(1) }))
   }
@@ -381,9 +384,12 @@ export const Panels: React.FC = () => {
     if (!selectedElement || !('points' in selectedElement)) return
     
     const pointEl = selectedElement as PointElement
-    const handle = parseHandle('n')
-    const delta = { dx: 0, dy: deltaY }
-    const newPoints = transformPoints(pointEl.points, bounds, delta, handle, false)
+    const newPoints = pointEl.points.map(p => ({
+      ...p,
+      y: p.y + deltaY,
+      prevControlHandle: p.prevControlHandle ? { ...p.prevControlHandle, y: p.prevControlHandle.y + deltaY } : undefined,
+      nextControlHandle: p.nextControlHandle ? { ...p.nextControlHandle, y: p.nextControlHandle.y + deltaY } : undefined,
+    }))
     updateElement(selectedElement.id, { points: newPoints } as Partial<SVGElement>)
     setLocalValues(prev => ({ ...prev, y: value.toFixed(1) }))
   }
