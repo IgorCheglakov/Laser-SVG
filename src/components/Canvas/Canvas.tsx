@@ -1095,29 +1095,57 @@ export const Canvas: React.FC = () => {
       const boxHeight = Math.abs(endCanvas.y - startCanvas.y)
       
       if (boxWidth > 5 || boxHeight > 5) {
-        // Find elements that have at least one vertex within the selection box
-        const selectedElements: string[] = []
-        
-        for (const el of elements) {
-          if (!('points' in el)) continue
-          const pointEl = el as PointElement
+        if (activeTool === 'directSelection') {
+          // Select vertices within the selection box
+          const newSelectedVertices = new Set<string>()
           
-          for (const p of pointEl.points) {
-            if (p.x >= boxX && p.x <= boxX + boxWidth && 
-                p.y >= boxY && p.y <= boxY + boxHeight) {
-              selectedElements.push(el.id)
-              break
+          for (const el of elements) {
+            if (!('points' in el)) continue
+            const pointEl = el as PointElement
+            
+            pointEl.points.forEach((p, index) => {
+              if (p.x >= boxX && p.x <= boxX + boxWidth && 
+                  p.y >= boxY && p.y <= boxY + boxHeight) {
+                newSelectedVertices.add(`${el.id}:${index}`)
+              }
+            })
+          }
+          
+          if (newSelectedVertices.size > 0) {
+            if (e.ctrlKey || e.metaKey) {
+              const next = new Set(selectedVertices)
+              newSelectedVertices.forEach(v => next.add(v))
+              setSelectedVertices(next)
+            } else {
+              setSelectedVertices(newSelectedVertices)
+            }
+          } else if (!(e.ctrlKey || e.metaKey)) {
+            setSelectedVertices(new Set())
+          }
+        } else {
+          // Find elements that have at least one vertex within the selection box
+          const selectedElements: string[] = []
+          
+          for (const el of elements) {
+            if (!('points' in el)) continue
+            const pointEl = el as PointElement
+            
+            for (const p of pointEl.points) {
+              if (p.x >= boxX && p.x <= boxX + boxWidth && 
+                  p.y >= boxY && p.y <= boxY + boxHeight) {
+                selectedElements.push(el.id)
+                break
+              }
             }
           }
-        }
-        
-        if (selectedElements.length > 0) {
-          if (e.ctrlKey || e.metaKey) {
-            // Add to existing selection
-            const newSelection = [...new Set([...selectedIds, ...selectedElements])]
-            setSelectedIds(newSelection)
-          } else {
-            setSelectedIds(selectedElements)
+          
+          if (selectedElements.length > 0) {
+            if (e.ctrlKey || e.metaKey) {
+              const newSelection = [...new Set([...selectedIds, ...selectedElements])]
+              setSelectedIds(newSelection)
+            } else {
+              setSelectedIds(selectedElements)
+            }
           }
         }
       }
@@ -1126,7 +1154,7 @@ export const Canvas: React.FC = () => {
     }
     
     tool.onMouseUp(e, toolContext)
-  }, [isPanning, previewElement, tool, toolContext, addElement, calculateBounds, selectionBox, activeTool, screenToCanvas, selectedIds, setSelectedIds, elements])
+  }, [isPanning, previewElement, tool, toolContext, addElement, calculateBounds, selectionBox, activeTool, screenToCanvas, selectedIds, setSelectedIds, selectedVertices, setSelectedVertices, elements])
 
   /**
    * Handle context menu
