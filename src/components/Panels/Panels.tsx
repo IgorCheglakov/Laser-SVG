@@ -361,10 +361,9 @@ export const Panels: React.FC = () => {
     if (!selectedElement || !('points' in selectedElement)) return
     
     const pointEl = selectedElement as PointElement
-    const newPoints = pointEl.points.map(p => ({
-      ...p,
-      x: p.x + deltaX,
-    }))
+    const handle = parseHandle('w')
+    const delta = { dx: deltaX, dy: 0 }
+    const newPoints = transformPoints(pointEl.points, bounds, delta, handle, false)
     updateElement(selectedElement.id, { points: newPoints } as Partial<SVGElement>)
     setLocalValues(prev => ({ ...prev, x: value.toFixed(1) }))
   }
@@ -382,10 +381,9 @@ export const Panels: React.FC = () => {
     if (!selectedElement || !('points' in selectedElement)) return
     
     const pointEl = selectedElement as PointElement
-    const newPoints = pointEl.points.map(p => ({
-      ...p,
-      y: p.y + deltaY,
-    }))
+    const handle = parseHandle('n')
+    const delta = { dx: 0, dy: deltaY }
+    const newPoints = transformPoints(pointEl.points, bounds, delta, handle, false)
     updateElement(selectedElement.id, { points: newPoints } as Partial<SVGElement>)
     setLocalValues(prev => ({ ...prev, y: value.toFixed(1) }))
   }
