@@ -9,7 +9,7 @@ import { Layout } from '@components/Layout/Layout'
 import { useEditorStore, undo, redo } from '@store/index'
 import { HOTKEYS } from '@constants/index'
 import { exportToSVG } from '@/utils/exportSvg'
-import { importFromSVG, centerElements, cropElementsToBounds } from '@/utils/importSvg'
+import { importFromSVG, centerElements, cropElementsToBounds } from '@/utils/importSvgToExistingDoc'
 import { DEFAULTS } from '@constants/index'
 import type { SVGElement, PointElement } from '@/types-app/index'
 

@@ -1,9 +1,11 @@
 /**
- * SVG Import Utility
+ * SVG Import Utility for Existing Document
  * 
+ * Handles import logic when adding SVG elements to an already opened document.
  * Parses SVG content and converts it to PointElement array.
  * Supports all SVG shapes: line, rect, circle, ellipse, polyline, polygon, path
  * Converts colors to nearest palette color and stroke width to standard 0.25mm
+ * Includes cropping and centering logic for imported elements
  */
 
 import type { PointElement, SVGElement, Point } from '@/types-app/index'
