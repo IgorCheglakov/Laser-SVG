@@ -211,33 +211,19 @@ export function convertToSmooth(
   const p = points[pointIndex]
   const totalPoints = points.length
   
+  console.log(`[convertToSmooth] ======== START ======== pointIndex=${pointIndex}, isClosedShape=${isClosedShape}, totalPoints=${totalPoints}`)
+  console.log(`[convertToSmooth] Point: (${p.x.toFixed(2)}, ${p.y.toFixed(2)}), vertexType=${p.vertexType}`)
+  console.log(`[convertToSmooth] Existing handles: prev=${p.prevControlHandle ? `(${p.prevControlHandle.x.toFixed(2)}, ${p.prevControlHandle.y.toFixed(2)})` : 'none'}, next=${p.nextControlHandle ? `(${p.nextControlHandle.x.toFixed(2)}, ${p.nextControlHandle.y.toFixed(2)})` : 'none'}`)
+  
   if (totalPoints < 2) return p
   
   const isFirst = pointIndex === 0
   const isLast = pointIndex === totalPoints - 1
   
+  console.log(`[convertToSmooth] isFirst=${isFirst}, isLast=${isLast}`)
+  
   let prevHandle: { x: number; y: number } | undefined
   let nextHandle: { x: number; y: number } | undefined
-  
-  const chooseHandleAngle = (
-    bisectAngle: number, 
-    existingHandle: { x: number; y: number } | undefined, 
-    neighborAngle: number
-  ): number => {
-    const option1 = normalizeAngle(bisectAngle + 90)
-    const option2 = normalizeAngle(bisectAngle - 90)
-    
-    if (existingHandle) {
-      const currentAngle = Math.atan2(existingHandle.y - p.y, existingHandle.x - p.x) * 180 / Math.PI
-      const diff1 = Math.abs(angleDifference(currentAngle, option1))
-      const diff2 = Math.abs(angleDifference(currentAngle, option2))
-      return diff1 <= diff2 ? option1 : option2
-    } else {
-      const diff1 = Math.abs(angleDifference(neighborAngle, option1))
-      const diff2 = Math.abs(angleDifference(neighborAngle, option2))
-      return diff1 <= diff2 ? option1 : option2
-    }
-  }
   
   if (isFirst) {
     if (isClosedShape && totalPoints > 2) {
@@ -253,6 +239,9 @@ export function convertToSmooth(
       const distToPrev = Math.sqrt(dxToPrev * dxToPrev + dyToPrev * dyToPrev)
       
       if (distToNext > 0 && distToPrev > 0) {
+        const angleToNext = Math.atan2(dyToNext, dxToNext) * 180 / Math.PI
+        const angleToPrev = Math.atan2(dyToPrev, dxToPrev) * 180 / Math.PI
+        
         const n1 = { x: dxToNext / distToNext, y: dyToNext / distToNext }
         const n2 = { x: dxToPrev / distToPrev, y: dyToPrev / distToPrev }
         
@@ -266,26 +255,31 @@ export function convertToSmooth(
           bisectAngle = Math.atan2(-n1.y, n1.x) * 180 / Math.PI + 90
         }
         
-        const angleToNext = Math.atan2(dyToNext, dxToNext) * 180 / Math.PI
+        const perp1 = normalizeAngle(bisectAngle + 90)
+        const perp2 = normalizeAngle(bisectAngle - 90)
         
-        const handleAngle1 = chooseHandleAngle(bisectAngle, p.prevControlHandle, angleToNext)
-        const handleAngle2 = normalizeAngle(handleAngle1 + 180)
+        const diff1ToNext = Math.abs(angleDifference(perp1, angleToNext))
+        const diff2ToNext = Math.abs(angleDifference(perp2, angleToNext))
         
-        const avgDist = (distToNext + distToPrev) / 4
+        const handleAngleNext = diff1ToNext <= diff2ToNext ? perp1 : perp2
+        const handleAnglePrev = normalizeAngle(handleAngleNext + 180)
         
-        const rad1 = handleAngle1 * Math.PI / 180
-        const rad2 = handleAngle2 * Math.PI / 180
+        const handleLen = (distToNext + distToPrev) / 4
         
-        // nextControlHandle should point towards next vertex (angleToNext direction)
-        // prevControlHandle should point towards previous vertex (opposite direction)
+        const radNext = handleAngleNext * Math.PI / 180
+        const radPrev = handleAnglePrev * Math.PI / 180
+        
         nextHandle = {
-          x: p.x + Math.cos(rad1) * avgDist,
-          y: p.y + Math.sin(rad1) * avgDist,
+          x: p.x + Math.cos(radNext) * handleLen,
+          y: p.y + Math.sin(radNext) * handleLen,
         }
         prevHandle = {
-          x: p.x + Math.cos(rad2) * avgDist,
-          y: p.y + Math.sin(rad2) * avgDist,
+          x: p.x + Math.cos(radPrev) * handleLen,
+          y: p.y + Math.sin(radPrev) * handleLen,
         }
+        
+        console.log(`[convertToSmooth] CLOSED FIRST (FIXED): angleToNext=${angleToNext.toFixed(2)}, angleToPrev=${angleToPrev.toFixed(2)}, bisectAngle=${bisectAngle.toFixed(2)}, perp1=${perp1.toFixed(2)}, perp2=${perp2.toFixed(2)}, handleAngleNext=${handleAngleNext.toFixed(2)}, handleAnglePrev=${handleAnglePrev.toFixed(2)}`)
+        console.log(`[convertToSmooth] CLOSED FIRST RESULT: nextHandle=(${nextHandle.x.toFixed(2)}, ${nextHandle.y.toFixed(2)}), prevHandle=(${prevHandle.x.toFixed(2)}, ${prevHandle.y.toFixed(2)})`)
       }
     } else if (totalPoints > 1) {
       const nextP = points[1]
@@ -311,11 +305,15 @@ export function convertToSmooth(
         const handleLen = dist / 4
         const rad1 = handleAngle * Math.PI / 180
         
+        console.log(`[convertToSmooth] OPEN FIRST: angleToNext=${angleToNext.toFixed(2)}, handleAngle=${handleAngle.toFixed(2)}, handleLen=${handleLen.toFixed(2)}`)
+        
         // For first point of open shape: only nextHandle is relevant (points to next vertex)
         nextHandle = {
           x: p.x + Math.cos(rad1) * handleLen,
           y: p.y + Math.sin(rad1) * handleLen,
         }
+        
+        console.log(`[convertToSmooth] OPEN FIRST RESULT: nextHandle=(${nextHandle.x.toFixed(2)}, ${nextHandle.y.toFixed(2)})`)
       }
     }
   } else if (isLast) {
@@ -332,6 +330,9 @@ export function convertToSmooth(
       const distToNext = Math.sqrt(dxToNext * dxToNext + dyToNext * dyToNext)
       
       if (distToPrev > 0 && distToNext > 0) {
+        const angleToPrev = Math.atan2(dyToPrev, dxToPrev) * 180 / Math.PI
+        const angleToNext = Math.atan2(dyToNext, dxToNext) * 180 / Math.PI
+        
         const n1 = { x: dxToNext / distToNext, y: dyToNext / distToNext }
         const n2 = { x: dxToPrev / distToPrev, y: dyToPrev / distToPrev }
         
@@ -345,26 +346,31 @@ export function convertToSmooth(
           bisectAngle = Math.atan2(-n1.y, n1.x) * 180 / Math.PI + 90
         }
         
-        const angleToPrev = Math.atan2(dyToPrev, dxToPrev) * 180 / Math.PI
+        const perp1 = normalizeAngle(bisectAngle + 90)
+        const perp2 = normalizeAngle(bisectAngle - 90)
         
-        const handleAngle2 = chooseHandleAngle(bisectAngle, p.nextControlHandle, angleToPrev)
-        const handleAngle1 = normalizeAngle(handleAngle2 + 180)
+        const diff1ToNext = Math.abs(angleDifference(perp1, angleToNext))
+        const diff2ToNext = Math.abs(angleDifference(perp2, angleToNext))
         
-        const avgDist = (distToNext + distToPrev) / 4
+        const handleAngleNext = diff1ToNext <= diff2ToNext ? perp1 : perp2
+        const handleAnglePrev = normalizeAngle(handleAngleNext + 180)
         
-        const rad1 = handleAngle1 * Math.PI / 180
-        const rad2 = handleAngle2 * Math.PI / 180
+        const handleLen = (distToPrev + distToNext) / 4
         
-        // nextControlHandle should point towards next vertex (angleToPrev direction for last point)
-        // prevControlHandle should point towards previous vertex (opposite direction)
+        const radNext = handleAngleNext * Math.PI / 180
+        const radPrev = handleAnglePrev * Math.PI / 180
+        
         nextHandle = {
-          x: p.x + Math.cos(rad2) * avgDist,
-          y: p.y + Math.sin(rad2) * avgDist,
+          x: p.x + Math.cos(radNext) * handleLen,
+          y: p.y + Math.sin(radNext) * handleLen,
         }
         prevHandle = {
-          x: p.x + Math.cos(rad1) * avgDist,
-          y: p.y + Math.sin(rad1) * avgDist,
+          x: p.x + Math.cos(radPrev) * handleLen,
+          y: p.y + Math.sin(radPrev) * handleLen,
         }
+        
+        console.log(`[convertToSmooth] CLOSED LAST (FIXED): angleToPrev=${angleToPrev.toFixed(2)}, angleToNext=${angleToNext.toFixed(2)}, bisectAngle=${bisectAngle.toFixed(2)}, perp1=${perp1.toFixed(2)}, perp2=${perp2.toFixed(2)}, handleAngleNext=${handleAngleNext.toFixed(2)}, handleAnglePrev=${handleAnglePrev.toFixed(2)}`)
+        console.log(`[convertToSmooth] CLOSED LAST RESULT: nextHandle=(${nextHandle.x.toFixed(2)}, ${nextHandle.y.toFixed(2)}), prevHandle=(${prevHandle.x.toFixed(2)}, ${prevHandle.y.toFixed(2)})`)
       }
     } else {
       const prevP = points[pointIndex - 1]
@@ -390,11 +396,15 @@ export function convertToSmooth(
         const handleLen = dist / 4
         const rad1 = handleAngle * Math.PI / 180
         
+        console.log(`[convertToSmooth] OPEN LAST: angleToPrev=${angleToPrev.toFixed(2)}, handleAngle=${handleAngle.toFixed(2)}, handleLen=${handleLen.toFixed(2)}`)
+        
         // For last point of open shape: only prevHandle is relevant (points to previous vertex)
         prevHandle = {
           x: p.x + Math.cos(rad1) * handleLen,
           y: p.y + Math.sin(rad1) * handleLen,
         }
+        
+        console.log(`[convertToSmooth] OPEN LAST RESULT: prevHandle=(${prevHandle.x.toFixed(2)}, ${prevHandle.y.toFixed(2)})`)
       }
     }
   } else {
@@ -411,6 +421,9 @@ export function convertToSmooth(
     const distToPrev = Math.sqrt(dxToPrev * dxToPrev + dyToPrev * dyToPrev)
     
     if (distToNext > 0 && distToPrev > 0) {
+      const angleToNext = Math.atan2(dyToNext, dxToNext) * 180 / Math.PI
+      const angleToPrev = Math.atan2(dyToPrev, dxToPrev) * 180 / Math.PI
+      
       const n1 = { x: dxToNext / distToNext, y: dyToNext / distToNext }
       const n2 = { x: dxToPrev / distToPrev, y: dyToPrev / distToPrev }
       
@@ -424,28 +437,36 @@ export function convertToSmooth(
         bisectAngle = Math.atan2(-n1.y, n1.x) * 180 / Math.PI + 90
       }
       
-      const angleToNext = Math.atan2(dyToNext, dxToNext) * 180 / Math.PI
+      const perp1 = normalizeAngle(bisectAngle + 90)
+      const perp2 = normalizeAngle(bisectAngle - 90)
       
-      const handleAngle1 = chooseHandleAngle(bisectAngle, p.nextControlHandle, angleToNext)
-      const handleAngle2 = normalizeAngle(handleAngle1 + 180)
+      const diff1ToNext = Math.abs(angleDifference(perp1, angleToNext))
+      const diff2ToNext = Math.abs(angleDifference(perp2, angleToNext))
       
-      const avgDist = (distToNext + distToPrev) / 4
+      const handleAngleNext = diff1ToNext <= diff2ToNext ? perp1 : perp2
+      const handleAnglePrev = normalizeAngle(handleAngleNext + 180)
       
-      const rad1 = handleAngle1 * Math.PI / 180
-      const rad2 = handleAngle2 * Math.PI / 180
+      const handleLen = (distToNext + distToPrev) / 4
       
-      // nextControlHandle should point towards next vertex
-      // prevControlHandle should point towards previous vertex (opposite direction)
+      const radNext = handleAngleNext * Math.PI / 180
+      const radPrev = handleAnglePrev * Math.PI / 180
+      
       nextHandle = {
-        x: p.x + Math.cos(rad1) * avgDist,
-        y: p.y + Math.sin(rad1) * avgDist,
+        x: p.x + Math.cos(radNext) * handleLen,
+        y: p.y + Math.sin(radNext) * handleLen,
       }
       prevHandle = {
-        x: p.x + Math.cos(rad2) * avgDist,
-        y: p.y + Math.sin(rad2) * avgDist,
+        x: p.x + Math.cos(radPrev) * handleLen,
+        y: p.y + Math.sin(radPrev) * handleLen,
       }
+      
+      console.log(`[convertToSmooth] MIDDLE (FIXED): angleToNext=${angleToNext.toFixed(2)}, angleToPrev=${angleToPrev.toFixed(2)}, bisectAngle=${bisectAngle.toFixed(2)}, perp1=${perp1.toFixed(2)}, perp2=${perp2.toFixed(2)}, handleAngleNext=${handleAngleNext.toFixed(2)}, handleAnglePrev=${handleAnglePrev.toFixed(2)}`)
+      console.log(`[convertToSmooth] MIDDLE RESULT: nextHandle=(${nextHandle.x.toFixed(2)}, ${nextHandle.y.toFixed(2)}), prevHandle=(${prevHandle.x.toFixed(2)}, ${prevHandle.y.toFixed(2)})`)
     }
   }
+  
+  console.log(`[convertToSmooth] FINAL: prevHandle=${prevHandle ? `(${prevHandle.x.toFixed(2)}, ${prevHandle.y.toFixed(2)})` : 'none'}, nextHandle=${nextHandle ? `(${nextHandle.x.toFixed(2)}, ${nextHandle.y.toFixed(2)})` : 'none'}`)
+  console.log(`[convertToSmooth] ======== END ========`)
   
   return { 
     ...p, 
