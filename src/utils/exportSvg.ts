@@ -9,7 +9,7 @@ import type { PointElement, SVGElement, GroupElement } from '@/types-app/index'
 /**
  * Generate SVG path data for points with Bezier curve support
  */
-function generatePathData(points: PointElement['points'], isClosed: boolean): string {
+export function generatePathData(points: PointElement['points'], isClosed: boolean): string {
   if (points.length === 0) return ''
   
   let d = ''
