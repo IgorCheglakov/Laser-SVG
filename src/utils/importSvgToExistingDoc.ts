@@ -132,6 +132,30 @@ function convertPolylineToPoints(pointsStr: string): Point[] {
   return points
 }
 
+/**
+ * Split path data into subpaths (by M command)
+ */
+function splitPathToSubpaths(d: string): string[] {
+  const subpaths: string[] = []
+  const commands = d.match(/[MLHVQZCmlhvqzc][^MLHVQZCmlhvqzc]*/g) || []
+  
+  let currentSubpath = ''
+  for (const cmd of commands) {
+    const cmdLetter = cmd[0].toUpperCase()
+    if (cmdLetter === 'M' && currentSubpath.length > 0) {
+      subpaths.push(currentSubpath.trim())
+      currentSubpath = cmd
+    } else {
+      currentSubpath += cmd
+    }
+  }
+  if (currentSubpath.trim().length > 0) {
+    subpaths.push(currentSubpath.trim())
+  }
+  
+  return subpaths
+}
+
 function parsePathData(d: string): ParsedCommand[] {
   console.log('[Import] Starting parsePathData, d length:', d.length)
   const commands: ParsedCommand[] = []
@@ -674,7 +698,7 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
     let elementIndex = 0
 
     // Helper function to convert an SVG element to PointElement
-    const convertElementToPoint = (el: Element): PointElement | null => {
+    const convertElementToPoint = (el: Element): PointElement | PointElement[] | null => {
       let points: Point[] = []
       let isClosed = false
       
@@ -736,11 +760,63 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
           const d = el.getAttribute('d')
           console.log('[Import] Processing path, d:', d)
           if (d) {
-            points = convertPathToPoints(d)
-            console.log('[Import] Path points:', points.length)
-            const fill = el.getAttribute('fill')
-            isClosed = d.toUpperCase().includes('Z') || (!!fill && fill !== 'none')
-            console.log('[Import] Path isClosed:', isClosed)
+            const subpaths = splitPathToSubpaths(d)
+            console.log('[Import] Path subpaths:', subpaths.length)
+            
+            if (subpaths.length > 1) {
+              const fill = el.getAttribute('fill')
+              let stroke = el.getAttribute('stroke')
+              const strokeWidth = parseFloat(el.getAttribute('stroke-width') || '') || STANDARD_STROKE_WIDTH
+              if ((!stroke || stroke === 'none') && fill && fill !== 'none') {
+                stroke = fill
+              }
+              if (!stroke || stroke === 'none') {
+                stroke = '#000000'
+              }
+              
+              const resultElements: PointElement[] = []
+              for (let idx = 0; idx < subpaths.length; idx++) {
+                const subpath = subpaths[idx]
+                const subPoints = convertPathToPoints(subpath)
+                if (subPoints.length < 2) continue
+                
+                const scaledPoints = subPoints.map(p => ({
+                  x: p.x * scaleFactor,
+                  y: p.y * scaleFactor,
+                  vertexType: p.vertexType,
+                  prevControlHandle: p.prevControlHandle ? {
+                    x: p.prevControlHandle.x * scaleFactor,
+                    y: p.prevControlHandle.y * scaleFactor,
+                  } : undefined,
+                  nextControlHandle: p.nextControlHandle ? {
+                    x: p.nextControlHandle.x * scaleFactor,
+                    y: p.nextControlHandle.y * scaleFactor,
+                  } : undefined,
+                }))
+                
+                resultElements.push({
+                  id: el.getAttribute('id') ? `${el.getAttribute('id')}_${idx}` : generateId(),
+                  type: 'point',
+                  name: `${el.getAttribute('data-name') || el.getAttribute('id') || 'path'} ${idx + 1}`,
+                  visible: true,
+                  locked: false,
+                  points: scaledPoints,
+                  stroke: colorToPalette(stroke),
+                  strokeWidth,
+                  isClosedShape: true,
+                })
+              }
+              
+              console.log('[Import] Multiple subpaths, returning', resultElements.length, 'elements')
+              if (resultElements.length === 0) return null
+              return resultElements
+            } else {
+              points = convertPathToPoints(d)
+              console.log('[Import] Path points:', points.length)
+              const fill = el.getAttribute('fill')
+              isClosed = d.toUpperCase().includes('Z') || (!!fill && fill !== 'none')
+              console.log('[Import] Path isClosed:', isClosed)
+            }
           }
           break
         }
@@ -816,7 +892,11 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
         } else if (selectors.includes(tagName)) {
           const pointEl = convertElementToPoint(el)
           if (pointEl) {
-            result.push(pointEl)
+            if (Array.isArray(pointEl)) {
+              result.push(...pointEl)
+            } else {
+              result.push(pointEl)
+            }
           }
         }
       })

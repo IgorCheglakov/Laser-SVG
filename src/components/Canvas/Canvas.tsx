@@ -1300,7 +1300,7 @@ export const Canvas: React.FC = () => {
       const centerCanvasX = (centerScreenX - view.offsetX) / view.scale / DEFAULTS.MM_TO_PX
       const centerCanvasY = (centerScreenY - view.offsetY) / view.scale / DEFAULTS.MM_TO_PX
       
-      console.log(`[Canvas] Visible center: (${centerCanvasX.toFixed(3)} mm, ${centerCanvasY.toFixed(3)} mm)`)
+      console.log(`[Canvas] Visible: ${centerCanvasX.toFixed(1)}, ${centerCanvasY.toFixed(1)}`) // Debug center
       
       return
     }
@@ -2015,6 +2015,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({ element, isPreview, isSel
     let d = ''
     const segments = getCurveSegments(points, isClosed)
     
+    // console.log('[CanvasElement] Rendering:', pointEl.name, 'pts:', points.length, 'segs:', segments.length, 'curves:', segments.filter(s => s.isCurve).length)
     for (let i = 0; i < segments.length; i++) {
       const seg = segments[i]
       const px = seg.p1.x * DEFAULTS.MM_TO_PX
@@ -2041,6 +2042,8 @@ const CanvasElement: React.FC<CanvasElementProps> = ({ element, isPreview, isSel
     if (isClosed && points.length > 2) {
       d += ' Z'
     }
+    
+    // console.log('[CanvasElement] Generated d:', d)
     
     return (
       <path
