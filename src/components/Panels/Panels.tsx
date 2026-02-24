@@ -11,6 +11,7 @@ import { Square, Circle, Minus, Folder } from 'lucide-react'
 import type { PointElement, SVGElement, Point } from '@/types-app/index'
 import { convertToCorner, convertToStraight, convertToSmooth } from '@/types-app/point'
 import { transformPoints, parseHandle } from '@/utils/transform'
+import { getAllPointElements } from '@/utils/bounds'
 
 /**
  * Vertex Properties Panel for Direct Selection tool
@@ -678,7 +679,7 @@ export const Panels: React.FC = () => {
         {activeTool === 'directSelection' ? (
           <VertexPropertiesPanel
             selectedVertices={selectedVertices}
-            elements={elements.filter(el => selectedIds.includes(el.id) && 'points' in el) as PointElement[]}
+            elements={getAllPointElements(elements.filter(el => selectedIds.includes(el.id)))}
           />
         ) : (
           <div className="p-4">
