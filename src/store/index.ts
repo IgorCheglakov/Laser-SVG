@@ -7,7 +7,7 @@
 
 import { create } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
-import type { EditorState, HistoryEntry, SVGElement, ViewState, CanvasSettings } from '@/types-app/index'
+import type { EditorState, GroupElement, HistoryEntry, SVGElement, ViewState, CanvasSettings } from '@/types-app/index'
 import { DEFAULTS } from '@constants/index'
 
 /**
@@ -209,6 +209,54 @@ export const useEditorStore = create<EditorState>()(
     
     // Vertex selection actions
     setSelectedVertices: (vertices: Set<string>) => set({ selectedVertices: vertices }),
+    
+    // Group actions
+    groupElements: (ids: string[]) => {
+      const state = get()
+      if (ids.length < 2) return
+      
+      pushHistory(get)
+      
+      const elementsToGroup = state.elements.filter(el => ids.includes(el.id))
+      if (elementsToGroup.length < 2) return
+      
+      const groupId = `group-${Date.now()}`
+      
+      const group: GroupElement = {
+        id: groupId,
+        type: 'group',
+        name: 'Group',
+        visible: true,
+        locked: false,
+        children: elementsToGroup,
+      }
+      
+      const remainingElements = state.elements.filter(el => !ids.includes(el.id))
+      
+      set({
+        elements: [...remainingElements, group],
+        selectedIds: [groupId],
+      })
+    },
+    
+    ungroupElements: (id: string) => {
+      const state = get()
+      const group = state.elements.find(el => el.id === id && el.type === 'group')
+      if (!group || group.type !== 'group') return
+      
+      pushHistory(get)
+      
+      const children = group.children
+      const parentElements = state.elements.filter(el => el.id !== id)
+      
+      const newElements = [...parentElements, ...children]
+      const childIds = children.map(c => c.id)
+      
+      set({
+        elements: newElements,
+        selectedIds: childIds,
+      })
+    },
   }))
 )
 

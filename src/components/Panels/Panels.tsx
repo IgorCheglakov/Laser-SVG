@@ -7,7 +7,7 @@
 import { useMemo, useState } from 'react'
 import { useEditorStore } from '@store/index'
 import { UI_STRINGS, COLOR_PALETTE, getContrastColor } from '@constants/index'
-import { Square, Circle, Minus } from 'lucide-react'
+import { Square, Circle, Minus, Folder } from 'lucide-react'
 import type { PointElement, SVGElement, Point } from '@/types-app/index'
 import { convertToCorner, convertToStraight, convertToSmooth } from '@/types-app/point'
 import { transformPoints, parseHandle } from '@/utils/transform'
@@ -333,6 +333,7 @@ export const Panels: React.FC = () => {
       case 'rect': return <Square size={14} />
       case 'ellipse': return <Circle size={14} />
       case 'line': return <Minus size={14} />
+      case 'group': return <Folder size={14} />
       default: return <Square size={14} />
     }
   }
@@ -630,7 +631,10 @@ export const Panels: React.FC = () => {
                     {getElementIcon(element.type)}
                   </span>
                   <span className="truncate flex-1">
-                    {element.name} {elements.indexOf(element) + 1}
+                    {element.type === 'group' 
+                      ? `${element.name || 'Group'} (${element.children?.length || 0})`
+                      : `${element.name || 'Element'} ${elements.indexOf(element) + 1}`
+                    }
                   </span>
                 </div>
               ))}

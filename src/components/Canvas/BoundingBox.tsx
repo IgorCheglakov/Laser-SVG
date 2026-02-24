@@ -64,11 +64,7 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false)
   
-  const pointElements = useMemo(() => {
-    return elements.filter(el => 'points' in el) as PointElement[]
-  }, [elements])
-
-  const box = useMemo(() => calculateBoundingBox(pointElements, selectedIds), [pointElements, selectedIds])
+  const box = useMemo(() => calculateBoundingBox(elements, selectedIds), [elements, selectedIds])
 
   const simpleLineElement = useMemo(() => {
     if (selectedIds.length !== 1) return null

@@ -9,7 +9,7 @@ import { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { useEditorStore, saveToHistory } from '../../store/index'
 import { getTool } from '@/tools/index'
 import type { ToolContext } from '@/tools/types'
-import type { Point, SVGElement, PointElement } from '@/types-app/index'
+import type { Point, SVGElement, PointElement, GroupElement } from '@/types-app/index'
 import { snapPoint } from '@/utils/snap'
 import { generateId } from '@/utils/id'
 import { DEFAULTS } from '@constants/index'
@@ -17,6 +17,7 @@ import { BoundingBox } from './BoundingBox'
 import { DirectSelectionBox } from './DirectSelectionBox'
 import { FloatingPropertiesWidget } from './FloatingPropertiesWidget'
 import { transformPoints, parseHandle, rotatePoints, type InitialSize } from '@/utils/transform'
+import { getAllPointElements } from '@/utils/bounds'
 
 /**
  * Canvas component with artboard, zoom, and tool integration
@@ -144,6 +145,47 @@ export const Canvas: React.FC = () => {
     for (let i = elements.length - 1; i >= 0; i--) {
       const element = elements[i]
       
+      // Handle groups - check if point is within group's children bounds
+      if (element.type === 'group') {
+        const group = element as GroupElement
+        if (!group.visible) continue
+        
+        // Check each child in the group
+        const childElements = getAllPointElements([group])
+        for (const childEl of childElements) {
+          if (!childEl.points) continue
+          
+          const bounds = calculateBounds(childEl.points)
+          
+          if (
+            point.x >= bounds.x - hitThreshold &&
+            point.x <= bounds.x + bounds.width + hitThreshold &&
+            point.y >= bounds.y - hitThreshold &&
+            point.y <= bounds.y + bounds.height + hitThreshold
+          ) {
+            // Check vertices
+            for (const p of childEl.points) {
+              const distToPoint = Math.sqrt((point.x - p.x) ** 2 + (point.y - p.y) ** 2)
+              if (distToPoint <= hitThreshold) {
+                return element // Return the group, not the child
+              }
+            }
+            
+            // Check edges
+            const segments = getCurveSegments(childEl.points, childEl.isClosedShape)
+            for (const seg of segments) {
+              const dist = seg.isCurve 
+                ? distanceToBezierCurveExact(point, seg.p1, seg.cp1, seg.cp2, seg.p2)
+                : distanceToLineSegment(point, seg.p1, seg.p2)
+              if (dist <= hitThreshold) {
+                return element // Return the group, not the child
+              }
+            }
+          }
+        }
+        continue
+      }
+      
       const el = element as PointElement
       if (!el.points) continue
       
@@ -258,7 +300,7 @@ export const Canvas: React.FC = () => {
   }, [setScreenSize])
 
   /**
-   * Calculate bounding box for selected elements
+   * Calculate bounding box for selected elements (including groups)
    */
   const calculateBoundsForSelected = useCallback((): InitialSize | null => {
     if (selectedIds.length === 0) return null
@@ -268,18 +310,34 @@ export const Canvas: React.FC = () => {
     let maxX = -Infinity
     let maxY = -Infinity
     
-    selectedIds.forEach(id => {
-      const el = elements.find(el => el.id === id)
-      if (el && 'points' in el) {
-        const pointEl = el as PointElement
-        for (const p of pointEl.points) {
-          minX = Math.min(minX, p.x)
-          minY = Math.min(minY, p.y)
-          maxX = Math.max(maxX, p.x)
-          maxY = Math.max(maxY, p.y)
-        }
+    // Get all point elements including from groups
+    const allPointElements = getAllPointElements(elements)
+    
+    // Get IDs of selected elements (for groups, include children)
+    const selectedPointIds = new Set<string>()
+    
+    for (const id of selectedIds) {
+      const el = elements.find(e => e.id === id)
+      if (!el) continue
+      
+      if (el.type === 'group') {
+        const childPointElements = getAllPointElements([el])
+        childPointElements.forEach(c => selectedPointIds.add(c.id))
+      } else if (el.type === 'point') {
+        selectedPointIds.add(id)
       }
-    })
+    }
+    
+    for (const el of allPointElements) {
+      if (!selectedPointIds.has(el.id)) continue
+      
+      for (const p of el.points) {
+        minX = Math.min(minX, p.x)
+        minY = Math.min(minY, p.y)
+        maxX = Math.max(maxX, p.x)
+        maxY = Math.max(maxY, p.y)
+      }
+    }
     
     if (minX === Infinity) return null
     
@@ -308,13 +366,27 @@ export const Canvas: React.FC = () => {
     }
     
     initialElementPositionsRef.current.clear()
-    selectedIds.forEach(id => {
-      const el = elements.find(el => el.id === id)
-      if (el && 'points' in el) {
-        const pointEl = el as PointElement
-        initialElementPositionsRef.current.set(id, JSON.parse(JSON.stringify(pointEl.points)))
+    
+    // Get all point elements including from groups
+    const allPointElements = getAllPointElements(elements)
+    const selectedPointIds = new Set<string>()
+    
+    for (const id of selectedIds) {
+      const el = elements.find(e => e.id === id)
+      if (!el) continue
+      
+      if (el.type === 'group') {
+        const childPointElements = getAllPointElements([el])
+        childPointElements.forEach(c => selectedPointIds.add(c.id))
+      } else if (el.type === 'point') {
+        selectedPointIds.add(id)
       }
-    })
+    }
+    
+    for (const el of allPointElements) {
+      if (!selectedPointIds.has(el.id)) continue
+      initialElementPositionsRef.current.set(el.id, JSON.parse(JSON.stringify(el.points)))
+    }
     
     saveToHistory()
   }, [elements, selectedIds, screenToCanvas, calculateBoundsForSelected])
@@ -333,13 +405,27 @@ export const Canvas: React.FC = () => {
     }
     
     initialElementPositionsRef.current.clear()
-    selectedIds.forEach(id => {
-      const el = elements.find(el => el.id === id)
-      if (el && 'points' in el) {
-        const pointEl = el as PointElement
-        initialElementPositionsRef.current.set(id, JSON.parse(JSON.stringify(pointEl.points)))
+    
+    // Get all point elements including from groups
+    const allPointElements = getAllPointElements(elements)
+    const selectedPointIds = new Set<string>()
+    
+    for (const id of selectedIds) {
+      const el = elements.find(e => e.id === id)
+      if (!el) continue
+      
+      if (el.type === 'group') {
+        const childPointElements = getAllPointElements([el])
+        childPointElements.forEach(c => selectedPointIds.add(c.id))
+      } else if (el.type === 'point') {
+        selectedPointIds.add(id)
       }
-    })
+    }
+    
+    for (const el of allPointElements) {
+      if (!selectedPointIds.has(el.id)) continue
+      initialElementPositionsRef.current.set(el.id, JSON.parse(JSON.stringify(el.points)))
+    }
     
     saveToHistory()
   }, [elements, selectedIds, calculateBoundsForSelected])
@@ -666,6 +752,24 @@ export const Canvas: React.FC = () => {
         
         updateElementNoHistory(id, { points: newPoints } as Partial<SVGElement>)
       })
+      
+      // Also move all children from initialElementPositionsRef (for groups)
+      Array.from(initialElementPositionsRef.current.keys()).forEach(id => {
+        if (selectedIds.includes(id)) return // Already handled above
+        
+        const initialPoints = initialElementPositionsRef.current.get(id)
+        if (!initialPoints) return
+        
+        const newPoints = initialPoints.map(p => ({
+          ...p,
+          x: p.x + deltaX,
+          y: p.y + deltaY,
+          prevControlHandle: p.prevControlHandle ? { ...p.prevControlHandle, x: p.prevControlHandle.x + deltaX, y: p.prevControlHandle.y + deltaY } : undefined,
+          nextControlHandle: p.nextControlHandle ? { ...p.nextControlHandle, x: p.nextControlHandle.x + deltaX, y: p.nextControlHandle.y + deltaY } : undefined,
+        }))
+        
+        updateElementNoHistory(id, { points: newPoints } as Partial<SVGElement>)
+      })
     }
 
     if (isVertexMovingRef.current && (e.buttons & 1)) {
@@ -841,7 +945,8 @@ export const Canvas: React.FC = () => {
         
         updateElementNoHistory(selectedIds[0], { points: newPoints } as Partial<SVGElement>)
       } else {
-        selectedIds.forEach(id => {
+        // Use keys from initialElementPositionsRef to handle groups (contains child IDs)
+        Array.from(initialElementPositionsRef.current.keys()).forEach(id => {
           const initialPoints = initialElementPositionsRef.current.get(id)
           if (!initialPoints) return
           
@@ -892,6 +997,22 @@ export const Canvas: React.FC = () => {
       }
 
       selectedIds.forEach(id => {
+        const initialPoints = initialElementPositionsRef.current.get(id)
+        if (!initialPoints) return
+
+        const newPoints = rotatePoints(
+          initialPoints,
+          { x: centerX, y: centerY },
+          angleDelta
+        )
+
+        updateElementNoHistory(id, { points: newPoints } as Partial<SVGElement>)
+      })
+      
+      // Also rotate all children from initialElementPositionsRef (for groups)
+      Array.from(initialElementPositionsRef.current.keys()).forEach(id => {
+        if (selectedIds.includes(id)) return // Already handled above
+        
         const initialPoints = initialElementPositionsRef.current.get(id)
         if (!initialPoints) return
 
@@ -1664,11 +1785,27 @@ interface CanvasElementProps {
 const CanvasElement: React.FC<CanvasElementProps> = ({ element, isPreview, isSelected }) => {
   const commonProps = {
     fill: 'none',
-    stroke: isSelected ? '#007acc' : (element.stroke || '#000000'),
+    stroke: isSelected ? '#007acc' : ((element as PointElement).stroke || '#000000'),
     strokeWidth: 1,
     vectorEffect: 'non-scaling-stroke' as const,
     opacity: isPreview ? 0.7 : 1,
     strokeDasharray: isPreview ? '2,2' : undefined,
+  }
+
+  if (element.type === 'group') {
+    const groupEl = element as GroupElement
+    return (
+      <g>
+        {groupEl.children.map((child) => (
+          <CanvasElement
+            key={child.id}
+            element={child}
+            isSelected={false}
+            isPreview={isPreview}
+          />
+        ))}
+      </g>
+    )
   }
 
   if ('points' in element && element.points) {

@@ -26,7 +26,7 @@ export interface Rect {
 /**
  * Supported SVG element types
  */
-export type ElementType = 'point' | 'path' | 'text'
+export type ElementType = 'point' | 'path' | 'text' | 'group'
 
 /**
  * Base interface for all SVG elements
@@ -69,9 +69,18 @@ export interface PathElement extends BaseElement {
 }
 
 /**
+ * Group element - contains child elements
+ * Exported as <g> in SVG
+ */
+export interface GroupElement extends BaseElement {
+  type: 'group'
+  children: SVGElement[]
+}
+
+/**
  * Union type for all element types
  */
-export type SVGElement = PointElement | PathElement
+export type SVGElement = PointElement | PathElement | GroupElement
 
 /**
  * View state for the canvas (zoom and pan)
@@ -179,6 +188,10 @@ export interface EditorState {
   
   // Vertex selection
   setSelectedVertices: (vertices: Set<string>) => void
+  
+  // Group actions
+  groupElements: (ids: string[]) => void
+  ungroupElements: (id: string) => void
 }
 
 /**

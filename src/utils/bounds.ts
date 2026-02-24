@@ -2,7 +2,35 @@
  * Bounding Box utilities
  */
 
-import type { PointElement, Point } from '@/types-app/index'
+import type { PointElement, Point, SVGElement, GroupElement } from '@/types-app/index'
+
+/**
+ * Recursively extract all PointElement from SVGElement array (including from groups)
+ */
+export function getAllPointElements(elements: SVGElement[]): PointElement[] {
+  const result: PointElement[] = []
+  
+  for (const el of elements) {
+    if (el.type === 'group') {
+      const group = el as GroupElement
+      if (!group.visible) continue
+      result.push(...getAllPointElements(group.children))
+    } else if (el.type === 'point') {
+      result.push(el as PointElement)
+    }
+  }
+  
+  return result
+}
+
+/**
+ * Find PointElements by IDs, including children from groups
+ */
+export function findPointElementsByIds(elements: SVGElement[], ids: string[]): PointElement[] {
+  const allPointElements = getAllPointElements(elements)
+  const idSet = new Set(ids)
+  return allPointElements.filter(el => idSet.has(el.id))
+}
 
 /**
  * Calculate point on cubic Bezier curve at parameter t
@@ -71,19 +99,39 @@ export function calculateBoundsFromPoints(points: Point[], isClosed: boolean = f
     return { x: 0, y: 0, width: 0, height: 0 }
   }
   
+  if (points.length === 1) {
+    return { x: points[0].x, y: points[0].y, width: 0, height: 0 }
+  }
+  
   let minX = Infinity
   let minY = Infinity
   let maxX = -Infinity
   let maxY = -Infinity
   
+  // First pass: include all anchor points and control handles
+  for (const p of points) {
+    minX = Math.min(minX, p.x)
+    minY = Math.min(minY, p.y)
+    maxX = Math.max(maxX, p.x)
+    maxY = Math.max(maxY, p.y)
+    
+    if (p.prevControlHandle) {
+      minX = Math.min(minX, p.prevControlHandle.x)
+      minY = Math.min(minY, p.prevControlHandle.y)
+      maxX = Math.max(maxX, p.prevControlHandle.x)
+      maxY = Math.max(maxY, p.prevControlHandle.y)
+    }
+    if (p.nextControlHandle) {
+      minX = Math.min(minX, p.nextControlHandle.x)
+      minY = Math.min(minY, p.nextControlHandle.y)
+      maxX = Math.max(maxX, p.nextControlHandle.x)
+      maxY = Math.max(maxY, p.nextControlHandle.y)
+    }
+  }
+  
   const segments = getCurveSegments(points, isClosed)
   
   for (const seg of segments) {
-    minX = Math.min(minX, seg.p1.x)
-    minY = Math.min(minY, seg.p1.y)
-    maxX = Math.max(maxX, seg.p1.x)
-    maxY = Math.max(maxY, seg.p1.y)
-    
     if (seg.isCurve) {
       for (let i = 1; i <= 20; i++) {
         const t = i / 20
@@ -105,26 +153,45 @@ export function calculateBoundsFromPoints(points: Point[], isClosed: boolean = f
 }
 
 /**
- * Calculate bounding box for selected elements, including Bezier curve extents
+ * Calculate bounding box for selected elements (including groups), including Bezier curve extents
  */
-export function calculateBoundingBox(elements: PointElement[], selectedIds: string[]): { x: number; y: number; width: number; height: number } | null {
+export function calculateBoundingBox(elements: SVGElement[], selectedIds: string[]): { x: number; y: number; width: number; height: number } | null {
   if (selectedIds.length === 0) return null
+
+  const pointElements = getAllPointElements(elements)
+  
+  // Get IDs of all elements that should be included in bounding box
+  // For groups, include all children IDs
+  const includeIds = new Set<string>()
+  
+  for (const id of selectedIds) {
+    const element = elements.find(el => el.id === id)
+    if (!element) continue
+    
+    if (element.type === 'group') {
+      const group = element as GroupElement
+      const childIds = getAllPointElements(group.children).map(c => c.id)
+      childIds.forEach(cid => includeIds.add(cid))
+    } else if (element.type === 'point') {
+      includeIds.add(id)
+    }
+  }
 
   let minX = Infinity
   let minY = Infinity
   let maxX = -Infinity
   let maxY = -Infinity
 
-  selectedIds.forEach(id => {
-    const element = elements.find(el => el.id === id)
-    if (!element || !element.points) return
+  for (const id of includeIds) {
+    const element = pointElements.find(el => el.id === id)
+    if (!element || !element.points) continue
     
     const bounds = calculateBoundsFromPoints(element.points, element.isClosedShape)
     minX = Math.min(minX, bounds.x)
     minY = Math.min(minY, bounds.y)
     maxX = Math.max(maxX, bounds.x + bounds.width)
     maxY = Math.max(maxY, bounds.y + bounds.height)
-  })
+  }
 
   if (minX === Infinity) return null
 

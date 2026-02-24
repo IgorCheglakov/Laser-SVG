@@ -27,6 +27,9 @@ const useGlobalShortcuts = () => {
     toggleDebug,
     deleteElement,
     selectedIds,
+    groupElements,
+    ungroupElements,
+    elements,
   } = useEditorStore()
 
   useEffect(() => {
@@ -131,13 +134,29 @@ const useGlobalShortcuts = () => {
               e.preventDefault()
             }
             break
+          case 'g':
+            if (ctrl && shift) {
+              // Ctrl+Shift+G: Ungroup
+              const selectedGroups = elements.filter(
+                el => selectedIds.includes(el.id) && el.type === 'group'
+              )
+              selectedGroups.forEach(group => ungroupElements(group.id))
+              e.preventDefault()
+            } else if (ctrl) {
+              // Ctrl+G: Group
+              if (selectedIds.length >= 2) {
+                groupElements(selectedIds)
+                e.preventDefault()
+              }
+            }
+            break
         }
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [setActiveTool, zoomIn, zoomOut, resetView, toggleGrid, toggleSnap, toggleDebug, deleteElement, selectedIds])
+  }, [setActiveTool, zoomIn, zoomOut, resetView, toggleGrid, toggleSnap, toggleDebug, deleteElement, selectedIds, groupElements, ungroupElements, elements])
 }
 
 /**

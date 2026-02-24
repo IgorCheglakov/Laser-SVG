@@ -211,16 +211,10 @@ export function convertToSmooth(
   const p = points[pointIndex]
   const totalPoints = points.length
   
-  console.log(`[convertToSmooth] ======== START ======== pointIndex=${pointIndex}, isClosedShape=${isClosedShape}, totalPoints=${totalPoints}`)
-  console.log(`[convertToSmooth] Point: (${p.x.toFixed(2)}, ${p.y.toFixed(2)}), vertexType=${p.vertexType}`)
-  console.log(`[convertToSmooth] Existing handles: prev=${p.prevControlHandle ? `(${p.prevControlHandle.x.toFixed(2)}, ${p.prevControlHandle.y.toFixed(2)})` : 'none'}, next=${p.nextControlHandle ? `(${p.nextControlHandle.x.toFixed(2)}, ${p.nextControlHandle.y.toFixed(2)})` : 'none'}`)
-  
   if (totalPoints < 2) return p
   
   const isFirst = pointIndex === 0
   const isLast = pointIndex === totalPoints - 1
-  
-  console.log(`[convertToSmooth] isFirst=${isFirst}, isLast=${isLast}`)
   
   let prevHandle: { x: number; y: number } | undefined
   let nextHandle: { x: number; y: number } | undefined
@@ -277,9 +271,6 @@ export function convertToSmooth(
           x: p.x + Math.cos(radPrev) * handleLen,
           y: p.y + Math.sin(radPrev) * handleLen,
         }
-        
-        console.log(`[convertToSmooth] CLOSED FIRST (FIXED): angleToNext=${angleToNext.toFixed(2)}, angleToPrev=${angleToPrev.toFixed(2)}, bisectAngle=${bisectAngle.toFixed(2)}, perp1=${perp1.toFixed(2)}, perp2=${perp2.toFixed(2)}, handleAngleNext=${handleAngleNext.toFixed(2)}, handleAnglePrev=${handleAnglePrev.toFixed(2)}`)
-        console.log(`[convertToSmooth] CLOSED FIRST RESULT: nextHandle=(${nextHandle.x.toFixed(2)}, ${nextHandle.y.toFixed(2)}), prevHandle=(${prevHandle.x.toFixed(2)}, ${prevHandle.y.toFixed(2)})`)
       }
     } else if (totalPoints > 1) {
       const nextP = points[1]
@@ -305,15 +296,11 @@ export function convertToSmooth(
         const handleLen = dist / 4
         const rad1 = handleAngle * Math.PI / 180
         
-        console.log(`[convertToSmooth] OPEN FIRST: angleToNext=${angleToNext.toFixed(2)}, handleAngle=${handleAngle.toFixed(2)}, handleLen=${handleLen.toFixed(2)}`)
-        
         // For first point of open shape: only nextHandle is relevant (points to next vertex)
         nextHandle = {
           x: p.x + Math.cos(rad1) * handleLen,
           y: p.y + Math.sin(rad1) * handleLen,
         }
-        
-        console.log(`[convertToSmooth] OPEN FIRST RESULT: nextHandle=(${nextHandle.x.toFixed(2)}, ${nextHandle.y.toFixed(2)})`)
       }
     }
   } else if (isLast) {
@@ -368,9 +355,6 @@ export function convertToSmooth(
           x: p.x + Math.cos(radPrev) * handleLen,
           y: p.y + Math.sin(radPrev) * handleLen,
         }
-        
-        console.log(`[convertToSmooth] CLOSED LAST (FIXED): angleToPrev=${angleToPrev.toFixed(2)}, angleToNext=${angleToNext.toFixed(2)}, bisectAngle=${bisectAngle.toFixed(2)}, perp1=${perp1.toFixed(2)}, perp2=${perp2.toFixed(2)}, handleAngleNext=${handleAngleNext.toFixed(2)}, handleAnglePrev=${handleAnglePrev.toFixed(2)}`)
-        console.log(`[convertToSmooth] CLOSED LAST RESULT: nextHandle=(${nextHandle.x.toFixed(2)}, ${nextHandle.y.toFixed(2)}), prevHandle=(${prevHandle.x.toFixed(2)}, ${prevHandle.y.toFixed(2)})`)
       }
     } else {
       const prevP = points[pointIndex - 1]
@@ -396,15 +380,11 @@ export function convertToSmooth(
         const handleLen = dist / 4
         const rad1 = handleAngle * Math.PI / 180
         
-        console.log(`[convertToSmooth] OPEN LAST: angleToPrev=${angleToPrev.toFixed(2)}, handleAngle=${handleAngle.toFixed(2)}, handleLen=${handleLen.toFixed(2)}`)
-        
         // For last point of open shape: only prevHandle is relevant (points to previous vertex)
         prevHandle = {
           x: p.x + Math.cos(rad1) * handleLen,
           y: p.y + Math.sin(rad1) * handleLen,
         }
-        
-        console.log(`[convertToSmooth] OPEN LAST RESULT: prevHandle=(${prevHandle.x.toFixed(2)}, ${prevHandle.y.toFixed(2)})`)
       }
     }
   } else {
@@ -459,14 +439,8 @@ export function convertToSmooth(
         x: p.x + Math.cos(radPrev) * handleLen,
         y: p.y + Math.sin(radPrev) * handleLen,
       }
-      
-      console.log(`[convertToSmooth] MIDDLE (FIXED): angleToNext=${angleToNext.toFixed(2)}, angleToPrev=${angleToPrev.toFixed(2)}, bisectAngle=${bisectAngle.toFixed(2)}, perp1=${perp1.toFixed(2)}, perp2=${perp2.toFixed(2)}, handleAngleNext=${handleAngleNext.toFixed(2)}, handleAnglePrev=${handleAnglePrev.toFixed(2)}`)
-      console.log(`[convertToSmooth] MIDDLE RESULT: nextHandle=(${nextHandle.x.toFixed(2)}, ${nextHandle.y.toFixed(2)}), prevHandle=(${prevHandle.x.toFixed(2)}, ${prevHandle.y.toFixed(2)})`)
     }
   }
-  
-  console.log(`[convertToSmooth] FINAL: prevHandle=${prevHandle ? `(${prevHandle.x.toFixed(2)}, ${prevHandle.y.toFixed(2)})` : 'none'}, nextHandle=${nextHandle ? `(${nextHandle.x.toFixed(2)}, ${nextHandle.y.toFixed(2)})` : 'none'}`)
-  console.log(`[convertToSmooth] ======== END ========`)
   
   return { 
     ...p, 
