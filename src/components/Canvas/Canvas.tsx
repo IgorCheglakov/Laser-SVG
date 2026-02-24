@@ -2055,7 +2055,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({ element, isPreview, isSel
             d={d}
             fill="none"
             stroke="#007acc"
-            strokeWidth={0.5}
+            strokeWidth={0.42}
             vectorEffect="non-scaling-stroke"
           />
         </>
