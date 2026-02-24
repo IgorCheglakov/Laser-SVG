@@ -330,7 +330,7 @@ export const useEditorStore = create<EditorState>()(
     },
     
     setActiveLayer: (id) => {
-      set({ activeLayerId: id })
+      set({ activeLayerId: id, selectedIds: [], selectedVertices: new Set() })
     },
     
     moveElementToLayer: (elementId, layerId) => {
