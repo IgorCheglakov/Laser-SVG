@@ -62,8 +62,9 @@ describe('Layer functionality', () => {
       const layers = useEditorStore.getState().layers
       expect(layers).toHaveLength(1)
       
+      // Elements on deleted layer should be removed
       const elements = useEditorStore.getState().elements
-      expect(elements[0].layerId).toBe('default')
+      expect(elements).toHaveLength(0)
     })
 
     it('should not delete last remaining layer', () => {

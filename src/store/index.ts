@@ -316,16 +316,20 @@ export const useEditorStore = create<EditorState>()(
       
       pushHistory(get)
       
-      // Move elements from deleted layer to first remaining layer
+      // Remove elements from deleted layer
       const remainingLayers = state.layers.filter(l => l.id !== id)
       const newLayerId = remainingLayers[0].id
+      
+      // Delete elements that are on this layer (not elements that have layerId set to this, but elements that belong to this layer)
+      // For now, delete all elements that explicitly have this layerId
+      const newElements = state.elements.filter(el => el.layerId !== id)
       
       set({
         layers: remainingLayers,
         activeLayerId: state.activeLayerId === id ? newLayerId : state.activeLayerId,
-        elements: state.elements.map(el => 
-          el.layerId === id ? { ...el, layerId: newLayerId } : el
-        ),
+        selectedIds: [],
+        selectedVertices: new Set(),
+        elements: newElements,
       })
     },
     

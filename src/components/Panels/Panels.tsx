@@ -7,7 +7,7 @@
 import { useMemo, useState } from 'react'
 import { useEditorStore } from '@store/index'
 import { UI_STRINGS, COLOR_PALETTE, getContrastColor } from '@constants/index'
-import { Square, Circle, Minus, Folder, Eye, EyeOff, Lock, Unlock } from 'lucide-react'
+import { Square, Circle, Minus, Folder, Eye, EyeOff, Lock, Unlock, Trash2 } from 'lucide-react'
 import type { PointElement, SVGElement, Point } from '@/types-app/index'
 import { convertToCorner, convertToStraight, convertToSmooth } from '@/types-app/point'
 import { transformPoints, parseHandle } from '@/utils/transform'
@@ -297,7 +297,6 @@ const LayersPanel: React.FC = () => {
 
   const [editingLayerId, setEditingLayerId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
-  const [draggedElementId, setDraggedElementId] = useState<string | null>(null)
   const [dragOverLayerId, setDragOverLayerId] = useState<string | null>(null)
 
   const getElementIcon = (type: string) => {
@@ -452,10 +451,10 @@ const LayersPanel: React.FC = () => {
               {layers.length > 1 && (
                 <button
                   onClick={(e) => { e.stopPropagation(); handleDeleteLayer(layer.id) }}
-                  className="text-xs text-dark-textMuted hover:text-red-400 w-4"
+                  className="text-dark-textMuted hover:text-red-400 ml-auto"
                   title="Delete Layer"
                 >
-                  ×
+                  <Trash2 size={14} />
                 </button>
               )}
 
@@ -476,9 +475,9 @@ const LayersPanel: React.FC = () => {
                 onDragLeave={() => setDragOverLayerId(null)}
                 onDrop={(e) => {
                   e.preventDefault()
-                  if (draggedElementId) {
-                    moveElementToLayer(draggedElementId, layer.id)
-                    setDraggedElementId(null)
+                  const elementId = e.dataTransfer.getData('elementId')
+                  if (elementId) {
+                    moveElementToLayer(elementId, layer.id)
                     setDragOverLayerId(null)
                   }
                 }}
@@ -489,11 +488,10 @@ const LayersPanel: React.FC = () => {
                     draggable
                     onClick={(e) => handleElementClick(element.id, e)}
                     onDragStart={(e) => {
-                      setDraggedElementId(element.id)
+                      e.dataTransfer.setData('elementId', element.id)
                       e.dataTransfer.effectAllowed = 'move'
                     }}
                     onDragEnd={() => {
-                      setDraggedElementId(null)
                       setDragOverLayerId(null)
                     }}
                     className={`
