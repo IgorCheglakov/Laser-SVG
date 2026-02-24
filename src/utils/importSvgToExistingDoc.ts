@@ -8,7 +8,7 @@
  * Includes cropping and centering logic for imported elements
  */
 
-import type { PointElement, SVGElement, Point } from '@/types-app/index'
+import type { PointElement, SVGElement, GroupElement, Point } from '@/types-app/index'
 import type { VertexType } from '@/types-app/point'
 import { generateId } from '@/utils/id'
 import { COLOR_PALETTE, DEFAULTS } from '@constants/index'
@@ -56,11 +56,6 @@ function colorToPalette(inputColor: string): string {
   }
 
   return closestColor
-}
-
-function normalizeStrokeWidth(width: number): number {
-  if (isNaN(width) || width <= 0) return STANDARD_STROKE_WIDTH
-  return STANDARD_STROKE_WIDTH
 }
 
 function convertLineToPoints(x1: number, y1: number, x2: number, y2: number): Point[] {
@@ -331,36 +326,6 @@ function convertPathToPoints(d: string): Point[] {
   return points
 }
 
-function getSvgElementAttributes(el: Element): {
-  stroke: string
-  strokeWidth: number
-  fill: string | null
-  name: string
-} {
-  let stroke = el.getAttribute('stroke')
-  const strokeWidth = parseFloat(el.getAttribute('stroke-width') || '') || STANDARD_STROKE_WIDTH
-  const fill = el.getAttribute('fill')
-  
-  // If no stroke but has fill, use fill as stroke (convert filled shape to outline)
-  if (!stroke && fill && fill !== 'none') {
-    stroke = fill
-  }
-  
-  // Default to black if no stroke
-  if (!stroke || stroke === 'none') {
-    stroke = '#000000'
-  }
-  
-  const name = el.getAttribute('data-name') || el.getAttribute('id') || ''
-
-  return {
-    stroke: colorToPalette(stroke),
-    strokeWidth: normalizeStrokeWidth(strokeWidth),
-    fill,
-    name,
-  }
-}
-
 function isLaserSvgCompatible(svg: Element, fileTimestamp: number): boolean {
   const meta = svg.querySelector('metadata')
   if (!meta) return false
@@ -471,29 +436,6 @@ function calculateScaleFactor(svgWidth: number, svgHeight: number, unit: string 
   console.log(`[Import] SVG size: ${svgWidth}x${svgHeight}${unit || ''} = ${svgWidthMm.toFixed(2)}x${svgHeightMm.toFixed(2)}mm, scale: ${scale.toFixed(4)}`)
   
   return scale
-}
-
-function scalePoints(points: Point[], scaleFactor: number, offsetX: number = 0, offsetY: number = 0): Point[] {
-  return points.map(p => {
-    const scaled: Point = {
-      x: p.x * scaleFactor + offsetX,
-      y: p.y * scaleFactor + offsetY,
-      vertexType: p.vertexType,
-    }
-    if (p.prevControlHandle) {
-      scaled.prevControlHandle = {
-        x: p.prevControlHandle.x * scaleFactor + offsetX,
-        y: p.prevControlHandle.y * scaleFactor + offsetY,
-      }
-    }
-    if (p.nextControlHandle) {
-      scaled.nextControlHandle = {
-        x: p.nextControlHandle.x * scaleFactor + offsetX,
-        y: p.nextControlHandle.y * scaleFactor + offsetY,
-      }
-    }
-    return scaled
-  })
 }
 
 function calculateBounds(points: Point[]): { x: number; y: number; width: number; height: number } {
@@ -689,7 +631,7 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
     }
 
     // Get SVG dimensions and calculate scale factor
-    const { width: svgWidth, height: svgHeight, unit, offsetX, offsetY } = getSvgDimensions(svg)
+    const { width: svgWidth, height: svgHeight, unit } = getSvgDimensions(svg)
     const scaleFactor = calculateScaleFactor(svgWidth, svgHeight, unit)
     console.log(`[Import] Scale factor: ${scaleFactor}`)
 
@@ -701,115 +643,156 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
     const selectors = ['path', 'line', 'rect', 'circle', 'ellipse', 'polyline', 'polygon']
     let elementIndex = 0
 
-    for (const selector of selectors) {
-      const els = svg.querySelectorAll(selector)
-      console.log(`[Import] Found ${selector}:`, els.length)
-
-      els.forEach((el) => {
-        let points: Point[] = []
-        let isClosed = false
-
-        switch (el.tagName.toLowerCase()) {
-          case 'line': {
-            const x1 = parseFloat(el.getAttribute('x1') || '0')
-            const y1 = parseFloat(el.getAttribute('y1') || '0')
-            const x2 = parseFloat(el.getAttribute('x2') || '0')
-            const y2 = parseFloat(el.getAttribute('y2') || '0')
-            points = convertLineToPoints(x1, y1, x2, y2)
-            break
-          }
-          case 'rect': {
-            const x = parseFloat(el.getAttribute('x') || '0')
-            const y = parseFloat(el.getAttribute('y') || '0')
-            const width = parseFloat(el.getAttribute('width') || '0')
-            const height = parseFloat(el.getAttribute('height') || '0')
-            if (width > 0 && height > 0) {
-              points = convertRectToPoints(x, y, width, height)
-              isClosed = true
-            }
-            break
-          }
-          case 'circle': {
-            const cx = parseFloat(el.getAttribute('cx') || '0')
-            const cy = parseFloat(el.getAttribute('cy') || '0')
-            const r = parseFloat(el.getAttribute('r') || '0')
-            if (r > 0) {
-              points = convertCircleToPoints(cx, cy, r)
-              isClosed = true
-            }
-            break
-          }
-          case 'ellipse': {
-            const cx = parseFloat(el.getAttribute('cx') || '0')
-            const cy = parseFloat(el.getAttribute('cy') || '0')
-            const rx = parseFloat(el.getAttribute('rx') || '0')
-            const ry = parseFloat(el.getAttribute('ry') || '0')
-            if (rx > 0 && ry > 0) {
-              points = convertEllipseToPoints(cx, cy, rx, ry)
-              isClosed = true
-            }
-            break
-          }
-          case 'polyline': {
-            const pointsStr = el.getAttribute('points') || ''
-            points = convertPolylineToPoints(pointsStr)
-            break
-          }
-          case 'polygon': {
-            const pointsStr = el.getAttribute('points') || ''
-            points = convertPolylineToPoints(pointsStr)
-            isClosed = points.length > 2
-            break
-          }
-          case 'path': {
-            const d = el.getAttribute('d')
-            if (d) {
-              points = convertPathToPoints(d)
-              const fill = el.getAttribute('fill')
-              // Closed if has Z or has fill (filled shape)
-              isClosed = d.toUpperCase().includes('Z') || (!!fill && fill !== 'none')
-            }
-            break
-          }
+    // Helper function to convert an SVG element to PointElement
+    const convertElementToPoint = (el: Element): PointElement | null => {
+      let points: Point[] = []
+      let isClosed = false
+      
+      const tagName = el.tagName.toLowerCase()
+      
+      switch (tagName) {
+        case 'line': {
+          const x1 = parseFloat(el.getAttribute('x1') || '0')
+          const y1 = parseFloat(el.getAttribute('y1') || '0')
+          const x2 = parseFloat(el.getAttribute('x2') || '0')
+          const y2 = parseFloat(el.getAttribute('y2') || '0')
+          points = convertLineToPoints(x1, y1, x2, y2)
+          break
         }
-
-        if (points.length < 2) {
-          console.log(`[Import] Skipping ${el.tagName}: less than 2 points`)
-          return
+        case 'rect': {
+          const x = parseFloat(el.getAttribute('x') || '0')
+          const y = parseFloat(el.getAttribute('y') || '0')
+          const width = parseFloat(el.getAttribute('width') || '0')
+          const height = parseFloat(el.getAttribute('height') || '0')
+          if (width > 0 && height > 0) {
+            points = convertRectToPoints(x, y, width, height)
+            isClosed = true
+          }
+          break
         }
-
-        const attrs = getSvgElementAttributes(el)
-        
-        // Use fill color as stroke if no stroke (convert filled shape to outline)
-        let finalStroke = attrs.stroke
-        if ((!el.getAttribute('stroke') || el.getAttribute('stroke') === 'none') && attrs.fill && attrs.fill !== 'none') {
-          finalStroke = colorToPalette(attrs.fill)
+        case 'circle': {
+          const cx = parseFloat(el.getAttribute('cx') || '0')
+          const cy = parseFloat(el.getAttribute('cy') || '0')
+          const r = parseFloat(el.getAttribute('r') || '0')
+          if (r > 0) {
+            points = convertCircleToPoints(cx, cy, r)
+            isClosed = true
+          }
+          break
         }
-
-        const name = attrs.name || `${el.tagName} ${elementIndex + 1}`
-
-        const pointElement: PointElement = {
-          id: generateId(),
-          type: 'point',
-          name,
-          visible: true,
-          locked: false,
-          points: scalePoints(points, scaleFactor, offsetX, offsetY),
-          stroke: finalStroke,
-          strokeWidth: attrs.strokeWidth,
-          isClosedShape: isClosed,
+        case 'ellipse': {
+          const cx = parseFloat(el.getAttribute('cx') || '0')
+          const cy = parseFloat(el.getAttribute('cy') || '0')
+          const rx = parseFloat(el.getAttribute('rx') || '0')
+          const ry = parseFloat(el.getAttribute('ry') || '0')
+          if (rx > 0 && ry > 0) {
+            points = convertEllipseToPoints(cx, cy, rx, ry)
+            isClosed = true
+          }
+          break
         }
-
-        const elementBounds = calculateBounds(pointElement.points)
-        console.log(`[Import] Element "${name}" position on canvas: x=${elementBounds.x.toFixed(2)}, y=${elementBounds.y.toFixed(2)}, width=${elementBounds.width.toFixed(2)}, height=${elementBounds.height.toFixed(2)}`)
-
-        elements.push(pointElement)
-        elementIndex++
-        console.log(`[Import] Added ${el.tagName}: ${name}, points: ${points.length}, closed: ${isClosed}`)
-      })
+        case 'polyline': {
+          const pointsStr = el.getAttribute('points') || ''
+          points = convertPolylineToPoints(pointsStr)
+          break
+        }
+        case 'polygon': {
+          const pointsStr = el.getAttribute('points') || ''
+          points = convertPolylineToPoints(pointsStr)
+          isClosed = points.length > 2
+          break
+        }
+        case 'path': {
+          const d = el.getAttribute('d')
+          if (d) {
+            points = convertPathToPoints(d)
+            const fill = el.getAttribute('fill')
+            isClosed = d.toUpperCase().includes('Z') || (!!fill && fill !== 'none')
+          }
+          break
+        }
+        default:
+          return null
+      }
+      
+      if (points.length < 2) return null
+      
+      // Get attributes
+      let stroke = el.getAttribute('stroke')
+      const strokeWidth = parseFloat(el.getAttribute('stroke-width') || '') || STANDARD_STROKE_WIDTH
+      const fill = el.getAttribute('fill')
+      
+      // Use fill as stroke if no stroke
+      if ((!stroke || stroke === 'none') && fill && fill !== 'none') {
+        stroke = fill
+      }
+      if (!stroke || stroke === 'none') {
+        stroke = '#000000'
+      }
+      
+      const name = el.getAttribute('data-name') || el.getAttribute('id') || `${tagName} ${elementIndex + 1}`
+      
+      // Scale points
+      const scaledPoints = points.map(p => ({
+        x: p.x * scaleFactor,
+        y: p.y * scaleFactor,
+      }))
+      
+      elementIndex++
+      
+      return {
+        id: el.getAttribute('id') || generateId(),
+        type: 'point' as const,
+        name,
+        visible: true,
+        locked: false,
+        points: scaledPoints,
+        stroke: colorToPalette(stroke),
+        strokeWidth,
+        isClosedShape: isClosed,
+      }
     }
 
-    console.log('[Import] Complete, elements count:', elements.length)
+    // Helper function to process elements recursively (including groups)
+    const processElements = (els: HTMLCollection | Element[]): SVGElement[] => {
+      const result: SVGElement[] = []
+      
+      Array.from(els).forEach((el: Element) => {
+        const tagName = el.tagName.toLowerCase()
+        
+        if (tagName === 'g') {
+          // Process group - recursively get children
+          const children = processElements(el.children)
+          
+          // Only create group if it has children
+          if (children.length > 0) {
+            const groupEl: GroupElement = {
+              id: el.getAttribute('id') || generateId(),
+              type: 'group',
+              name: el.getAttribute('data-name') || el.getAttribute('id') || `Group ${elementIndex + 1}`,
+              visible: true,
+              locked: false,
+              children,
+            }
+            result.push(groupEl)
+            elementIndex++
+          }
+        } else if (selectors.includes(tagName)) {
+          const pointEl = convertElementToPoint(el)
+          if (pointEl) {
+            result.push(pointEl)
+          }
+        }
+      })
+      
+      return result
+    }
+
+    // Process all elements including groups
+    const allElements = processElements(svg.children)
+    elements.push(...allElements)
+
+    console.log(`[Import] Complete, elements count: ${elements.length}`)
     return elements
   } catch (error) {
     console.error('[Import] Fatal error:', error)

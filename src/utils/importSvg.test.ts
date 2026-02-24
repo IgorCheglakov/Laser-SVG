@@ -5,7 +5,7 @@ import {
   centerElements,
   importFromSVG,
 } from './importSvgToExistingDoc'
-import type { PointElement, SVGElement } from '@/types-app/index'
+import type { PointElement, GroupElement, SVGElement } from '@/types-app/index'
 
 function createPointElement(overrides: Partial<PointElement> = {}): PointElement {
   return {
@@ -235,14 +235,6 @@ describe('importFromSVG - basic shapes', () => {
     expect(pointEl.stroke).toBe('#FF0000')
   })
 
-  it('should import group element by extracting children (no group wrapper)', () => {
-    const svg = `<svg width="100mm" height="100mm" viewBox="0 0 100 100"><g><rect x="10" y="10" width="20" height="20"/></g></svg>`
-    const result = importFromSVG(svg)
-    
-    expect(result.length).toBe(1)
-    expect(result[0].type).toBe('point')
-  })
-
   it('should scale SVG from px to mm when using px units', () => {
     const svg = `<svg width="100px" height="100px" viewBox="0 0 100 100"><rect x="0" y="0" width="10" height="10"/></svg>`
     const result = importFromSVG(svg)
@@ -254,12 +246,26 @@ describe('importFromSVG - basic shapes', () => {
     expect(maxCoord).toBeLessThan(400)
   })
 
-  it('should import elements inside groups by extracting them (not as groups)', () => {
+  it('should import group element with children', () => {
     const svg = `<svg width="100mm" height="100mm" viewBox="0 0 100 100"><g><rect x="10" y="10" width="20" height="20"/></g></svg>`
     const result = importFromSVG(svg)
     
     expect(result.length).toBe(1)
-    expect(result[0].type).toBe('point')
+    expect(result[0].type).toBe('group')
+    const groupEl = result[0] as GroupElement
+    expect(groupEl.children.length).toBe(1)
+    expect(groupEl.children[0].type).toBe('point')
+  })
+
+  it('should import nested groups', () => {
+    const svg = `<svg width="100mm" height="100mm" viewBox="0 0 100 100"><g><g><rect x="10" y="10" width="20" height="20"/></g></g></svg>`
+    const result = importFromSVG(svg)
+    
+    expect(result.length).toBe(1)
+    expect(result[0].type).toBe('group')
+    const outerGroup = result[0] as GroupElement
+    expect(outerGroup.children.length).toBe(1)
+    expect(outerGroup.children[0].type).toBe('group')
   })
 
   it('should import path element', () => {
