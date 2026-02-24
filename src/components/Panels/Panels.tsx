@@ -281,7 +281,7 @@ const VertexPropertiesPanel: React.FC<{
 /**
  * Layers Panel
  */
-const LayersPanel: React.FC = () => {
+export const LayersPanel: React.FC = () => {
   const { 
     elements, 
     layers, 
@@ -704,8 +704,8 @@ export const Panels: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full" tabIndex={0}>
-      {/* Properties Panel */}
-      <div className="h-[45%] border-b border-dark-border overflow-y-auto">
+      {/* Properties Panel - full height since Layers moved to bottom */}
+      <div className="h-full overflow-y-auto">
         <div className="px-3 py-2 bg-dark-bgTertiary text-sm font-medium text-dark-text border-b border-dark-border sticky top-0">
           {UI_STRINGS.PANEL_PROPERTIES}
         </div>
@@ -831,8 +831,7 @@ export const Panels: React.FC = () => {
         )}
       </div>
 
-      {/* Layers Panel */}
-      <LayersPanel />
+      {/* Layers Panel - moved to bottom in Layout */}
     </div>
   )
 }
