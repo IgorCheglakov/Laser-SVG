@@ -576,8 +576,6 @@ export const Panels: React.FC = () => {
     return Array.from(colors)
   }, [selectedPointElements])
 
-  const hasMixedColors = uniqueColors.length > 1
-
   // Get common color if all elements have the same color
   const commonColor = uniqueColors.length === 1 ? uniqueColors[0] : null
 
@@ -840,18 +838,6 @@ export const Panels: React.FC = () => {
                 <div>
                   <label className="text-xs text-dark-textMuted block mb-1">{UI_STRINGS.PROP_COLOR}</label>
                   <div className="flex flex-wrap gap-1 max-w-[180px]">
-                    {hasMixedColors && (
-                      <button
-                        onClick={() => handleColorChange('#000000')}
-                        className="w-8 h-6 rounded border-2 border-red-500 flex items-center justify-center relative hover:scale-105 transition-transform"
-                        style={{ backgroundColor: '#ffffff' }}
-                        title="Set all to same color"
-                      >
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-6 h-0.5 bg-red-500 rotate-45 absolute" />
-                        </div>
-                      </button>
-                    )}
                     {COLOR_PALETTE.map((c) => (
                       <button
                         key={c.index}
