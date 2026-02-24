@@ -292,10 +292,13 @@ const LayersPanel: React.FC = () => {
     updateLayer,
     deleteLayer,
     setActiveLayer,
+    moveElementToLayer,
   } = useEditorStore()
 
   const [editingLayerId, setEditingLayerId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
+  const [draggedElementId, setDraggedElementId] = useState<string | null>(null)
+  const [dragOverLayerId, setDragOverLayerId] = useState<string | null>(null)
 
   const getElementIcon = (type: string) => {
     switch (type) {
@@ -464,13 +467,37 @@ const LayersPanel: React.FC = () => {
 
             {/* Elements in layer */}
             {activeLayerId === layer.id && elementsByLayer[layer.id]?.length > 0 && (
-              <div className="bg-dark-bgSecondary">
+              <div 
+                className={`bg-dark-bgSecondary ${dragOverLayerId === layer.id ? 'ring-2 ring-dark-accent ring-inset' : ''}`}
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  setDragOverLayerId(layer.id)
+                }}
+                onDragLeave={() => setDragOverLayerId(null)}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  if (draggedElementId) {
+                    moveElementToLayer(draggedElementId, layer.id)
+                    setDraggedElementId(null)
+                    setDragOverLayerId(null)
+                  }
+                }}
+              >
                 {[...elementsByLayer[layer.id]].reverse().map((element, idx) => (
                   <div
                     key={element.id}
+                    draggable
                     onClick={(e) => handleElementClick(element.id, e)}
+                    onDragStart={(e) => {
+                      setDraggedElementId(element.id)
+                      e.dataTransfer.effectAllowed = 'move'
+                    }}
+                    onDragEnd={() => {
+                      setDraggedElementId(null)
+                      setDragOverLayerId(null)
+                    }}
                     className={`
-                      flex items-center gap-2 px-4 py-1.5 text-xs cursor-pointer
+                      flex items-center gap-2 px-4 py-1.5 text-xs cursor-grab active:cursor-grabbing
                       ${selectedIds.includes(element.id)
                         ? 'bg-dark-accent text-white'
                         : 'text-dark-text hover:bg-dark-bgTertiary'
