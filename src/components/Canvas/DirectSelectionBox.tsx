@@ -10,8 +10,9 @@
  */
 
 import { useMemo, useState, useEffect } from 'react'
-import type { SVGElement, PointElement, Point } from '@/types-app/index'
+import type { SVGElement, PointElement, Point, GroupElement } from '@/types-app/index'
 import { DEFAULTS } from '@constants/index'
+import { getAllPointElements } from '@/utils/bounds'
 
 export interface DirectSelectionBoxProps {
   elements: SVGElement[]
@@ -52,7 +53,22 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
   const halfControlHandle = controlHandleSize / 2
 
   const selectedElements = useMemo(() => {
-    return elements.filter(el => selectedIds.includes(el.id) && 'points' in el) as PointElement[]
+    const result: PointElement[] = []
+    
+    for (const id of selectedIds) {
+      const element = elements.find(el => el.id === id)
+      if (!element) continue
+      
+      // Handle groups - get all children point elements
+      if (element.type === 'group') {
+        const group = element as GroupElement
+        result.push(...getAllPointElements([group]))
+      } else if ('points' in element) {
+        result.push(element as PointElement)
+      }
+    }
+    
+    return result
   }, [elements, selectedIds])
 
   useEffect(() => {
