@@ -841,28 +841,27 @@ export const Panels: React.FC = () => {
                   <label className="text-xs text-dark-textMuted block mb-1">{UI_STRINGS.PROP_COLOR}</label>
                   <div className="flex flex-wrap gap-1 max-w-[180px]">
                     {hasMixedColors && (
-                      <div
-                        className="w-8 h-6 rounded border-2 border-red-500 flex items-center justify-center relative"
+                      <button
+                        onClick={() => handleColorChange('#000000')}
+                        className="w-8 h-6 rounded border-2 border-red-500 flex items-center justify-center relative hover:scale-105 transition-transform"
                         style={{ backgroundColor: '#ffffff' }}
-                        title="Mixed colors"
+                        title="Set all to same color"
                       >
                         <div className="absolute inset-0 flex items-center justify-center">
                           <div className="w-6 h-0.5 bg-red-500 rotate-45 absolute" />
                         </div>
-                      </div>
+                      </button>
                     )}
                     {COLOR_PALETTE.map((c) => (
                       <button
                         key={c.index}
                         onClick={() => handleColorChange(c.color)}
-                        disabled={hasMixedColors && commonColor !== c.color && uniqueColors.length > 1}
                         className={`
                           w-8 h-6 rounded border-2 transition-all text-xs font-bold
                           ${commonColor === c.color 
                             ? 'border-white scale-110' 
                             : 'border-transparent hover:border-dark-border'
                           }
-                          ${hasMixedColors && commonColor !== c.color ? 'opacity-30 cursor-not-allowed' : ''}
                         `}
                         style={{ 
                           backgroundColor: c.color,
