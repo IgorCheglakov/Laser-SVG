@@ -1999,7 +1999,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({ element, isPreview, isSel
           <CanvasElement
             key={child.id}
             element={child}
-            isSelected={false}
+            isSelected={isSelected}
             isPreview={isPreview}
           />
         ))}
