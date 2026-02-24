@@ -8,7 +8,7 @@ import { useMemo, useState } from 'react'
 import { useEditorStore } from '@store/index'
 import { UI_STRINGS, COLOR_PALETTE, getContrastColor } from '@constants/index'
 import { Square, Circle, Minus, Folder, Eye, EyeOff, Lock, Unlock, Trash2 } from 'lucide-react'
-import type { PointElement, SVGElement, Point } from '@/types-app/index'
+import type { PointElement, SVGElement, Point, GroupElement } from '@/types-app/index'
 import { convertToCorner, convertToStraight, convertToSmooth } from '@/types-app/point'
 import { transformPoints, parseHandle } from '@/utils/transform'
 import { getAllPointElements } from '@/utils/bounds'
@@ -548,6 +548,46 @@ export const Panels: React.FC = () => {
     angle: '',
   })
 
+  // Get all selected point elements including from groups
+  const selectedPointElements = useMemo(() => {
+    const result: PointElement[] = []
+    for (const id of selectedIds) {
+      const element = elements.find(el => el.id === id)
+      if (!element) continue
+      
+      if (element.type === 'group') {
+        const groupEl = element as GroupElement
+        for (const child of groupEl.children) {
+          if ('points' in child) {
+            result.push(child as PointElement)
+          }
+        }
+      } else if ('points' in element) {
+        result.push(element as PointElement)
+      }
+    }
+    return result
+  }, [elements, selectedIds])
+
+  // Check if selected elements have different colors
+  const uniqueColors = useMemo(() => {
+    if (selectedPointElements.length === 0) return []
+    const colors = new Set(selectedPointElements.map(el => el.stroke))
+    return Array.from(colors)
+  }, [selectedPointElements])
+
+  const hasMixedColors = uniqueColors.length > 1
+
+  // Get common color if all elements have the same color
+  const commonColor = uniqueColors.length === 1 ? uniqueColors[0] : null
+
+  // Handle color change for all selected elements
+  const handleColorChange = (color: string) => {
+    for (const el of selectedPointElements) {
+      updateElement(el.id, { stroke: color } as Partial<SVGElement>)
+    }
+  }
+
   const bounds = useMemo(() => {
     if (selectedIds.length === 0) return null
     
@@ -796,22 +836,33 @@ export const Panels: React.FC = () => {
                 </div>
               )}
 
-              {selectedIds.length === 1 && pointElement && (
+              {selectedPointElements.length > 0 && (
                 <div>
                   <label className="text-xs text-dark-textMuted block mb-1">{UI_STRINGS.PROP_COLOR}</label>
                   <div className="flex flex-wrap gap-1 max-w-[180px]">
+                    {hasMixedColors && (
+                      <div
+                        className="w-8 h-6 rounded border-2 border-red-500 flex items-center justify-center relative"
+                        style={{ backgroundColor: '#ffffff' }}
+                        title="Mixed colors"
+                      >
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-6 h-0.5 bg-red-500 rotate-45 absolute" />
+                        </div>
+                      </div>
+                    )}
                     {COLOR_PALETTE.map((c) => (
                       <button
                         key={c.index}
-                        onClick={() => {
-                          updateElement(selectedIds[0], { stroke: c.color } as Partial<SVGElement>)
-                        }}
+                        onClick={() => handleColorChange(c.color)}
+                        disabled={hasMixedColors && commonColor !== c.color && uniqueColors.length > 1}
                         className={`
                           w-8 h-6 rounded border-2 transition-all text-xs font-bold
-                          ${pointElement.stroke === c.color 
+                          ${commonColor === c.color 
                             ? 'border-white scale-110' 
                             : 'border-transparent hover:border-dark-border'
                           }
+                          ${hasMixedColors && commonColor !== c.color ? 'opacity-30 cursor-not-allowed' : ''}
                         `}
                         style={{ 
                           backgroundColor: c.color,
