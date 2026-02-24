@@ -533,7 +533,9 @@ export const Canvas: React.FC = () => {
     vertexMoveIndicesRef.current = vertexIndices
     vertexMoveStartRef.current = clientPoint
     
-    const el = elements.find(el => el.id === elementId)
+    // Find element - may be inside a group
+    const allPointElements = getAllPointElements(elements)
+    const el = allPointElements.find(el => el.id === elementId)
     if (el && 'points' in el) {
       const pointEl = el as PointElement
       initialVertexPositionsRef.current.set(elementId, JSON.parse(JSON.stringify(pointEl.points)))
@@ -552,7 +554,9 @@ export const Canvas: React.FC = () => {
     controlMoveTypeRef.current = controlType
     controlMoveStartRef.current = clientPoint
     
-    const el = elements.find(el => el.id === elementId)
+    // Find element - may be inside a group
+    const allPointElements = getAllPointElements(elements)
+    const el = allPointElements.find(el => el.id === elementId)
     if (el && 'points' in el) {
       const pointEl = el as PointElement
       initialControlPositionsRef.current.set(elementId, JSON.parse(JSON.stringify(pointEl.points)))
@@ -876,7 +880,9 @@ export const Canvas: React.FC = () => {
       
       if (!initialPositions) return
       
-      const el = elements.find(el => el.id === elementId)
+      // Find element - may be inside a group
+      const allPointElements = getAllPointElements(elements)
+      const el = allPointElements.find(el => el.id === elementId)
       if (!el || !('points' in el)) return
       
       const pointEl = el as PointElement
@@ -918,7 +924,9 @@ export const Canvas: React.FC = () => {
       
       if (!initialPositions) return
       
-      const el = elements.find(el => el.id === elementId)
+      // Find element - may be inside a group
+      const allPointElements = getAllPointElements(elements)
+      const el = allPointElements.find(el => el.id === elementId)
       if (!el || !('points' in el)) return
       
       const pointEl = el as PointElement
