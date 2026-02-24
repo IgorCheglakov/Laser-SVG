@@ -163,6 +163,7 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
   }
 
   const handleBoxMouseDown = (e: React.MouseEvent) => {
+    console.log('[BoundingBox] handleBoxMouseDown called')
     e.stopPropagation()
     onBoxClick?.({ x: e.clientX, y: e.clientY }, e.altKey)
   }

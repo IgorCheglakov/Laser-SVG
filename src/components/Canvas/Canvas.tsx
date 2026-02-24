@@ -467,13 +467,38 @@ export const Canvas: React.FC = () => {
     isFirstMoveRef.current = true
     
     initialElementPositionsRef.current.clear()
-    selectedIds.forEach(id => {
-      const el = elements.find(el => el.id === id)
-      if (el && 'points' in el) {
-        const pointEl = el as PointElement
-        initialElementPositionsRef.current.set(id, [...pointEl.points])
+    
+    // Get all point elements including from groups
+    const allPointElements = getAllPointElements(elements)
+    const selectedPointIds = new Set<string>()
+    
+    console.log('[handleBoxClick] elements:', elements.map(e => e.id))
+    console.log('[handleBoxClick] selectedIds:', selectedIds)
+    console.log('[handleBoxClick] allPointElements:', allPointElements.map(e => e.id))
+    
+    for (const id of selectedIds) {
+      const el = elements.find(e => e.id === id)
+      console.log('[handleBoxClick] Looking for ID:', id, 'Found:', el?.type)
+      if (!el) continue
+      
+      if (el.type === 'group') {
+        const childPointElements = getAllPointElements([el])
+        console.log('[handleBoxClick] Group children:', childPointElements.map(e => e.id))
+        childPointElements.forEach(c => selectedPointIds.add(c.id))
+      } else if ('points' in el) {
+        selectedPointIds.add(id)
       }
-    })
+    }
+    
+    console.log('[handleBoxClick] selectedPointIds:', Array.from(selectedPointIds))
+    
+    for (const el of allPointElements) {
+      if (!selectedPointIds.has(el.id)) continue
+      initialElementPositionsRef.current.set(el.id, JSON.parse(JSON.stringify(el.points)))
+    }
+    
+    console.log('[handleBoxClick] Initial positions saved:', Array.from(initialElementPositionsRef.current.keys()))
+    console.log('[handleBoxClick] Selected IDs:', selectedIds)
   }, [elements, selectedIds, screenToCanvas])
 
   /**
@@ -562,6 +587,8 @@ export const Canvas: React.FC = () => {
       
       if (activeTool === 'selection') {
         const clickedElement = findElementAtPoint(point)
+        console.log('[handleMouseDown] clickedElement:', clickedElement?.id, clickedElement?.type)
+        console.log('[handleMouseDown] activeTool:', activeTool)
         
         if (clickedElement) {
           if (e.ctrlKey || e.metaKey) {
@@ -571,8 +598,10 @@ export const Canvas: React.FC = () => {
               setSelectedIds([...selectedIds, clickedElement.id])
             }
           } else {
-            if (!selectedIds.includes(clickedElement.id)) {
-              setSelectedIds([clickedElement.id])
+            // Use clickedElement.id directly since setSelectedIds is async
+            const newSelectedId = clickedElement.id
+            if (!selectedIds.includes(newSelectedId)) {
+              setSelectedIds([newSelectedId])
             }
             
             isMovingRef.current = true
@@ -580,13 +609,36 @@ export const Canvas: React.FC = () => {
             isFirstMoveRef.current = true
             
             initialElementPositionsRef.current.clear()
-            selectedIds.forEach(id => {
-              const el = elements.find(el => el.id === id)
-              if (el && 'points' in el) {
-                const pointEl = el as PointElement
-                initialElementPositionsRef.current.set(id, [...pointEl.points])
+            
+            // Get all point elements including from groups
+            const allPointElements = getAllPointElements(elements)
+            const selectedPointIds = new Set<string>()
+            
+            // Use newSelectedId instead of selectedIds since it's async
+            const idsToProcess = [newSelectedId]
+            console.log('[handleMouseDown] idsToProcess:', idsToProcess)
+            
+            for (const id of idsToProcess) {
+              const el = elements.find(e => e.id === id)
+              console.log('[handleMouseDown] Looking for ID:', id, 'Found:', el?.type)
+              if (!el) continue
+              
+              if (el.type === 'group') {
+                const childPointElements = getAllPointElements([el])
+                console.log('[handleMouseDown] Group children:', childPointElements.map(e => e.id))
+                childPointElements.forEach(c => selectedPointIds.add(c.id))
+              } else if ('points' in el) {
+                selectedPointIds.add(id)
               }
-            })
+            }
+            
+            console.log('[handleMouseDown] selectedPointIds:', Array.from(selectedPointIds))
+            
+            for (const el of allPointElements) {
+              if (!selectedPointIds.has(el.id)) continue
+              initialElementPositionsRef.current.set(el.id, JSON.parse(JSON.stringify(el.points)))
+            }
+            console.log('[handleMouseDown] Initial positions saved:', Array.from(initialElementPositionsRef.current.keys()))
           }
         } else {
           if (!e.ctrlKey && !e.metaKey) {
@@ -748,6 +800,7 @@ export const Canvas: React.FC = () => {
     }
     
     if (isMovingRef.current && (e.buttons & 1)) {
+      console.log('[handleMouseMove] isMovingRef is true')
       let point = screenToCanvas(e.clientX, e.clientY)
       
       if (settings.snapToGrid) {
@@ -763,8 +816,12 @@ export const Canvas: React.FC = () => {
       }
       
       selectedIds.forEach(id => {
+        console.log('[handleMouseMove] Processing selected ID:', id)
         const initialPoints = initialElementPositionsRef.current.get(id)
-        if (!initialPoints) return
+        if (!initialPoints) {
+          console.log('[handleMouseMove] No initial points for:', id)
+          return
+        }
         
         const newPoints = initialPoints.map(p => ({
           ...p,
@@ -781,6 +838,7 @@ export const Canvas: React.FC = () => {
       Array.from(initialElementPositionsRef.current.keys()).forEach(id => {
         if (selectedIds.includes(id)) return // Already handled above
         
+        console.log('[handleMouseMove] Processing group child ID:', id)
         const initialPoints = initialElementPositionsRef.current.get(id)
         if (!initialPoints) return
         
