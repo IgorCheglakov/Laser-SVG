@@ -1981,9 +1981,10 @@ interface CanvasElementProps {
 }
 
 const CanvasElement: React.FC<CanvasElementProps> = ({ element, isPreview, isSelected }) => {
+  const originalStroke = (element as PointElement).stroke || '#000000'
   const commonProps = {
     fill: 'none',
-    stroke: isSelected ? '#007acc' : ((element as PointElement).stroke || '#000000'),
+    stroke: originalStroke,
     strokeWidth: 1,
     vectorEffect: 'non-scaling-stroke' as const,
     opacity: isPreview ? 0.7 : 1,
@@ -2044,6 +2045,22 @@ const CanvasElement: React.FC<CanvasElementProps> = ({ element, isPreview, isSel
     }
     
     // console.log('[CanvasElement] Generated d:', d)
+    
+    // When selected, render original color + thin blue selection indicator
+    if (isSelected) {
+      return (
+        <>
+          <path d={d} {...commonProps} />
+          <path
+            d={d}
+            fill="none"
+            stroke="#007acc"
+            strokeWidth={0.33}
+            vectorEffect="non-scaling-stroke"
+          />
+        </>
+      )
+    }
     
     return (
       <path
