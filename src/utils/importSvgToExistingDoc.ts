@@ -259,7 +259,9 @@ function convertToAbsolute(commands: ParsedCommand[]): ParsedCommand[] {
 
 function convertPathToPoints(d: string): Point[] {
   const commands = parsePathData(d)
+  console.log('[Import] parsePathData commands:', commands)
   const absCommands = convertToAbsolute(commands)
+  console.log('[Import] convertToAbsolute result:', absCommands)
 
   const points: Point[] = []
   let currentPoint: Point | null = null
@@ -277,6 +279,20 @@ function convertPathToPoints(d: string): Point[] {
     } else if (cmd.command === 'L') {
       if (cmd.values.length < 2) continue
       currentPoint = { x: cmd.values[0], y: cmd.values[1], vertexType: 'straight' }
+      if (!isNaN(currentPoint.x) && !isNaN(currentPoint.y)) {
+        points.push(currentPoint)
+      }
+    } else if (cmd.command === 'H') {
+      // Horizontal line - only x changes, y stays the same
+      if (cmd.values.length < 1 || !currentPoint) continue
+      currentPoint = { x: cmd.values[0], y: currentPoint.y, vertexType: 'straight' }
+      if (!isNaN(currentPoint.x) && !isNaN(currentPoint.y)) {
+        points.push(currentPoint)
+      }
+    } else if (cmd.command === 'V') {
+      // Vertical line - only y changes, x stays the same
+      if (cmd.values.length < 1 || !currentPoint) continue
+      currentPoint = { x: currentPoint.x, y: cmd.values[0], vertexType: 'straight' }
       if (!isNaN(currentPoint.x) && !isNaN(currentPoint.y)) {
         points.push(currentPoint)
       }
@@ -704,10 +720,13 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
         }
         case 'path': {
           const d = el.getAttribute('d')
+          console.log('[Import] Processing path, d:', d)
           if (d) {
             points = convertPathToPoints(d)
+            console.log('[Import] Path points:', points.length)
             const fill = el.getAttribute('fill')
             isClosed = d.toUpperCase().includes('Z') || (!!fill && fill !== 'none')
+            console.log('[Import] Path isClosed:', isClosed)
           }
           break
         }
@@ -715,7 +734,10 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
           return null
       }
       
-      if (points.length < 2) return null
+      if (points.length < 2) {
+        console.log('[Import] points.length < 2, returning null')
+        return null
+      }
       
       // Get attributes
       let stroke = el.getAttribute('stroke')
