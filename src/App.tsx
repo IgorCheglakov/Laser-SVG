@@ -9,7 +9,7 @@ import { Layout } from '@components/Layout/Layout'
 import { useEditorStore, undo, redo } from '@store/index'
 import { HOTKEYS } from '@constants/index'
 import { exportToSVG } from '@/utils/exportSvg'
-import { importFromSVG, centerElements, cropElementsToBounds, isSvgLaserCompatible } from '@/utils/importSvgToExistingDoc'
+import { importFromSVG, centerElements, cropElementsToBounds } from '@/utils/importSvgToExistingDoc'
 import { DEFAULTS } from '@constants/index'
 import type { SVGElement, PointElement } from '@/types-app/index'
 
@@ -236,15 +236,15 @@ const useMenuActions = () => {
                 console.log('[App] File opened:', result.path, 'content length:', result.content.length, 'timestamp:', result.timestamp)
                 console.log('[App] Content preview:', result.content.substring(0, 200))
                 
-                const isCompatible = isSvgLaserCompatible(result.content)
-                if (!isCompatible) {
+                // const isCompatible = isSvgLaserCompatible(result.content)
+                /* if (!isCompatible) {
                   await window.electronAPI?.showMessageBox({
                     type: 'info',
                     title: 'LaserSVG Editor',
                     message: 'This program will adjust the file for the purposes of laser engraving in Lightburn program:\n- All fills are disabled, all strokes are enabled;\n- All colors are adjusted to match the Lightburn palette;\n- All monolithic shapes, such as monolithic circles and squares are converted into polygonal objects.\n\nDo not override the existing file if you don\'t want this data to be lost',
                     buttons: ['OK'],
                   })
-                }
+                } */
                 
                 const importedElements = importFromSVG(result.content, result.timestamp)
                 
