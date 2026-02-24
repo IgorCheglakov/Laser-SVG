@@ -5,7 +5,7 @@ import {
   centerElements,
   importFromSVG,
 } from './importSvgToExistingDoc'
-import type { PointElement, GroupElement, SVGElement } from '@/types-app/index'
+import type { PointElement, SVGElement } from '@/types-app/index'
 
 function createPointElement(overrides: Partial<PointElement> = {}): PointElement {
   return {

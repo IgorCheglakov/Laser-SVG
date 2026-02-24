@@ -234,7 +234,6 @@ export function convertToSmooth(
       
       if (distToNext > 0 && distToPrev > 0) {
         const angleToNext = Math.atan2(dyToNext, dxToNext) * 180 / Math.PI
-        const angleToPrev = Math.atan2(dyToPrev, dxToPrev) * 180 / Math.PI
         
         const n1 = { x: dxToNext / distToNext, y: dyToNext / distToNext }
         const n2 = { x: dxToPrev / distToPrev, y: dyToPrev / distToPrev }
@@ -317,7 +316,6 @@ export function convertToSmooth(
       const distToNext = Math.sqrt(dxToNext * dxToNext + dyToNext * dyToNext)
       
       if (distToPrev > 0 && distToNext > 0) {
-        const angleToPrev = Math.atan2(dyToPrev, dxToPrev) * 180 / Math.PI
         const angleToNext = Math.atan2(dyToNext, dxToNext) * 180 / Math.PI
         
         const n1 = { x: dxToNext / distToNext, y: dyToNext / distToNext }
@@ -402,7 +400,6 @@ export function convertToSmooth(
     
     if (distToNext > 0 && distToPrev > 0) {
       const angleToNext = Math.atan2(dyToNext, dxToNext) * 180 / Math.PI
-      const angleToPrev = Math.atan2(dyToPrev, dxToPrev) * 180 / Math.PI
       
       const n1 = { x: dxToNext / distToNext, y: dyToNext / distToNext }
       const n2 = { x: dxToPrev / distToPrev, y: dyToPrev / distToPrev }

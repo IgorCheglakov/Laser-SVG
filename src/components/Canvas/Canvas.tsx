@@ -137,51 +137,78 @@ export const Canvas: React.FC = () => {
   }, [])
 
   /**
-   * Hit test - find element at point
-   */
+    * Hit test - find element at point
+    */
   const findElementAtPoint = useCallback((point: Point): SVGElement | null => {
     const hitThreshold = 5 / view.scale
     
     for (let i = elements.length - 1; i >= 0; i--) {
       const element = elements[i]
       
-      // Handle groups - check if point is within group's children bounds
+      // Handle groups - check if point is within group's bounds
       if (element.type === 'group') {
         const group = element as GroupElement
         if (!group.visible) continue
         
-        // Check each child in the group
+        // Get all child point elements and calculate group bounds
         const childElements = getAllPointElements([group])
+        
+        // Calculate overall group bounding box
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
         for (const childEl of childElements) {
           if (!childEl.points) continue
-          
           const bounds = calculateBounds(childEl.points)
-          
-          if (
-            point.x >= bounds.x - hitThreshold &&
-            point.x <= bounds.x + bounds.width + hitThreshold &&
-            point.y >= bounds.y - hitThreshold &&
-            point.y <= bounds.y + bounds.height + hitThreshold
-          ) {
-            // Check vertices
-            for (const p of childEl.points) {
-              const distToPoint = Math.sqrt((point.x - p.x) ** 2 + (point.y - p.y) ** 2)
-              if (distToPoint <= hitThreshold) {
-                return element // Return the group, not the child
-              }
-            }
+          minX = Math.min(minX, bounds.x)
+          minY = Math.min(minY, bounds.y)
+          maxX = Math.max(maxX, bounds.x + bounds.width)
+          maxY = Math.max(maxY, bounds.y + bounds.height)
+        }
+        
+        // If no children, skip
+        if (minX === Infinity) continue
+        
+        // Check if point is within group bounds
+        if (
+          point.x >= minX - hitThreshold &&
+          point.x <= maxX + hitThreshold &&
+          point.y >= minY - hitThreshold &&
+          point.y <= maxY + hitThreshold
+        ) {
+          // Now check children for vertices/edges (for direct selection)
+          for (const childEl of childElements) {
+            if (!childEl.points) continue
             
-            // Check edges
-            const segments = getCurveSegments(childEl.points, childEl.isClosedShape)
-            for (const seg of segments) {
-              const dist = seg.isCurve 
-                ? distanceToBezierCurveExact(point, seg.p1, seg.cp1, seg.cp2, seg.p2)
-                : distanceToLineSegment(point, seg.p1, seg.p2)
-              if (dist <= hitThreshold) {
-                return element // Return the group, not the child
+            const bounds = calculateBounds(childEl.points)
+            
+            if (
+              point.x >= bounds.x - hitThreshold &&
+              point.x <= bounds.x + bounds.width + hitThreshold &&
+              point.y >= bounds.y - hitThreshold &&
+              point.y <= bounds.y + bounds.height + hitThreshold
+            ) {
+              // Check vertices
+              for (const p of childEl.points) {
+                const distToPoint = Math.sqrt((point.x - p.x) ** 2 + (point.y - p.y) ** 2)
+                if (distToPoint <= hitThreshold) {
+                  return element
+                }
+              }
+              
+              // Check edges
+              const segments = getCurveSegments(childEl.points, childEl.isClosedShape)
+              for (const seg of segments) {
+                const dist = seg.isCurve 
+                  ? distanceToBezierCurveExact(point, seg.p1, seg.cp1, seg.cp2, seg.p2)
+                  : distanceToLineSegment(point, seg.p1, seg.p2)
+                if (dist <= hitThreshold) {
+                  return element
+                }
               }
             }
           }
+          
+          // Point is within group bounds but not on any child element - select the group
+          return element
         }
         continue
       }
@@ -1222,6 +1249,28 @@ export const Canvas: React.FC = () => {
           const elementsWithSelectedVertices: string[] = []
           
           for (const el of elements) {
+            // Handle groups - check children's vertices
+            if (el.type === 'group') {
+              const group = el as GroupElement
+              if (!group.visible) continue
+              
+              const childElements = getAllPointElements([group])
+              for (const childEl of childElements) {
+                if (!childEl.points) continue
+                
+                childEl.points.forEach((p, index) => {
+                  if (p.x >= boxX && p.x <= boxX + boxWidth && 
+                      p.y >= boxY && p.y <= boxY + boxHeight) {
+                    newSelectedVertices.add(`${childEl.id}:${index}`)
+                    if (!elementsWithSelectedVertices.includes(el.id)) {
+                      elementsWithSelectedVertices.push(el.id)
+                    }
+                  }
+                })
+              }
+              continue
+            }
+            
             if (!('points' in el)) continue
             const pointEl = el as PointElement
             
@@ -1256,6 +1305,27 @@ export const Canvas: React.FC = () => {
           const selectedElements: string[] = []
           
           for (const el of elements) {
+            // Handle groups - check if any child point is within the box
+            if (el.type === 'group') {
+              const group = el as GroupElement
+              if (!group.visible) continue
+              
+              const childElements = getAllPointElements([group])
+              for (const childEl of childElements) {
+                if (!childEl.points) continue
+                
+                for (const p of childEl.points) {
+                  if (p.x >= boxX && p.x <= boxX + boxWidth && 
+                      p.y >= boxY && p.y <= boxY + boxHeight) {
+                    selectedElements.push(el.id)
+                    break
+                  }
+                }
+                if (selectedElements.includes(el.id)) break
+              }
+              continue
+            }
+            
             if (!('points' in el)) continue
             const pointEl = el as PointElement
             

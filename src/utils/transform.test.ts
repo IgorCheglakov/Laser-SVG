@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseHandle, transformPoints, rotatePoints, flipPointsHorizontal, flipPointsVertical, TransformHandleType, TransformDirection } from './transform'
+import { parseHandle, transformPoints, rotatePoints, flipPointsHorizontal, flipPointsVertical, TransformDirection } from './transform'
 import type { Point, InitialSize } from './transform'
 
 describe('parseHandle', () => {
