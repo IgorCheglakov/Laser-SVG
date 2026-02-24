@@ -133,12 +133,13 @@ describe('transformPoints', () => {
     
     const result = transformPoints(points, box, delta, handle, true)
     
-    // All points should scale from center
-    // Left side moves -10, right side moves +10
-    expect(result[0].x).toBe(-10)
-    expect(result[1].x).toBe(110)
-    expect(result[2].x).toBe(110)
-    expect(result[3].x).toBe(-10)
+    // All points scale from center with full delta applied via coefficient
+    // Left side (x=0): coefficient = -1, so 0 + (-1)*20 = -20
+    // Right side (x=100): coefficient = 1, so 100 + 1*20 = 120
+    expect(result[0].x).toBe(-20)
+    expect(result[1].x).toBe(120)
+    expect(result[2].x).toBe(120)
+    expect(result[3].x).toBe(-20)
   })
 
   it('should handle corner handles with both axes', () => {

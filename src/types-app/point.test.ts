@@ -5,7 +5,7 @@ import type { Point } from './point'
 describe('createPoint', () => {
   it('should create a point with x and y', () => {
     const result = createPoint(10, 20)
-    expect(result).toEqual({ x: 10, y: 20 })
+    expect(result).toEqual({ x: 10, y: 20, vertexType: 'straight' })
   })
 })
 
@@ -38,7 +38,7 @@ describe('isCorner', () => {
   })
 
   it('should return true for corner vertex type', () => {
-    const point: Point = { x: 0, y: 0, vertexType: 'corner' }
+    const point: Point = { x: 0, y: 0, vertexType: 'corner', nextControlHandle: { x: 10, y: 0 } }
     expect(isCorner(point)).toBe(true)
   })
 
@@ -58,8 +58,8 @@ describe('convertToCorner', () => {
     const result = convertToCorner(0, points, false)
     
     expect(result.vertexType).toBe('corner')
-    expect(result.prevControlHandle).toBeUndefined()
-    expect(result.nextControlHandle).toBeUndefined()
+    expect(result.prevControlHandle).toBeDefined()
+    expect(result.nextControlHandle).toBeDefined()
   })
 
   it('should convert last point of open shape to corner', () => {
@@ -71,8 +71,8 @@ describe('convertToCorner', () => {
     const result = convertToCorner(1, points, false)
     
     expect(result.vertexType).toBe('corner')
-    expect(result.prevControlHandle).toBeUndefined()
-    expect(result.nextControlHandle).toBeUndefined()
+    expect(result.prevControlHandle).toBeDefined()
+    expect(result.nextControlHandle).toBeDefined()
   })
 
   it('should convert middle point of open shape to corner', () => {
@@ -85,8 +85,8 @@ describe('convertToCorner', () => {
     const result = convertToCorner(1, points, false)
     
     expect(result.vertexType).toBe('corner')
-    expect(result.prevControlHandle).toBeUndefined()
-    expect(result.nextControlHandle).toBeUndefined()
+    expect(result.prevControlHandle).toBeDefined()
+    expect(result.nextControlHandle).toBeDefined()
   })
 })
 
