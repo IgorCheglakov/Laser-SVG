@@ -135,7 +135,7 @@ function convertPolylineToPoints(pointsStr: string): Point[] {
 function parsePathData(d: string): ParsedCommand[] {
   console.log('[Import] Starting parsePathData, d length:', d.length)
   const commands: ParsedCommand[] = []
-  const regex = /([MLCQZmlcqz])([^MLCQZmlcqz]*)/g
+  const regex = /([MLHVQZCmlhvqzc])([^MLHVQZCmlhvqzc]*)/g
   let match
   let matchCount = 0
 
@@ -248,6 +248,20 @@ function convertToAbsolute(commands: ParsedCommand[]): ParsedCommand[] {
         absolute.push({ command: 'Z', values: [] })
         x = startX
         y = startY
+        break
+      }
+      case 'H': {
+        if (v.length < 1) continue
+        const newX = isRelative ? x + v[0] : v[0]
+        absolute.push({ command: 'L', values: [newX, y] })
+        x = newX
+        break
+      }
+      case 'V': {
+        if (v.length < 1) continue
+        const newY = isRelative ? y + v[0] : v[0]
+        absolute.push({ command: 'L', values: [x, newY] })
+        y = newY
         break
       }
     }
