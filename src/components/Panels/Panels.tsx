@@ -383,7 +383,7 @@ export const LayersPanel: React.FC = () => {
   }, [elements, layers])
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-48 shrink-0">
       {/* Layers header with add button */}
       <div className="px-3 py-2 bg-dark-bgTertiary text-sm font-medium text-dark-text border-b border-dark-border flex items-center justify-between">
         <span>{UI_STRINGS.PANEL_LAYERS}</span>
@@ -703,7 +703,7 @@ export const Panels: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col justify-between h-full" tabIndex={0}>
+    <div className="flex flex-col h-full" tabIndex={0}>
       {/* Properties Panel */}
       <div className="flex-1 overflow-y-auto min-h-0">
         <div className="px-3 py-2 bg-dark-bgTertiary text-sm font-medium text-dark-text border-b border-dark-border sticky top-0">
