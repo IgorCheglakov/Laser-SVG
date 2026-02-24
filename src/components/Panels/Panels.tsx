@@ -7,7 +7,7 @@
 import { useMemo, useState } from 'react'
 import { useEditorStore } from '@store/index'
 import { UI_STRINGS, COLOR_PALETTE, getContrastColor } from '@constants/index'
-import { Square, Circle, Minus, Folder } from 'lucide-react'
+import { Square, Circle, Minus, Folder, Eye, EyeOff, Lock, Unlock } from 'lucide-react'
 import type { PointElement, SVGElement, Point } from '@/types-app/index'
 import { convertToCorner, convertToStraight, convertToSmooth } from '@/types-app/point'
 import { transformPoints, parseHandle } from '@/utils/transform'
@@ -409,19 +409,19 @@ const LayersPanel: React.FC = () => {
               {/* Visibility toggle */}
               <button
                 onClick={(e) => handleToggleVisibility(layer.id, e)}
-                className={`text-sm w-6 ${layer.visible ? 'text-dark-text' : 'text-dark-textMuted'}`}
+                className={`text-dark-text hover:text-dark-accent ${!layer.visible ? 'text-dark-textMuted' : ''}`}
                 title={layer.visible ? 'Hide Layer' : 'Show Layer'}
               >
-                {layer.visible ? '👁' : '○'}
+                {layer.visible ? <Eye size={14} /> : <EyeOff size={14} />}
               </button>
 
               {/* Lock toggle */}
               <button
                 onClick={(e) => handleToggleLock(layer.id, e)}
-                className={`text-sm w-6 ${layer.locked ? 'text-dark-warning' : 'text-dark-textMuted'}`}
+                className={`text-dark-text hover:text-dark-warning ${layer.locked ? 'text-dark-warning' : 'text-dark-textMuted'}`}
                 title={layer.locked ? 'Unlock Layer' : 'Lock Layer'}
               >
-                {layer.locked ? '🔒' : '🔓'}
+                {layer.locked ? <Lock size={14} /> : <Unlock size={14} />}
               </button>
 
               {/* Layer name */}
