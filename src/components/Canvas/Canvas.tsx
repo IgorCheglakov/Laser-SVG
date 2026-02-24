@@ -377,6 +377,7 @@ export const Canvas: React.FC = () => {
    * Handle resize start from BoundingBox handle
    */
   const handleResizeStart = useCallback((handle: string, clientPoint: Point, altKey: boolean) => {
+    // console.log('[handleResizeStart] CALLED with handle:', handle)
     isResizingRef.current = true
     resizeHandleRef.current = handle
     resizeFromCenterRef.current = altKey
@@ -419,6 +420,7 @@ export const Canvas: React.FC = () => {
    * Handle rotation start from BoundingBox rotation handle
    */
   const handleRotateStart = useCallback((clientPoint: Point, shiftKey: boolean) => {
+    // console.log('[handleRotateStart] CALLED')
     isRotatingRef.current = true
     rotationStartRef.current = clientPoint
     rotationShiftRef.current = shiftKey
@@ -458,6 +460,7 @@ export const Canvas: React.FC = () => {
    * Handle click on BoundingBox to start moving selected elements
    */
   const handleBoxClick = useCallback((clientPoint: Point, _altKey: boolean) => {
+    // console.log('[handleBoxClick] CALLED')
     if (selectedIds.length === 0) return
     
     const point = screenToCanvas(clientPoint.x, clientPoint.y)
@@ -472,33 +475,33 @@ export const Canvas: React.FC = () => {
     const allPointElements = getAllPointElements(elements)
     const selectedPointIds = new Set<string>()
     
-    console.log('[handleBoxClick] elements:', elements.map(e => e.id))
-    console.log('[handleBoxClick] selectedIds:', selectedIds)
-    console.log('[handleBoxClick] allPointElements:', allPointElements.map(e => e.id))
+    // console.log('[handleBoxClick] elements:', elements.map(e => e.id))
+    // console.log('[handleBoxClick] selectedIds:', selectedIds)
+    // console.log('[handleBoxClick] allPointElements:', allPointElements.map(e => e.id))
     
     for (const id of selectedIds) {
       const el = elements.find(e => e.id === id)
-      console.log('[handleBoxClick] Looking for ID:', id, 'Found:', el?.type)
+      // console.log('[handleBoxClick] Looking for ID:', id, 'Found:', el?.type)
       if (!el) continue
       
       if (el.type === 'group') {
         const childPointElements = getAllPointElements([el])
-        console.log('[handleBoxClick] Group children:', childPointElements.map(e => e.id))
+        // console.log('[handleBoxClick] Group children:', childPointElements.map(e => e.id))
         childPointElements.forEach(c => selectedPointIds.add(c.id))
       } else if ('points' in el) {
         selectedPointIds.add(id)
       }
     }
     
-    console.log('[handleBoxClick] selectedPointIds:', Array.from(selectedPointIds))
+    // console.log('[handleBoxClick] selectedPointIds:', Array.from(selectedPointIds))
     
     for (const el of allPointElements) {
       if (!selectedPointIds.has(el.id)) continue
       initialElementPositionsRef.current.set(el.id, JSON.parse(JSON.stringify(el.points)))
     }
     
-    console.log('[handleBoxClick] Initial positions saved:', Array.from(initialElementPositionsRef.current.keys()))
-    console.log('[handleBoxClick] Selected IDs:', selectedIds)
+    // console.log('[handleBoxClick] Initial positions saved:', Array.from(initialElementPositionsRef.current.keys()))
+    // console.log('[handleBoxClick] Selected IDs:', selectedIds)
   }, [elements, selectedIds, screenToCanvas])
 
   /**
@@ -587,8 +590,8 @@ export const Canvas: React.FC = () => {
       
       if (activeTool === 'selection') {
         const clickedElement = findElementAtPoint(point)
-        console.log('[handleMouseDown] clickedElement:', clickedElement?.id, clickedElement?.type)
-        console.log('[handleMouseDown] activeTool:', activeTool)
+        // console.log('[handleMouseDown] clickedElement:', clickedElement?.id, clickedElement?.type)
+        // console.log('[handleMouseDown] activeTool:', activeTool)
         
         if (clickedElement) {
           if (e.ctrlKey || e.metaKey) {
@@ -616,29 +619,29 @@ export const Canvas: React.FC = () => {
             
             // Use newSelectedId instead of selectedIds since it's async
             const idsToProcess = [newSelectedId]
-            console.log('[handleMouseDown] idsToProcess:', idsToProcess)
+            // console.log('[handleMouseDown] idsToProcess:', idsToProcess)
             
             for (const id of idsToProcess) {
               const el = elements.find(e => e.id === id)
-              console.log('[handleMouseDown] Looking for ID:', id, 'Found:', el?.type)
+              // console.log('[handleMouseDown] Looking for ID:', id, 'Found:', el?.type)
               if (!el) continue
               
               if (el.type === 'group') {
                 const childPointElements = getAllPointElements([el])
-                console.log('[handleMouseDown] Group children:', childPointElements.map(e => e.id))
+                // console.log('[handleMouseDown] Group children:', childPointElements.map(e => e.id))
                 childPointElements.forEach(c => selectedPointIds.add(c.id))
               } else if ('points' in el) {
                 selectedPointIds.add(id)
               }
             }
             
-            console.log('[handleMouseDown] selectedPointIds:', Array.from(selectedPointIds))
+            // console.log('[handleMouseDown] selectedPointIds:', Array.from(selectedPointIds))
             
             for (const el of allPointElements) {
               if (!selectedPointIds.has(el.id)) continue
               initialElementPositionsRef.current.set(el.id, JSON.parse(JSON.stringify(el.points)))
             }
-            console.log('[handleMouseDown] Initial positions saved:', Array.from(initialElementPositionsRef.current.keys()))
+            // console.log('[handleMouseDown] Initial positions saved:', Array.from(initialElementPositionsRef.current.keys()))
           }
         } else {
           if (!e.ctrlKey && !e.metaKey) {
@@ -800,7 +803,7 @@ export const Canvas: React.FC = () => {
     }
     
     if (isMovingRef.current && (e.buttons & 1)) {
-      console.log('[handleMouseMove] isMovingRef is true')
+      // console.log('[handleMouseMove] isMovingRef is true, selectedIds:', selectedIds)
       let point = screenToCanvas(e.clientX, e.clientY)
       
       if (settings.snapToGrid) {
@@ -815,32 +818,31 @@ export const Canvas: React.FC = () => {
         isFirstMoveRef.current = false
       }
       
-      selectedIds.forEach(id => {
-        console.log('[handleMouseMove] Processing selected ID:', id)
+      // Get all element IDs to process (expand groups to their children)
+      const allIdsToProcess = new Set<string>()
+      
+      for (const id of selectedIds) {
+        const el = elements.find(e => e.id === id)
+        if (el && el.type === 'group') {
+          // Skip groups - they'll be handled via initialElementPositionsRef
+          continue
+        }
+        allIdsToProcess.add(id)
+      }
+      
+      // Add children from initialElementPositionsRef (includes group children)
+      for (const id of initialElementPositionsRef.current.keys()) {
+        allIdsToProcess.add(id)
+      }
+      
+      allIdsToProcess.forEach(id => {
         const initialPoints = initialElementPositionsRef.current.get(id)
         if (!initialPoints) {
-          console.log('[handleMouseMove] No initial points for:', id)
+          // console.log('[handleMouseMove] No initialPoints for id:', id)
           return
         }
         
-        const newPoints = initialPoints.map(p => ({
-          ...p,
-          x: p.x + deltaX,
-          y: p.y + deltaY,
-          prevControlHandle: p.prevControlHandle ? { ...p.prevControlHandle, x: p.prevControlHandle.x + deltaX, y: p.prevControlHandle.y + deltaY } : undefined,
-          nextControlHandle: p.nextControlHandle ? { ...p.nextControlHandle, x: p.nextControlHandle.x + deltaX, y: p.nextControlHandle.y + deltaY } : undefined,
-        }))
-        
-        updateElementNoHistory(id, { points: newPoints } as Partial<SVGElement>)
-      })
-      
-      // Also move all children from initialElementPositionsRef (for groups)
-      Array.from(initialElementPositionsRef.current.keys()).forEach(id => {
-        if (selectedIds.includes(id)) return // Already handled above
-        
-        console.log('[handleMouseMove] Processing group child ID:', id)
-        const initialPoints = initialElementPositionsRef.current.get(id)
-        if (!initialPoints) return
+        // console.log('[handleMouseMove] Updating id:', id, 'deltaX:', deltaX, 'deltaY:', deltaY)
         
         const newPoints = initialPoints.map(p => ({
           ...p,
@@ -850,6 +852,7 @@ export const Canvas: React.FC = () => {
           nextControlHandle: p.nextControlHandle ? { ...p.nextControlHandle, x: p.nextControlHandle.x + deltaX, y: p.nextControlHandle.y + deltaY } : undefined,
         }))
         
+        // console.log('[handleMouseMove] Calling updateElementNoHistory for:', id)
         updateElementNoHistory(id, { points: newPoints } as Partial<SVGElement>)
       })
     }
@@ -1078,23 +1081,22 @@ export const Canvas: React.FC = () => {
         }
       }
 
-      selectedIds.forEach(id => {
-        const initialPoints = initialElementPositionsRef.current.get(id)
-        if (!initialPoints) return
-
-        const newPoints = rotatePoints(
-          initialPoints,
-          { x: centerX, y: centerY },
-          angleDelta
-        )
-
-        updateElementNoHistory(id, { points: newPoints } as Partial<SVGElement>)
-      })
+      // Get all element IDs to process for rotation (expand groups to their children)
+      const allRotateIds = new Set<string>()
       
-      // Also rotate all children from initialElementPositionsRef (for groups)
-      Array.from(initialElementPositionsRef.current.keys()).forEach(id => {
-        if (selectedIds.includes(id)) return // Already handled above
-        
+      for (const id of selectedIds) {
+        const el = elements.find(e => e.id === id)
+        if (el && el.type === 'group') {
+          continue
+        }
+        allRotateIds.add(id)
+      }
+      
+      for (const id of initialElementPositionsRef.current.keys()) {
+        allRotateIds.add(id)
+      }
+      
+      allRotateIds.forEach(id => {
         const initialPoints = initialElementPositionsRef.current.get(id)
         if (!initialPoints) return
 

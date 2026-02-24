@@ -64,7 +64,10 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false)
   
-  const box = useMemo(() => calculateBoundingBox(elements, selectedIds), [elements, selectedIds])
+  const box = useMemo(() => {
+    // console.log('[BoundingBox] calculateBoundingBox called with selectedIds:', selectedIds)
+    return calculateBoundingBox(elements, selectedIds)
+  }, [elements, selectedIds])
 
   const simpleLineElement = useMemo(() => {
     if (selectedIds.length !== 1) return null
@@ -105,7 +108,10 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
   }, [elements, selectedIds])
 
   const selectionCenter = useMemo(() => {
-    if (!box) return null
+  if (!box) {
+    // console.log('[BoundingBox] box is null, not rendering')
+    return null
+  }
     return {
       x: (box.x + box.width / 2) * DEFAULTS.MM_TO_PX,
       y: (box.y + box.height / 2) * DEFAULTS.MM_TO_PX,
@@ -153,17 +159,19 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
   const crosshairThickness = 0.5
 
   const handleMouseDown = (handleId: string) => (e: React.MouseEvent) => {
+    // console.log('[BoundingBox] handleMouseDown called for handle:', handleId)
     e.stopPropagation()
     onHandleDragStart?.(handleId, { x: e.clientX, y: e.clientY }, e.altKey)
   }
 
   const handleRotateMouseDown = (e: React.MouseEvent) => {
+    // console.log('[BoundingBox] handleRotateMouseDown called')
     e.stopPropagation()
     onRotateStart?.({ x: e.clientX, y: e.clientY }, e.shiftKey)
   }
 
   const handleBoxMouseDown = (e: React.MouseEvent) => {
-    console.log('[BoundingBox] handleBoxMouseDown called')
+    // console.log('[BoundingBox] handleBoxMouseDown called')
     e.stopPropagation()
     onBoxClick?.({ x: e.clientX, y: e.clientY }, e.altKey)
   }

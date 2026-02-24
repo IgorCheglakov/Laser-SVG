@@ -119,11 +119,26 @@ export const useEditorStore = create<EditorState>()(
     },
 
     updateElementNoHistory: (id: string, updates: Partial<SVGElement>) => {
-      set((state) => ({
-        elements: state.elements.map((el) =>
-          el.id === id ? ({ ...el, ...updates } as SVGElement) : el
-        ),
-      }))
+      set((state) => {
+        const updateInChildren = (elements: SVGElement[]): SVGElement[] => {
+          return elements.map((el) => {
+            if (el.id === id) {
+              return { ...el, ...updates } as SVGElement
+            }
+            if (el.type === 'group') {
+              return {
+                ...el,
+                children: updateInChildren((el as GroupElement).children),
+              }
+            }
+            return el
+          })
+        }
+        
+        return {
+          elements: updateInChildren(state.elements),
+        }
+      })
     },
 
     deleteElement: (id) => {
