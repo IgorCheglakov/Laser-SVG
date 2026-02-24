@@ -399,12 +399,35 @@ const LayersPanel: React.FC = () => {
       {/* Layers list */}
       <div className="flex-1 overflow-y-auto">
         {layers.map(layer => (
-          <div key={layer.id} className={`border-b border-dark-border ${activeLayerId === layer.id ? 'bg-dark-bgSecondary' : ''}`}>
+          <div 
+            key={layer.id} 
+            className={`border-b border-dark-border ${activeLayerId === layer.id ? 'bg-dark-bgSecondary' : ''}`}
+            onDragOver={(e) => {
+              e.preventDefault()
+              console.log('[LayersPanel] Layer onDragOver:', layer.id)
+              setDragOverLayerId(layer.id)
+            }}
+            onDragLeave={() => {
+              console.log('[LayersPanel] Layer onDragLeave:', layer.id)
+              setDragOverLayerId(null)
+            }}
+            onDrop={(e) => {
+              e.preventDefault()
+              console.log('[LayersPanel] Layer onDrop:', layer.id)
+              const elementId = e.dataTransfer.getData('elementId')
+              console.log('[LayersPanel] elementId:', elementId)
+              if (elementId) {
+                moveElementToLayer(elementId, layer.id)
+              }
+              setDragOverLayerId(null)
+            }}
+          >
             {/* Layer header */}
             <div 
               className={`
-                flex items-center gap-2 px-3 py-2 cursor-pointer select-none border-l-4
+                flex items-center gap-2 px-3 py-2 cursor-pointer select-none border-l-8
                 ${activeLayerId === layer.id ? 'border-l-dark-accent bg-dark-bgSecondary' : 'border-l-transparent hover:bg-dark-bgTertiary'}
+                ${dragOverLayerId === layer.id ? 'bg-dark-accent/20' : ''}
               `}
               onClick={() => handleLayerClick(layer.id)}
             >
@@ -466,33 +489,19 @@ const LayersPanel: React.FC = () => {
 
             {/* Elements in layer */}
             {activeLayerId === layer.id && elementsByLayer[layer.id]?.length > 0 && (
-              <div 
-                className={`bg-dark-bgSecondary ${dragOverLayerId === layer.id ? 'ring-2 ring-dark-accent ring-inset' : ''}`}
-                onDragOver={(e) => {
-                  e.preventDefault()
-                  setDragOverLayerId(layer.id)
-                }}
-                onDragLeave={() => setDragOverLayerId(null)}
-                onDrop={(e) => {
-                  e.preventDefault()
-                  const elementId = e.dataTransfer.getData('elementId')
-                  if (elementId) {
-                    moveElementToLayer(elementId, layer.id)
-                    setDragOverLayerId(null)
-                  }
-                }}
-              >
+              <div className="bg-dark-bgSecondary">
                 {[...elementsByLayer[layer.id]].reverse().map((element, idx) => (
                   <div
                     key={element.id}
                     draggable
                     onClick={(e) => handleElementClick(element.id, e)}
                     onDragStart={(e) => {
+                      console.log('[LayersPanel] onDragStart:', element.id)
                       e.dataTransfer.setData('elementId', element.id)
                       e.dataTransfer.effectAllowed = 'move'
                     }}
                     onDragEnd={() => {
-                      setDragOverLayerId(null)
+                      console.log('[LayersPanel] onDragEnd:', element.id)
                     }}
                     className={`
                       flex items-center gap-2 px-4 py-1.5 text-xs cursor-grab active:cursor-grabbing

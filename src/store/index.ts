@@ -338,12 +338,16 @@ export const useEditorStore = create<EditorState>()(
     },
     
     moveElementToLayer: (elementId, layerId) => {
+      console.log('[Store] moveElementToLayer called:', elementId, '->', layerId)
       pushHistory(get)
-      set(state => ({
-        elements: state.elements.map(el => 
+      set(state => {
+        console.log('[Store] Current elements:', state.elements.map(e => e.id))
+        const newElements = state.elements.map(el => 
           el.id === elementId ? { ...el, layerId } : el
-        ),
-      }))
+        )
+        console.log('[Store] New elements:', newElements.map(e => `${e.id}:${e.layerId}`))
+        return { elements: newElements }
+      })
     },
   }))
 )
