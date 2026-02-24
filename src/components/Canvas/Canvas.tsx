@@ -145,15 +145,49 @@ export const Canvas: React.FC = () => {
     for (let i = elements.length - 1; i >= 0; i--) {
       const element = elements[i]
       
-      // Handle groups - check if point is within group's bounds
+      // Handle groups - check children first, then group bounds
       if (element.type === 'group') {
         const group = element as GroupElement
         if (!group.visible) continue
         
-        // Get all child point elements and calculate group bounds
+        // Get all child point elements
         const childElements = getAllPointElements([group])
         
-        // Calculate overall group bounding box
+        // First, check if point is near any child vertex or edge
+        for (const childEl of childElements) {
+          if (!childEl.points) continue
+          
+          const bounds = calculateBounds(childEl.points)
+          
+          // Check if point is within child's bounds
+          if (
+            point.x >= bounds.x - hitThreshold &&
+            point.x <= bounds.x + bounds.width + hitThreshold &&
+            point.y >= bounds.y - hitThreshold &&
+            point.y <= bounds.y + bounds.height + hitThreshold
+          ) {
+            // Check vertices
+            for (const p of childEl.points) {
+              const distToPoint = Math.sqrt((point.x - p.x) ** 2 + (point.y - p.y) ** 2)
+              if (distToPoint <= hitThreshold) {
+                return element
+              }
+            }
+            
+            // Check edges
+            const segments = getCurveSegments(childEl.points, childEl.isClosedShape)
+            for (const seg of segments) {
+              const dist = seg.isCurve 
+                ? distanceToBezierCurveExact(point, seg.p1, seg.cp1, seg.cp2, seg.p2)
+                : distanceToLineSegment(point, seg.p1, seg.p2)
+              if (dist <= hitThreshold) {
+                return element
+              }
+            }
+          }
+        }
+        
+        // If not near any child, check if point is within overall group bounds
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
         for (const childEl of childElements) {
           if (!childEl.points) continue
@@ -164,52 +198,15 @@ export const Canvas: React.FC = () => {
           maxY = Math.max(maxY, bounds.y + bounds.height)
         }
         
-        // If no children, skip
-        if (minX === Infinity) continue
-        
-        // Check if point is within group bounds
-        if (
-          point.x >= minX - hitThreshold &&
-          point.x <= maxX + hitThreshold &&
-          point.y >= minY - hitThreshold &&
-          point.y <= maxY + hitThreshold
-        ) {
-          // Now check children for vertices/edges (for direct selection)
-          for (const childEl of childElements) {
-            if (!childEl.points) continue
-            
-            const bounds = calculateBounds(childEl.points)
-            
-            if (
-              point.x >= bounds.x - hitThreshold &&
-              point.x <= bounds.x + bounds.width + hitThreshold &&
-              point.y >= bounds.y - hitThreshold &&
-              point.y <= bounds.y + bounds.height + hitThreshold
-            ) {
-              // Check vertices
-              for (const p of childEl.points) {
-                const distToPoint = Math.sqrt((point.x - p.x) ** 2 + (point.y - p.y) ** 2)
-                if (distToPoint <= hitThreshold) {
-                  return element
-                }
-              }
-              
-              // Check edges
-              const segments = getCurveSegments(childEl.points, childEl.isClosedShape)
-              for (const seg of segments) {
-                const dist = seg.isCurve 
-                  ? distanceToBezierCurveExact(point, seg.p1, seg.cp1, seg.cp2, seg.p2)
-                  : distanceToLineSegment(point, seg.p1, seg.p2)
-                if (dist <= hitThreshold) {
-                  return element
-                }
-              }
-            }
-          }
-          
-          // Point is within group bounds but not on any child element - select the group
+        if (minX !== Infinity &&
+            point.x >= minX - hitThreshold &&
+            point.x <= maxX + hitThreshold &&
+            point.y >= minY - hitThreshold &&
+            point.y <= maxY + hitThreshold) {
+          // Point is within group bounds - select the group
           return element
         }
+        
         continue
       }
       
