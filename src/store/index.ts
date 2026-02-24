@@ -101,8 +101,11 @@ export const useEditorStore = create<EditorState>()(
         return
       }
       pushHistory(get)
+      // Assign element to active layer
+      const activeLayerId = get().activeLayerId || 'default'
+      const elementWithLayer = { ...element, layerId: activeLayerId }
       set((state) => ({
-        elements: [...state.elements, element],
+        elements: [...state.elements, elementWithLayer],
         selectedIds: [element.id],
       }))
     },

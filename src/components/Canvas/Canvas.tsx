@@ -71,9 +71,33 @@ export const Canvas: React.FC = () => {
     activeTool,
     selectedVertices,
     setSelectedVertices,
+    layers,
   } = useEditorStore()
 
   const tool = useMemo(() => getTool(activeTool), [activeTool])
+
+  /**
+   * Filter elements based on layer visibility and lock state
+   */
+  const visibleElements = useMemo(() => {
+    const layerMap = new Map(layers.map(l => [l.id, l]))
+    
+    return elements.filter(el => {
+      const layerId = el.layerId || 'default'
+      const layer = layerMap.get(layerId)
+      if (!layer) return true // No layer found, show element
+      return layer.visible
+    })
+  }, [elements, layers])
+
+  /**
+   * Check if element is on a locked layer
+   */
+  const isElementLocked = useCallback((element: SVGElement): boolean => {
+    const layerId = element.layerId || 'default'
+    const layer = layers.find(l => l.id === layerId)
+    return layer?.locked ?? false
+  }, [layers])
 
   /**
    * Convert screen coordinates to canvas coordinates (in mm)
@@ -144,6 +168,11 @@ export const Canvas: React.FC = () => {
     
     for (let i = elements.length - 1; i >= 0; i--) {
       const element = elements[i]
+      
+      // Skip elements on hidden layers
+      const layerId = element.layerId || 'default'
+      const layer = layers.find(l => l.id === layerId)
+      if (layer && !layer.visible) continue
       
       // Handle groups - check children first, then group bounds
       if (element.type === 'group') {
@@ -244,7 +273,7 @@ export const Canvas: React.FC = () => {
     }
     
     return null
-  }, [elements, view.scale, calculateBounds])
+  }, [elements, layers, view.scale, calculateBounds])
 
   /**
    * Tool context for passing to tools
@@ -378,6 +407,14 @@ export const Canvas: React.FC = () => {
    */
   const handleResizeStart = useCallback((handle: string, clientPoint: Point, altKey: boolean) => {
     // console.log('[handleResizeStart] CALLED with handle:', handle)
+    // Check if any selected element is on a locked layer
+    for (const id of selectedIds) {
+      const el = elements.find(e => e.id === id)
+      if (el && isElementLocked(el)) {
+        return // Don't allow resizing elements on locked layers
+      }
+    }
+    
     isResizingRef.current = true
     resizeHandleRef.current = handle
     resizeFromCenterRef.current = altKey
@@ -421,6 +458,14 @@ export const Canvas: React.FC = () => {
    */
   const handleRotateStart = useCallback((clientPoint: Point, shiftKey: boolean) => {
     // console.log('[handleRotateStart] CALLED')
+    // Check if any selected element is on a locked layer
+    for (const id of selectedIds) {
+      const el = elements.find(e => e.id === id)
+      if (el && isElementLocked(el)) {
+        return // Don't allow rotating elements on locked layers
+      }
+    }
+    
     isRotatingRef.current = true
     rotationStartRef.current = clientPoint
     rotationShiftRef.current = shiftKey
@@ -462,6 +507,14 @@ export const Canvas: React.FC = () => {
   const handleBoxClick = useCallback((clientPoint: Point, _altKey: boolean) => {
     // console.log('[handleBoxClick] CALLED')
     if (selectedIds.length === 0) return
+    
+    // Check if any selected element is on a locked layer
+    for (const id of selectedIds) {
+      const el = elements.find(e => e.id === id)
+      if (el && isElementLocked(el)) {
+        return // Don't allow moving elements on locked layers
+      }
+    }
     
     const point = screenToCanvas(clientPoint.x, clientPoint.y)
     
@@ -598,6 +651,11 @@ export const Canvas: React.FC = () => {
         // console.log('[handleMouseDown] activeTool:', activeTool)
         
         if (clickedElement) {
+          // Check if element is on a locked layer
+          if (isElementLocked(clickedElement)) {
+            return // Don't allow selection of locked elements
+          }
+          
           if (e.ctrlKey || e.metaKey) {
             if (selectedIds.includes(clickedElement.id)) {
               setSelectedIds(selectedIds.filter(id => id !== clickedElement.id))
@@ -658,6 +716,11 @@ export const Canvas: React.FC = () => {
         const clickedElement = findElementAtPoint(point)
         
         if (clickedElement) {
+          // Check if element is on a locked layer
+          if (isElementLocked(clickedElement)) {
+            return // Don't allow selection of locked elements
+          }
+          
           if (e.ctrlKey || e.metaKey) {
             if (selectedIds.includes(clickedElement.id)) {
               setSelectedIds(selectedIds.filter(id => id !== clickedElement.id))
@@ -1680,7 +1743,7 @@ export const Canvas: React.FC = () => {
         )}
 
         <g id="elements">
-          {elements.map((element) => (
+          {visibleElements.map((element) => (
             <CanvasElement 
               key={element.id} 
               element={element} 
