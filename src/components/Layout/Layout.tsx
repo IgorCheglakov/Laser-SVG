@@ -7,7 +7,6 @@
 import { Toolbar } from '@components/Toolbar/Toolbar'
 import { Canvas } from '@components/Canvas/Canvas'
 import { Panels } from '@components/Panels/Panels'
-import { LayersPanel } from '@components/Panels/Panels'
 import { StatusBar } from './StatusBar'
 
 /**
@@ -33,15 +32,10 @@ export const Layout: React.FC = () => {
           <Canvas />
         </div>
 
-        {/* Right panels - Properties only */}
+        {/* Right panels */}
         <div className="w-72 bg-dark-bgSecondary border-l border-dark-border shrink-0 overflow-y-auto">
           <Panels />
         </div>
-      </div>
-
-      {/* Bottom layers panel */}
-      <div className="h-48 bg-dark-bgSecondary border-t border-dark-border shrink-0 overflow-hidden">
-        <LayersPanel />
       </div>
 
       {/* Bottom status bar */}

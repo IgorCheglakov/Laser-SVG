@@ -703,9 +703,9 @@ export const Panels: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-full" tabIndex={0}>
-      {/* Properties Panel - full height since Layers moved to bottom */}
-      <div className="h-full overflow-y-auto">
+    <div className="flex flex-col justify-between h-full" tabIndex={0}>
+      {/* Properties Panel */}
+      <div className="flex-1 overflow-y-auto min-h-0">
         <div className="px-3 py-2 bg-dark-bgTertiary text-sm font-medium text-dark-text border-b border-dark-border sticky top-0">
           {UI_STRINGS.PANEL_PROPERTIES}
         </div>
@@ -831,7 +831,8 @@ export const Panels: React.FC = () => {
         )}
       </div>
 
-      {/* Layers Panel - moved to bottom in Layout */}
+      {/* Layers Panel */}
+      <LayersPanel />
     </div>
   )
 }
