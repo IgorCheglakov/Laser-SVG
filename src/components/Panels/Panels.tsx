@@ -278,10 +278,226 @@ const VertexPropertiesPanel: React.FC<{
 }
 
 /**
+ * Layers Panel
+ */
+const LayersPanel: React.FC = () => {
+  const { 
+    elements, 
+    layers, 
+    activeLayerId, 
+    selectedIds, 
+    setSelectedIds,
+    addLayer,
+    updateLayer,
+    deleteLayer,
+    setActiveLayer,
+  } = useEditorStore()
+
+  const [editingLayerId, setEditingLayerId] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState('')
+
+  const getElementIcon = (type: string) => {
+    switch (type) {
+      case 'rect': return <Square size={12} />
+      case 'ellipse': return <Circle size={12} />
+      case 'line': return <Minus size={12} />
+      case 'group': return <Folder size={12} />
+      case 'point': return <Square size={12} />
+      default: return <Square size={12} />
+    }
+  }
+
+  const handleAddLayer = () => {
+    const newId = `layer_${Date.now()}`
+    const layerCount = layers.length + 1
+    addLayer({
+      id: newId,
+      name: `Layer ${layerCount}`,
+      visible: true,
+      locked: false,
+      color: '#000000',
+    })
+    setActiveLayer(newId)
+  }
+
+  const handleDeleteLayer = (layerId: string) => {
+    if (layers.length <= 1) return
+    deleteLayer(layerId)
+  }
+
+  const handleToggleVisibility = (layerId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const layer = layers.find(l => l.id === layerId)
+    if (layer) {
+      updateLayer(layerId, { visible: !layer.visible })
+    }
+  }
+
+  const handleToggleLock = (layerId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const layer = layers.find(l => l.id === layerId)
+    if (layer) {
+      updateLayer(layerId, { locked: !layer.locked })
+    }
+  }
+
+  const handleStartEdit = (layerId: string, currentName: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingLayerId(layerId)
+    setEditingName(currentName)
+  }
+
+  const handleFinishEdit = () => {
+    if (editingLayerId && editingName.trim()) {
+      updateLayer(editingLayerId, { name: editingName.trim() })
+    }
+    setEditingLayerId(null)
+    setEditingName('')
+  }
+
+  const handleLayerClick = (layerId: string) => {
+    setActiveLayer(layerId)
+  }
+
+  const handleElementClick = (elementId: string, e: React.MouseEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      if (selectedIds.includes(elementId)) {
+        setSelectedIds(selectedIds.filter(id => id !== elementId))
+      } else {
+        setSelectedIds([...selectedIds, elementId])
+      }
+    } else {
+      setSelectedIds([elementId])
+    }
+  }
+
+  const elementsByLayer = useMemo(() => {
+    const result: Record<string, typeof elements> = {}
+    layers.forEach(layer => {
+      result[layer.id] = elements.filter(el => el.layerId === layer.id || (!el.layerId && layer.id === 'default'))
+    })
+    return result
+  }, [elements, layers])
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Layers header with add button */}
+      <div className="px-3 py-2 bg-dark-bgTertiary text-sm font-medium text-dark-text border-b border-dark-border flex items-center justify-between">
+        <span>{UI_STRINGS.PANEL_LAYERS}</span>
+        <button
+          onClick={handleAddLayer}
+          className="text-xs px-2 py-0.5 bg-dark-accent text-white rounded hover:bg-dark-accent/80"
+          title="Add Layer"
+        >
+          +
+        </button>
+      </div>
+
+      {/* Layers list */}
+      <div className="flex-1 overflow-y-auto">
+        {layers.map(layer => (
+          <div key={layer.id} className="border-b border-dark-border">
+            {/* Layer header */}
+            <div 
+              className={`
+                flex items-center gap-2 px-3 py-2 cursor-pointer select-none
+                ${activeLayerId === layer.id ? 'bg-dark-bgSecondary' : 'hover:bg-dark-bgTertiary'}
+              `}
+              onClick={() => handleLayerClick(layer.id)}
+            >
+              {/* Visibility toggle */}
+              <button
+                onClick={(e) => handleToggleVisibility(layer.id, e)}
+                className={`text-xs w-4 ${layer.visible ? 'text-dark-text' : 'text-dark-textMuted'}`}
+                title={layer.visible ? 'Hide Layer' : 'Show Layer'}
+              >
+                {layer.visible ? '👁' : '○'}
+              </button>
+
+              {/* Lock toggle */}
+              <button
+                onClick={(e) => handleToggleLock(layer.id, e)}
+                className={`text-xs w-4 ${layer.locked ? 'text-dark-accent' : 'text-dark-textMuted'}`}
+                title={layer.locked ? 'Unlock Layer' : 'Lock Layer'}
+              >
+                {layer.locked ? '🔒' : '🔓'}
+              </button>
+
+              {/* Layer name */}
+              {editingLayerId === layer.id ? (
+                <input
+                  type="text"
+                  value={editingName}
+                  onChange={(e) => setEditingName(e.target.value)}
+                  onBlur={handleFinishEdit}
+                  onKeyDown={(e) => e.key === 'Enter' && handleFinishEdit()}
+                  className="flex-1 bg-dark-bgTertiary text-dark-text text-xs px-1 py-0.5 rounded border border-dark-border"
+                  autoFocus
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <span 
+                  className="flex-1 text-sm text-dark-text truncate"
+                  onDoubleClick={(e) => handleStartEdit(layer.id, layer.name, e)}
+                >
+                  {layer.name}
+                </span>
+              )}
+
+              {/* Delete layer button */}
+              {layers.length > 1 && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDeleteLayer(layer.id) }}
+                  className="text-xs text-dark-textMuted hover:text-red-400 w-4"
+                  title="Delete Layer"
+                >
+                  ×
+                </button>
+              )}
+
+              {/* Element count */}
+              <span className="text-xs text-dark-textMuted">
+                ({elementsByLayer[layer.id]?.length || 0})
+              </span>
+            </div>
+
+            {/* Elements in layer */}
+            {activeLayerId === layer.id && elementsByLayer[layer.id]?.length > 0 && (
+              <div className="bg-dark-bgSecondary">
+                {[...elementsByLayer[layer.id]].reverse().map((element, idx) => (
+                  <div
+                    key={element.id}
+                    onClick={(e) => handleElementClick(element.id, e)}
+                    className={`
+                      flex items-center gap-2 px-4 py-1.5 text-xs cursor-pointer
+                      ${selectedIds.includes(element.id)
+                        ? 'bg-dark-accent text-white'
+                        : 'text-dark-text hover:bg-dark-bgTertiary'
+                      }
+                    `}
+                  >
+                    <span className="text-dark-textMuted">
+                      {getElementIcon(element.type)}
+                    </span>
+                    <span className="truncate">
+                      {element.name || `${element.type} ${elements.length - idx}`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
  * Right panel container with layers and properties
  */
 export const Panels: React.FC = () => {
-  const { elements, selectedIds, setSelectedIds, updateElement, activeTool, selectedVertices } = useEditorStore()
+  const { elements, selectedIds, updateElement, activeTool, selectedVertices } = useEditorStore()
 
   const [localValues, setLocalValues] = useState<{
     x: string
@@ -327,28 +543,6 @@ export const Panels: React.FC = () => {
       height: maxY - minY,
     }
   }, [elements, selectedIds])
-
-  const getElementIcon = (type: string) => {
-    switch (type) {
-      case 'rect': return <Square size={14} />
-      case 'ellipse': return <Circle size={14} />
-      case 'line': return <Minus size={14} />
-      case 'group': return <Folder size={14} />
-      default: return <Square size={14} />
-    }
-  }
-
-  const handleElementClick = (id: string, e: React.MouseEvent) => {
-    if (e.ctrlKey || e.metaKey) {
-      if (selectedIds.includes(id)) {
-        setSelectedIds(selectedIds.filter(sid => sid !== id))
-      } else {
-        setSelectedIds([...selectedIds, id])
-      }
-    } else {
-      setSelectedIds([id])
-    }
-  }
 
   const handleInputChange = (field: 'y' | 'x' | 'width' | 'height' | 'angle') => (e: React.ChangeEvent<HTMLInputElement>) => {
     setLocalValues(prev => ({ ...prev, [field]: e.target.value }))
@@ -603,45 +797,7 @@ export const Panels: React.FC = () => {
       </div>
 
       {/* Layers Panel */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="px-3 py-2 bg-dark-bgTertiary text-sm font-medium text-dark-text border-b border-dark-border">
-          {UI_STRINGS.PANEL_LAYERS}
-        </div>
-        <div className="p-0">
-          {elements.length === 0 ? (
-            <div className="p-4 text-sm text-dark-textMuted italic">
-              No layers yet
-            </div>
-          ) : (
-            <div className="divide-y divide-dark-border">
-              {[...elements].reverse().map((element) => (
-                <div
-                  key={element.id}
-                  onClick={(e) => handleElementClick(element.id, e)}
-                  className={`
-                    flex items-center gap-2 px-3 py-2 text-sm cursor-pointer
-                    transition-colors duration-100
-                    ${selectedIds.includes(element.id)
-                      ? 'bg-dark-accent text-white'
-                      : 'text-dark-text hover:bg-dark-bgTertiary'
-                    }
-                  `}
-                >
-                  <span className="text-dark-textMuted">
-                    {getElementIcon(element.type)}
-                  </span>
-                  <span className="truncate flex-1">
-                    {element.type === 'group' 
-                      ? `${element.name || 'Group'} (${element.children?.length || 0})`
-                      : `${element.name || 'Element'} ${elements.indexOf(element) + 1}`
-                    }
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+      <LayersPanel />
     </div>
   )
 }
