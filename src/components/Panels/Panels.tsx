@@ -387,7 +387,7 @@ const LayersPanel: React.FC = () => {
         <span>{UI_STRINGS.PANEL_LAYERS}</span>
         <button
           onClick={handleAddLayer}
-          className="text-xs px-2 py-0.5 bg-dark-accent text-white rounded hover:bg-dark-accent/80"
+          className="text-xs w-5 h-5 flex items-center justify-center bg-dark-accent text-white rounded hover:bg-dark-accent/80"
           title="Add Layer"
         >
           +
@@ -397,12 +397,12 @@ const LayersPanel: React.FC = () => {
       {/* Layers list */}
       <div className="flex-1 overflow-y-auto">
         {layers.map(layer => (
-          <div key={layer.id} className="border-b border-dark-border">
+          <div key={layer.id} className={`border-b border-dark-border ${activeLayerId === layer.id ? 'bg-dark-bgSecondary' : ''}`}>
             {/* Layer header */}
             <div 
               className={`
-                flex items-center gap-2 px-3 py-2 cursor-pointer select-none
-                ${activeLayerId === layer.id ? 'bg-dark-bgSecondary' : 'hover:bg-dark-bgTertiary'}
+                flex items-center gap-2 px-3 py-2 cursor-pointer select-none border-l-2
+                ${activeLayerId === layer.id ? 'border-l-dark-accent bg-dark-bgSecondary' : 'border-l-transparent hover:bg-dark-bgTertiary'}
               `}
               onClick={() => handleLayerClick(layer.id)}
             >
