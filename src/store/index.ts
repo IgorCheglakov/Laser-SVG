@@ -82,6 +82,10 @@ export const useEditorStore = create<EditorState>()(
     view: initialView,
     settings: initialSettings,
     activeTool: 'selection',
+    
+    // Initial layer
+    layers: [{ id: 'default', name: 'Layer 1', visible: true, locked: false, color: '#000000' }],
+    activeLayerId: 'default',
 
     // Element actions
     setElements: (elements) => {
@@ -256,6 +260,53 @@ export const useEditorStore = create<EditorState>()(
         elements: newElements,
         selectedIds: childIds,
       })
+    },
+    
+    // Layer actions
+    addLayer: (layer) => {
+      pushHistory(get)
+      set(state => ({
+        layers: [...state.layers, layer],
+      }))
+    },
+    
+    updateLayer: (id, updates) => {
+      pushHistory(get)
+      set(state => ({
+        layers: state.layers.map(l => l.id === id ? { ...l, ...updates } : l),
+      }))
+    },
+    
+    deleteLayer: (id) => {
+      const state = get()
+      if (state.layers.length <= 1) return // Can't delete last layer
+      
+      pushHistory(get)
+      
+      // Move elements from deleted layer to first remaining layer
+      const remainingLayers = state.layers.filter(l => l.id !== id)
+      const newLayerId = remainingLayers[0].id
+      
+      set({
+        layers: remainingLayers,
+        activeLayerId: state.activeLayerId === id ? newLayerId : state.activeLayerId,
+        elements: state.elements.map(el => 
+          el.layerId === id ? { ...el, layerId: newLayerId } : el
+        ),
+      })
+    },
+    
+    setActiveLayer: (id) => {
+      set({ activeLayerId: id })
+    },
+    
+    moveElementToLayer: (elementId, layerId) => {
+      pushHistory(get)
+      set(state => ({
+        elements: state.elements.map(el => 
+          el.id === elementId ? { ...el, layerId } : el
+        ),
+      }))
     },
   }))
 )

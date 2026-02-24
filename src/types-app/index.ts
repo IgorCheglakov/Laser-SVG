@@ -29,6 +29,17 @@ export interface Rect {
 export type ElementType = 'point' | 'path' | 'text' | 'group'
 
 /**
+ * Layer - Group of elements that can be shown/hidden/locked together
+ */
+export interface Layer {
+  id: string
+  name: string
+  visible: boolean
+  locked: boolean
+  color: string
+}
+
+/**
  * Base interface for all SVG elements
  */
 export interface BaseElement {
@@ -37,6 +48,7 @@ export interface BaseElement {
   name: string
   visible: boolean
   locked: boolean
+  layerId?: string
 }
 
 /**
@@ -152,6 +164,10 @@ export interface EditorState {
   selectedIds: string[]
   selectedVertices: Set<string>
   
+  // Layers
+  layers: Layer[]
+  activeLayerId: string | null
+  
   // View
   view: ViewState
   settings: CanvasSettings
@@ -192,6 +208,13 @@ export interface EditorState {
   // Group actions
   groupElements: (ids: string[]) => void
   ungroupElements: (id: string) => void
+  
+  // Layer actions
+  addLayer: (layer: Layer) => void
+  updateLayer: (id: string, updates: Partial<Layer>) => void
+  deleteLayer: (id: string) => void
+  setActiveLayer: (id: string | null) => void
+  moveElementToLayer: (elementId: string, layerId: string) => void
 }
 
 /**
