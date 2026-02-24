@@ -401,7 +401,7 @@ const LayersPanel: React.FC = () => {
             {/* Layer header */}
             <div 
               className={`
-                flex items-center gap-2 px-3 py-2 cursor-pointer select-none border-l-2
+                flex items-center gap-2 px-3 py-2 cursor-pointer select-none border-l-4
                 ${activeLayerId === layer.id ? 'border-l-dark-accent bg-dark-bgSecondary' : 'border-l-transparent hover:bg-dark-bgTertiary'}
               `}
               onClick={() => handleLayerClick(layer.id)}
@@ -409,7 +409,7 @@ const LayersPanel: React.FC = () => {
               {/* Visibility toggle */}
               <button
                 onClick={(e) => handleToggleVisibility(layer.id, e)}
-                className={`text-xs w-4 ${layer.visible ? 'text-dark-text' : 'text-dark-textMuted'}`}
+                className={`text-sm w-6 ${layer.visible ? 'text-dark-text' : 'text-dark-textMuted'}`}
                 title={layer.visible ? 'Hide Layer' : 'Show Layer'}
               >
                 {layer.visible ? '👁' : '○'}
@@ -418,7 +418,7 @@ const LayersPanel: React.FC = () => {
               {/* Lock toggle */}
               <button
                 onClick={(e) => handleToggleLock(layer.id, e)}
-                className={`text-xs w-4 ${layer.locked ? 'text-dark-accent' : 'text-dark-textMuted'}`}
+                className={`text-sm w-6 ${layer.locked ? 'text-dark-warning' : 'text-dark-textMuted'}`}
                 title={layer.locked ? 'Unlock Layer' : 'Lock Layer'}
               >
                 {layer.locked ? '🔒' : '🔓'}
