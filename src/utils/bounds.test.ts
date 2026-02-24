@@ -151,4 +151,32 @@ describe('calculateBoundingBox', () => {
     
     expect(result).toEqual({ x: 100, y: 100, width: 20, height: 20 })
   })
+
+  it('should calculate bounding box for group with multiple children', () => {
+    const child1: PointElement = { id: '2', type: 'point', name: 'child1', visible: true, locked: false, points: [{ x: 10, y: 10 }, { x: 30, y: 10 }, { x: 30, y: 30 }, { x: 10, y: 30 }], stroke: '#000', strokeWidth: 1, isClosedShape: true }
+    const child2: PointElement = { id: '3', type: 'point', name: 'child2', visible: true, locked: false, points: [{ x: 50, y: 50 }, { x: 70, y: 50 }, { x: 70, y: 70 }, { x: 50, y: 70 }], stroke: '#000', strokeWidth: 1, isClosedShape: true }
+    const group: GroupElement = { id: 'g1', type: 'group', name: 'Group', visible: true, locked: false, children: [child1, child2] }
+    
+    const result = calculateBoundingBox([group], ['g1'])
+    
+    expect(result).toEqual({ x: 10, y: 10, width: 60, height: 60 })
+  })
+
+  it('should calculate bounding box combining point elements and groups', () => {
+    const pointEl: PointElement = { id: '1', type: 'point', name: 'rect', visible: true, locked: false, points: [{ x: 0, y: 0 }, { x: 20, y: 0 }, { x: 20, y: 20 }, { x: 0, y: 20 }], stroke: '#000', strokeWidth: 1, isClosedShape: true }
+    const groupChild: PointElement = { id: '3', type: 'point', name: 'child', visible: true, locked: false, points: [{ x: 100, y: 100 }, { x: 120, y: 120 }], stroke: '#000', strokeWidth: 1, isClosedShape: false }
+    const group: GroupElement = { id: 'g1', type: 'group', name: 'Group', visible: true, locked: false, children: [groupChild] }
+    
+    const result = calculateBoundingBox([pointEl, group], ['1', 'g1'])
+    
+    expect(result).toEqual({ x: 0, y: 0, width: 120, height: 120 })
+  })
+
+  it('should return null if no valid elements in selection', () => {
+    const group: GroupElement = { id: 'g1', type: 'group', name: 'Group', visible: true, locked: false, children: [] }
+    
+    const result = calculateBoundingBox([group], ['g1'])
+    
+    expect(result).toBeNull()
+  })
 })
