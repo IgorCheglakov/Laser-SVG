@@ -1583,6 +1583,7 @@ export const Canvas: React.FC = () => {
           transformOrigin: '0 0',
           overflow: 'visible',
         }}
+        onMouseDown={handleMouseDown}
       >
         <defs>
           <pattern
