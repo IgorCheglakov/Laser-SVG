@@ -80,6 +80,10 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
   if (selectedElements.length === 0) return null
 
   const handleVertexClick = (elementId: string, vertexIndex: number) => (e: React.MouseEvent) => {
+    // Allow middle mouse button to pass through for panning
+    if (e.button === 1) {
+      return
+    }
     e.stopPropagation()
     
     if (onVertexSelect) {
@@ -104,6 +108,10 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
   }
 
   const handleVertexMouseDown = (elementId: string, vertexIndex: number) => (e: React.MouseEvent) => {
+    // Allow middle mouse button to pass through for panning
+    if (e.button === 1) {
+      return
+    }
     e.stopPropagation()
     
     const key = vertexKey(elementId, vertexIndex)
@@ -122,6 +130,10 @@ export const DirectSelectionBox: React.FC<DirectSelectionBoxProps> = ({
   }
 
   const handleControlMouseDown = (elementId: string, vertexIndex: number, controlType: 'prevControlHandle' | 'nextControlHandle') => (e: React.MouseEvent) => {
+    // Allow middle mouse button to pass through for panning
+    if (e.button === 1) {
+      return
+    }
     e.stopPropagation()
     onControlDragStart?.(elementId, vertexIndex, controlType, { x: e.clientX, y: e.clientY })
   }

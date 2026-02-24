@@ -159,19 +159,30 @@ export const BoundingBox: React.FC<BoundingBoxProps> = ({
   const crosshairThickness = 0.5
 
   const handleMouseDown = (handleId: string) => (e: React.MouseEvent) => {
+    // Allow middle mouse button to pass through for panning
+    if (e.button === 1) {
+      return
+    }
     // console.log('[BoundingBox] handleMouseDown called for handle:', handleId)
     e.stopPropagation()
     onHandleDragStart?.(handleId, { x: e.clientX, y: e.clientY }, e.altKey)
   }
 
   const handleRotateMouseDown = (e: React.MouseEvent) => {
+    // Allow middle mouse button to pass through for panning
+    if (e.button === 1) {
+      return
+    }
     // console.log('[BoundingBox] handleRotateMouseDown called')
     e.stopPropagation()
     onRotateStart?.({ x: e.clientX, y: e.clientY }, e.shiftKey)
   }
 
   const handleBoxMouseDown = (e: React.MouseEvent) => {
-    // console.log('[BoundingBox] handleBoxMouseDown called')
+    // Allow middle mouse button to pass through for panning
+    if (e.button === 1) {
+      return
+    }
     e.stopPropagation()
     onBoxClick?.({ x: e.clientX, y: e.clientY }, e.altKey)
   }
