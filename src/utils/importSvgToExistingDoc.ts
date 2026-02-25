@@ -11,7 +11,7 @@
 import type { PointElement, SVGElement, GroupElement, Point } from '@/types-app/index'
 import type { VertexType } from '@/types-app/point'
 import { generateId } from '@/utils/id'
-import { COLOR_PALETTE, DEFAULTS } from '@constants/index'
+import { COLOR_PALETTE } from '@constants/index'
 
 const STANDARD_STROKE_WIDTH = 0.25
 const TIMESTAMP_TOLERANCE_MS = 2000
@@ -137,7 +137,7 @@ function convertPolylineToPoints(pointsStr: string): Point[] {
  */
 function splitPathToSubpaths(d: string): string[] {
   const subpaths: string[] = []
-  const commands = d.match(/[MLHVQZCmlhvqzc][^MLHVQZCmlhvqzc]*/g) || []
+  const commands = d.match(/[MLHVQZCSmlhvqzcs][^MLHVQZCSmlhvqzcs]*/g) || []
   
   let currentSubpath = ''
   for (const cmd of commands) {
@@ -158,29 +158,123 @@ function splitPathToSubpaths(d: string): string[] {
 
 function parsePathData(d: string): ParsedCommand[] {
   const commands: ParsedCommand[] = []
-  // Match command letter and all numbers (including negative, decimal, scientific notation)
-  // Include S command for smooth curves
-  const regex = /([MLHVQZCSmlhvqzcs])([^MLHVQZCSmlhvqzcs]*)/g
-  let match
-  let matchCount = 0
-
-  while ((match = regex.exec(d)) !== null) {
-    matchCount++
-    const command = match[1]
-    const argsStr = match[2].trim()
+  
+  // Split by command letters
+  const commandRegex = /([MLHVQZCSmlhvqzcs])/g
+  const parts = d.split(commandRegex)
+  
+  let lastCommand = ''
+  
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i]
     
-    if (argsStr) {
-      // Match all numbers (including negative, decimal, scientific notation)
-      const numRegex = /-?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/g
-      const rawValues = argsStr.match(numRegex) || []
-      const values: number[] = rawValues.map(v => Number(v)).filter(n => !isNaN(n))
-      commands.push({ command, values })
-    } else {
-      commands.push({ command, values: [] })
+    // Skip empty parts
+    if (!part || !part.trim()) continue
+    
+    // Check if this part is a command letter
+    if (/^[MLHVQZCSmlhvqzcs]$/.test(part)) {
+      lastCommand = part
+      // Check next part for arguments
+      if (i + 1 < parts.length) {
+        const nextPart = parts[i + 1]
+        if (nextPart && nextPart.trim()) {
+          const values = extractNumbers(nextPart)
+          if (values.length > 0) {
+            const cmdParts = splitValuesByCommand(part, values)
+            for (const cmdVal of cmdParts) {
+              commands.push({ command: cmdVal.command, values: cmdVal.values })
+            }
+          }
+        } else {
+          commands.push({ command: part, values: [] })
+        }
+      }
+    } else if (lastCommand && i > 0) {
+      // This part contains numbers without a command - implicit command
+      // Skip if the previous iteration was a command (its arguments)
+      const prevPart = parts[i - 1]
+      if (/^[MLHVQZCSmlhvqzcs]$/.test(prevPart)) {
+        continue // The previous command already consumed these numbers
+      }
+      
+      const values = extractNumbers(part)
+      if (values.length > 0) {
+        const implicitCommand = getImplicitCommand(lastCommand)
+        // Split values into multiple commands if needed
+        const cmdParts = splitValuesByCommand(implicitCommand, values)
+        for (const cmdVal of cmdParts) {
+          commands.push({ command: cmdVal.command, values: cmdVal.values })
+        }
+      }
     }
   }
-
+  
   return commands
+}
+
+function splitValuesByCommand(command: string, values: number[]): { command: string; values: number[] }[] {
+  const results: { command: string; values: number[] }[] = []
+  const baseCommand = command.toUpperCase()
+  const isRelative = command === command.toLowerCase()
+  
+  // Number of values expected per command
+  const valuesPerCommand: Record<string, number> = {
+    'M': 2, 'm': 2,
+    'L': 2, 'l': 2,
+    'H': 1, 'h': 1,
+    'V': 1, 'v': 1,
+    'C': 6, 'c': 6,
+    'S': 4, 's': 4,
+    'Q': 4, 'q': 4,
+    'T': 2, 't': 2,
+    'A': 7, 'a': 7,
+    'Z': 0, 'z': 0
+  }
+  
+  const perCmd = valuesPerCommand[command] || 2
+  
+  for (let i = 0; i < values.length; i += perCmd) {
+    const cmdValues = values.slice(i, i + perCmd)
+    if (cmdValues.length > 0) {
+      results.push({ command, values: cmdValues })
+    }
+  }
+  
+  return results
+}
+
+function extractNumbers(str: string): number[] {
+  const numRegex = /-?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/g
+  const rawValues = str.match(numRegex) || []
+  return rawValues.map(v => Number(v)).filter(n => !isNaN(n))
+}
+
+function getImplicitCommand(lastCommand: string): string {
+  const upper = lastCommand.toUpperCase()
+  const isRelative = lastCommand === lastCommand.toLowerCase()
+  
+  switch (upper) {
+    case 'M':
+      return isRelative ? 'l' : 'L'
+    case 'L':
+    case 'H':
+    case 'V':
+      return lastCommand
+    case 'C':
+      return isRelative ? 's' : 'S'
+    case 'S':
+      return lastCommand
+    case 'Q':
+      return isRelative ? 't' : 'T'
+    case 'T':
+      return lastCommand
+    case 'A':
+      return lastCommand
+    case 'Z':
+      return 'Z'
+    default:
+      return lastCommand
+  }
 }
 
 function convertToAbsolute(commands: ParsedCommand[]): ParsedCommand[] {
@@ -337,15 +431,12 @@ function convertToAbsolute(commands: ParsedCommand[]): ParsedCommand[] {
     }
   }
 
-  console.log('[Import] convertToAbsolute complete, result count:', absolute.length)
   return absolute
 }
 
 function convertPathToPoints(d: string): Point[] {
   const commands = parsePathData(d)
-  console.log('[Import] parsePathData commands:', commands)
   const absCommands = convertToAbsolute(commands)
-  console.log('[Import] convertToAbsolute result:', absCommands)
 
   const points: Point[] = []
   let currentPoint: Point | null = null
@@ -445,8 +536,7 @@ function isLaserSvgCompatible(svg: Element, fileTimestamp: number): boolean {
   return diff <= TIMESTAMP_TOLERANCE_MS
 }
 
-function getSvgDimensions(svg: Element): { width: number; height: number; viewBox: { x: number; y: number; width: number; height: number } | null; unit: string | null; offsetX: number; offsetY: number } {
-  // Get viewBox first (preferred)
+function getSvgDimensions(svg: Element): { width: number; height: number; viewBox: { x: number; y: number; width: number; height: number } | null; unit: string | null; offsetX: number; offsetY: number; displayWidth: number; displayHeight: number } {
   const viewBoxAttr = svg.getAttribute('viewBox')
   let viewBox: { x: number; y: number; width: number; height: number } | null = null
   let offsetX = 0
@@ -461,19 +551,17 @@ function getSvgDimensions(svg: Element): { width: number; height: number; viewBo
     }
   }
   
-  // Get width/height with unit detection
   const widthAttr = svg.getAttribute('width')
   const heightAttr = svg.getAttribute('height')
   
-  // Extract unit (mm, px, etc.)
   let unit: string | null = null
-  let width = NaN
-  let height = NaN
+  let displayWidth = NaN
+  let displayHeight = NaN
   
   if (widthAttr) {
     const widthMatch = widthAttr.match(/^([\d.]+)\s*(px|mm|cm|in)?$/i)
     if (widthMatch) {
-      width = parseFloat(widthMatch[1])
+      displayWidth = parseFloat(widthMatch[1])
       unit = widthMatch[2] || null
     }
   }
@@ -481,57 +569,53 @@ function getSvgDimensions(svg: Element): { width: number; height: number; viewBo
   if (heightAttr) {
     const heightMatch = heightAttr.match(/^([\d.]+)\s*(px|mm|cm|in)?$/i)
     if (heightMatch) {
-      height = parseFloat(heightMatch[1])
+      displayHeight = parseFloat(heightMatch[1])
       if (!unit) unit = heightMatch[2] || null
     }
   }
   
-  // Prefer viewBox dimensions over width/height - viewBox defines the actual coordinate system
+  let width = displayWidth
+  let height = displayHeight
+  
   if (viewBox) {
-    width = viewBox.width
-    height = viewBox.height
+    if (isNaN(width)) {
+      width = viewBox.width
+    }
+    if (isNaN(height)) {
+      height = viewBox.height
+    }
     if (!unit) unit = 'px'
   } else if (isNaN(width) || isNaN(height)) {
-    // If no width/height and no viewBox, default to 1000
     width = 1000
     height = 1000
   }
   
-  // Default to 1000 if still not found
   if (isNaN(width)) width = 1000
   if (isNaN(height)) height = 1000
+  if (isNaN(displayWidth)) displayWidth = width
+  if (isNaN(displayHeight)) displayHeight = height
   if (!unit) unit = 'px'
   
-  console.log(`[Import] SVG dimensions: ${width}x${height}${unit}, viewBox:`, viewBox, 'offset:', offsetX, offsetY)
+  console.log(`[Import] SVG: ${width}x${height}${unit || ''} viewBox:`, viewBox, 'display:', displayWidth, displayHeight)
   
-  return { width, height, viewBox, unit, offsetX, offsetY }
+  return { width, height, viewBox, unit, offsetX, offsetY, displayWidth, displayHeight }
 }
 
-function calculateScaleFactor(svgWidth: number, svgHeight: number, unit: string | null): number {
-  // If dimensions are in mm or viewBox is in mm (our app uses mm), no scaling needed
+function calculateScaleFactor(displayWidth: number, displayHeight: number, viewBoxWidth: number, viewBoxHeight: number, unit: string | null): number {
+  if (viewBoxWidth > 0 && viewBoxHeight > 0 && displayWidth > 0 && displayHeight > 0) {
+    const scaleX = displayWidth / viewBoxWidth
+    const scaleY = displayHeight / viewBoxHeight
+    const calculatedScale = Math.min(scaleX, scaleY)
+    
+    if (unit === 'mm' || calculatedScale === 1) {
+      return 1
+    }
+    return calculatedScale
+  }
+  
   if (unit === 'mm') {
-    console.log(`[Import] Dimensions in mm, no scaling needed`)
     return 1
   }
-  
-  // For other units (px, cm, in) or no unit, convert to mm
-  let svgWidthMm = svgWidth
-  let svgHeightMm = svgHeight
-  
-  if (unit === 'cm') {
-    svgWidthMm = svgWidth * 10
-    svgHeightMm = svgHeight * 10
-  } else if (unit === 'in') {
-    svgWidthMm = svgWidth * 25.4
-    svgHeightMm = svgHeight * 25.4
-  } else {
-    // Assume px, convert using DPI
-    svgWidthMm = svgWidth * DEFAULTS.PX_TO_MM
-    svgHeightMm = svgHeight * DEFAULTS.PX_TO_MM
-  }
-  
-  // Use 1 as scale factor - preserve original size in mm (no scaling to fit artboard)
-  console.log(`[Import] SVG size: ${svgWidth}x${svgHeight}${unit || ''} = ${svgWidthMm.toFixed(2)}x${svgHeightMm.toFixed(2)}mm, scale: 1 (preserving original size)`)
   
   return 1
 }
@@ -729,9 +813,14 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
     }
 
     // Get SVG dimensions and calculate scale factor
-    const { width: svgWidth, height: svgHeight, unit, offsetX, offsetY } = getSvgDimensions(svg)
-    const scaleFactor = calculateScaleFactor(svgWidth, svgHeight, unit)
-    console.log(`[Import] Scale factor: ${scaleFactor}, offset: ${offsetX}, ${offsetY}`)
+    const { width, height, viewBox, offsetX, offsetY, displayWidth, displayHeight } = getSvgDimensions(svg)
+    const scaleFactor = calculateScaleFactor(
+      displayWidth, 
+      displayHeight, 
+      viewBox ? viewBox.width : width, 
+      viewBox ? viewBox.height : height, 
+      viewBox ? null : 'px'
+    )
 
     if (fileTimestamp && isLaserSvgCompatible(svg, fileTimestamp)) {
       console.log('[Import] File is LaserSVG compatible, using fast path')
@@ -802,10 +891,8 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
         }
         case 'path': {
           const d = el.getAttribute('d')
-          console.log('[Import] Processing path, d:', d)
           if (d) {
             const subpaths = splitPathToSubpaths(d)
-            console.log('[Import] Path subpaths:', subpaths.length)
             
             if (subpaths.length > 1) {
               const fill = el.getAttribute('fill')
@@ -851,15 +938,12 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
                 })
               }
               
-              console.log('[Import] Multiple subpaths, returning', resultElements.length, 'elements')
               if (resultElements.length === 0) return null
               return resultElements
             } else {
               points = convertPathToPoints(d)
-              console.log('[Import] Path points:', points.length)
               const fill = el.getAttribute('fill')
               isClosed = d.toUpperCase().includes('Z') || (!!fill && fill !== 'none')
-              console.log('[Import] Path isClosed:', isClosed)
             }
           }
           break
@@ -869,7 +953,6 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
       }
       
       if (points.length < 2) {
-        console.log('[Import] points.length < 2, returning null')
         return null
       }
       

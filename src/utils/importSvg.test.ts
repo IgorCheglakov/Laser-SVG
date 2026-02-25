@@ -289,4 +289,18 @@ describe('importFromSVG - basic shapes', () => {
     const pointEl = result[0] as PointElement
     expect(pointEl.points.length).toBe(2)
   })
+
+  it('should handle SVG with small viewBox but large width/height', () => {
+    const svg = `<svg fill="#000000" width="800px" height="800px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8.49,12.68v4.61c0,.34,.23,.61,.53,.71v5.48c0,.13"/>
+    </svg>`
+    const result = importFromSVG(svg)
+    
+    expect(result.length).toBe(1)
+    expect(result[0].type).toBe('point')
+    const pointEl = result[0] as PointElement
+    expect(pointEl.points.length).toBeGreaterThan(0)
+    expect(pointEl.points[0].x).toBe(8.49 * 25)
+    expect(pointEl.points[0].y).toBe(12.68 * 25)
+  })
 })
