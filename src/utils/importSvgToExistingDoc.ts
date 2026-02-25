@@ -440,10 +440,15 @@ function getSvgDimensions(svg: Element): { width: number; height: number; viewBo
     }
   }
   
-  // If no width/height but have viewBox, use viewBox
-  if ((isNaN(width) || isNaN(height)) && viewBox) {
+  // Prefer viewBox dimensions over width/height - viewBox defines the actual coordinate system
+  if (viewBox) {
     width = viewBox.width
     height = viewBox.height
+    if (!unit) unit = 'px'
+  } else if (isNaN(width) || isNaN(height)) {
+    // If no width/height and no viewBox, default to 1000
+    width = 1000
+    height = 1000
   }
   
   // Default to 1000 if still not found
@@ -685,9 +690,9 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
     }
 
     // Get SVG dimensions and calculate scale factor
-    const { width: svgWidth, height: svgHeight, unit } = getSvgDimensions(svg)
+    const { width: svgWidth, height: svgHeight, unit, offsetX, offsetY } = getSvgDimensions(svg)
     const scaleFactor = calculateScaleFactor(svgWidth, svgHeight, unit)
-    console.log(`[Import] Scale factor: ${scaleFactor}`)
+    console.log(`[Import] Scale factor: ${scaleFactor}, offset: ${offsetX}, ${offsetY}`)
 
     if (fileTimestamp && isLaserSvgCompatible(svg, fileTimestamp)) {
       console.log('[Import] File is LaserSVG compatible, using fast path')
@@ -781,16 +786,16 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
                 if (subPoints.length < 2) continue
                 
                 const scaledPoints = subPoints.map(p => ({
-                  x: p.x * scaleFactor,
-                  y: p.y * scaleFactor,
+                  x: (p.x - offsetX) * scaleFactor,
+                  y: (p.y - offsetY) * scaleFactor,
                   vertexType: p.vertexType,
                   prevControlHandle: p.prevControlHandle ? {
-                    x: p.prevControlHandle.x * scaleFactor,
-                    y: p.prevControlHandle.y * scaleFactor,
+                    x: (p.prevControlHandle.x - offsetX) * scaleFactor,
+                    y: (p.prevControlHandle.y - offsetY) * scaleFactor,
                   } : undefined,
                   nextControlHandle: p.nextControlHandle ? {
-                    x: p.nextControlHandle.x * scaleFactor,
-                    y: p.nextControlHandle.y * scaleFactor,
+                    x: (p.nextControlHandle.x - offsetX) * scaleFactor,
+                    y: (p.nextControlHandle.y - offsetY) * scaleFactor,
                   } : undefined,
                 }))
                 
@@ -844,10 +849,19 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
       
       const name = el.getAttribute('data-name') || el.getAttribute('id') || `${tagName} ${elementIndex + 1}`
       
-      // Scale points
+      // Scale points with viewBox offset
       const scaledPoints = points.map(p => ({
-        x: p.x * scaleFactor,
-        y: p.y * scaleFactor,
+        x: (p.x - offsetX) * scaleFactor,
+        y: (p.y - offsetY) * scaleFactor,
+        vertexType: p.vertexType,
+        prevControlHandle: p.prevControlHandle ? {
+          x: (p.prevControlHandle.x - offsetX) * scaleFactor,
+          y: (p.prevControlHandle.y - offsetY) * scaleFactor,
+        } : undefined,
+        nextControlHandle: p.nextControlHandle ? {
+          x: (p.nextControlHandle.x - offsetX) * scaleFactor,
+          y: (p.nextControlHandle.y - offsetY) * scaleFactor,
+        } : undefined,
       }))
       
       elementIndex++
