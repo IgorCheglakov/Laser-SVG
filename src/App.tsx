@@ -248,15 +248,45 @@ const useMenuActions = () => {
                 
                 const importedElements = importFromSVG(result.content, result.timestamp)
                 
+                console.log('[App] ===== IMPORT SVG DEBUG INFO =====')
+                console.log('[App] Imported elements (before centering):')
+                importedElements.forEach((el: SVGElement, idx: number) => {
+                  const pointEl = el as PointElement
+                  if (pointEl.points && pointEl.points.length > 0) {
+                    console.log(`[App] Element ${idx + 1}: "${pointEl.name}" (id: ${pointEl.id})`)
+                    console.log(`[App]   Bounding box: ${pointEl.isClosedShape ? 'closed' : 'open'} shape, ${pointEl.points.length} points`)
+                    pointEl.points.forEach((p, pIdx) => {
+                      let cp1Info = p.prevControlHandle ? `, prevControl: (${p.prevControlHandle.x.toFixed(3)}, ${p.prevControlHandle.y.toFixed(3)})` : ''
+                      let cp2Info = p.nextControlHandle ? `, nextControl: (${p.nextControlHandle.x.toFixed(3)}, ${p.nextControlHandle.y.toFixed(3)})` : ''
+                      console.log(`[App]   Point ${pIdx}: SVG coords: (${p.x.toFixed(3)}, ${p.y.toFixed(3)})${cp1Info}${cp2Info}`)
+                    })
+                  }
+                })
+                
                 const croppedElements = cropElementsToBounds(importedElements, settings.artboardWidth, settings.artboardHeight)
                 
-                // Calculate visible center in mm coordinates using screen dimensions from store
                 const centerScreenX = view.screenWidth / 2
                 const centerScreenY = view.screenHeight / 2
                 const visibleCenterX = (centerScreenX - view.offsetX) / view.scale / DEFAULTS.MM_TO_PX
                 const visibleCenterY = (centerScreenY - view.offsetY) / view.scale / DEFAULTS.MM_TO_PX
                 
+                console.log(`[App] Canvas center target: (${visibleCenterX.toFixed(3)}, ${visibleCenterY.toFixed(3)})`)
+                
                 const centeredElements = centerElements(croppedElements, visibleCenterX, visibleCenterY, settings.artboardWidth, settings.artboardHeight)
+                
+                console.log('[App] Elements AFTER centering:')
+                centeredElements.forEach((el: SVGElement, idx: number) => {
+                  const pointEl = el as PointElement
+                  if (pointEl.points && pointEl.points.length > 0) {
+                    console.log(`[App] Element ${idx + 1}: "${pointEl.name}"`)
+                    pointEl.points.forEach((p, pIdx) => {
+                      let cp1Info = p.prevControlHandle ? `, prevControl: (${p.prevControlHandle.x.toFixed(3)}, ${p.prevControlHandle.y.toFixed(3)})` : ''
+                      let cp2Info = p.nextControlHandle ? `, nextControl: (${p.nextControlHandle.x.toFixed(3)}, ${p.nextControlHandle.y.toFixed(3)})` : ''
+                      console.log(`[App]   Point ${pIdx}: canvas coords: (${p.x.toFixed(3)}, ${p.y.toFixed(3)})${cp1Info}${cp2Info}`)
+                    })
+                  }
+                })
+                console.log('[App] ===== END IMPORT DEBUG INFO =====')
                 console.log('[App] Imported elements count:', centeredElements.length)
                 centeredElements.forEach((element: SVGElement) => {
                   const points = 'points' in element ? (element as PointElement).points?.length : 'N/A'

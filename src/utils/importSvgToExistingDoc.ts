@@ -157,9 +157,10 @@ function splitPathToSubpaths(d: string): string[] {
 }
 
 function parsePathData(d: string): ParsedCommand[] {
-  console.log('[Import] Starting parsePathData, d length:', d.length)
   const commands: ParsedCommand[] = []
-  const regex = /([MLHVQZCmlhvqzc])([^MLHVQZCmlhvqzc]*)/g
+  // Match command letter and all numbers (including negative, decimal, scientific notation)
+  // Include S command for smooth curves
+  const regex = /([MLHVQZCSmlhvqzcs])([^MLHVQZCSmlhvqzcs]*)/g
   let match
   let matchCount = 0
 
@@ -169,26 +170,20 @@ function parsePathData(d: string): ParsedCommand[] {
     const argsStr = match[2].trim()
     
     if (argsStr) {
-      const rawValues = argsStr.split(/[\s,]+/).filter(v => v)
-      const values: number[] = []
-      for (const v of rawValues) {
-        const num = Number(v)
-        if (!isNaN(num)) {
-          values.push(num)
-        }
-      }
+      // Match all numbers (including negative, decimal, scientific notation)
+      const numRegex = /-?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/g
+      const rawValues = argsStr.match(numRegex) || []
+      const values: number[] = rawValues.map(v => Number(v)).filter(n => !isNaN(n))
       commands.push({ command, values })
     } else {
       commands.push({ command, values: [] })
     }
   }
 
-  console.log('[Import] parsePathData complete, commands:', matchCount)
   return commands
 }
 
 function convertToAbsolute(commands: ParsedCommand[]): ParsedCommand[] {
-  console.log('[Import] Starting convertToAbsolute, commands count:', commands.length)
   const absolute: ParsedCommand[] = []
   let x = 0, y = 0
   let startX = 0, startY = 0
@@ -286,6 +281,57 @@ function convertToAbsolute(commands: ParsedCommand[]): ParsedCommand[] {
         const newY = isRelative ? y + v[0] : v[0]
         absolute.push({ command: 'L', values: [x, newY] })
         y = newY
+        break
+      }
+      case 'S': {
+        // Shorthand smooth cubic Bezier: S x2 y2, x y
+        // First control point is reflection of previous control point about the previous curve's end point
+        if (v.length < 4) continue
+        
+        let cp1x: number, cp1y: number
+        let cp2x: number, cp2y: number, endX: number, endY: number
+        
+        // Find previous control point AND end point from last C or S command
+        let prevEndX: number | null = null
+        let prevEndY: number | null = null
+        let prevCp2x: number | null = null
+        let prevCp2y: number | null = null
+        for (let i = absolute.length - 1; i >= 0; i--) {
+          const prevCmd = absolute[i]
+          if (prevCmd.command === 'C' && prevCmd.values.length >= 6) {
+            prevCp2x = prevCmd.values[2]
+            prevCp2y = prevCmd.values[3]
+            prevEndX = prevCmd.values[4]
+            prevEndY = prevCmd.values[5]
+            break
+          }
+        }
+        
+        // Reflect previous control point about the previous curve's end point to get first control point
+        if (prevCp2x !== null && prevCp2y !== null && prevEndX !== null && prevEndY !== null) {
+          cp1x = prevEndX + (prevEndX - prevCp2x)
+          cp1y = prevEndY + (prevEndY - prevCp2y)
+        } else {
+          // If no previous control point, use current point
+          cp1x = x
+          cp1y = y
+        }
+        
+        if (isRelative) {
+          cp2x = x + v[0]
+          cp2y = y + v[1]
+          endX = x + v[2]
+          endY = y + v[3]
+        } else {
+          cp2x = v[0]
+          cp2y = v[1]
+          endX = v[2]
+          endY = v[3]
+        }
+        
+        absolute.push({ command: 'C', values: [cp1x, cp1y, cp2x, cp2y, endX, endY] })
+        x = endX
+        y = endY
         break
       }
     }
@@ -461,8 +507,6 @@ function getSvgDimensions(svg: Element): { width: number; height: number; viewBo
   return { width, height, viewBox, unit, offsetX, offsetY }
 }
 
-const DEFAULT_ARTBOARD_SIZE = 1000
-
 function calculateScaleFactor(svgWidth: number, svgHeight: number, unit: string | null): number {
   // If dimensions are in mm or viewBox is in mm (our app uses mm), no scaling needed
   if (unit === 'mm') {
@@ -486,15 +530,10 @@ function calculateScaleFactor(svgWidth: number, svgHeight: number, unit: string 
     svgHeightMm = svgHeight * DEFAULTS.PX_TO_MM
   }
   
-  // Scale to fit within 1000x1000 mm while preserving aspect ratio
-  const targetSize = DEFAULT_ARTBOARD_SIZE
-  const scaleX = targetSize / svgWidthMm
-  const scaleY = targetSize / svgHeightMm
-  const scale = Math.min(scaleX, scaleY)
+  // Use 1 as scale factor - preserve original size in mm (no scaling to fit artboard)
+  console.log(`[Import] SVG size: ${svgWidth}x${svgHeight}${unit || ''} = ${svgWidthMm.toFixed(2)}x${svgHeightMm.toFixed(2)}mm, scale: 1 (preserving original size)`)
   
-  console.log(`[Import] SVG size: ${svgWidth}x${svgHeight}${unit || ''} = ${svgWidthMm.toFixed(2)}x${svgHeightMm.toFixed(2)}mm, scale: ${scale.toFixed(4)}`)
-  
-  return scale
+  return 1
 }
 
 function calculateBounds(points: Point[]): { x: number; y: number; width: number; height: number } {

@@ -235,15 +235,16 @@ describe('importFromSVG - basic shapes', () => {
     expect(pointEl.stroke).toBe('#FF0000')
   })
 
-  it('should scale SVG from px to mm when using px units', () => {
+  it('should preserve SVG size when using px units (no scaling to artboard)', () => {
     const svg = `<svg width="100px" height="100px" viewBox="0 0 100 100"><rect x="0" y="0" width="10" height="10"/></svg>`
     const result = importFromSVG(svg)
     
     expect(result.length).toBe(1)
     const pointEl = result[0] as PointElement
     const maxCoord = Math.max(...pointEl.points.map(p => Math.max(p.x, p.y)))
-    expect(maxCoord).toBeGreaterThan(370)
-    expect(maxCoord).toBeLessThan(400)
+    // With scale factor = 1, coordinates should be in mm (100px * 0.264583 = 26.46mm)
+    // rect goes from 0 to 10, so maxCoord = 10
+    expect(maxCoord).toBe(10)
   })
 
   it('should import group element with children', () => {
