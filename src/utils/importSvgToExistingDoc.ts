@@ -164,6 +164,7 @@ function parsePathData(d: string): ParsedCommand[] {
   const parts = d.split(commandRegex)
   
   let lastCommand = ''
+  let lastWasZ = false
   
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i]
@@ -174,6 +175,7 @@ function parsePathData(d: string): ParsedCommand[] {
     // Check if this part is a command letter
     if (/^[MLHVQZCSmlhvqzcs]$/.test(part)) {
       lastCommand = part
+      lastWasZ = (part.toUpperCase() === 'Z')
       // Check next part for arguments
       if (i + 1 < parts.length) {
         const nextPart = parts[i + 1]
@@ -199,7 +201,7 @@ function parsePathData(d: string): ParsedCommand[] {
       
       const values = extractNumbers(part)
       if (values.length > 0) {
-        const implicitCommand = getImplicitCommand(lastCommand)
+        const implicitCommand = getImplicitCommand(lastCommand, lastWasZ)
         // Split values into multiple commands if needed
         const cmdParts = splitValuesByCommand(implicitCommand, values)
         for (const cmdVal of cmdParts) {
@@ -214,8 +216,6 @@ function parsePathData(d: string): ParsedCommand[] {
 
 function splitValuesByCommand(command: string, values: number[]): { command: string; values: number[] }[] {
   const results: { command: string; values: number[] }[] = []
-  const baseCommand = command.toUpperCase()
-  const isRelative = command === command.toLowerCase()
   
   // Number of values expected per command
   const valuesPerCommand: Record<string, number> = {
@@ -249,9 +249,15 @@ function extractNumbers(str: string): number[] {
   return rawValues.map(v => Number(v)).filter(n => !isNaN(n))
 }
 
-function getImplicitCommand(lastCommand: string): string {
+function getImplicitCommand(lastCommand: string, afterZ: boolean = false): string {
   const upper = lastCommand.toUpperCase()
   const isRelative = lastCommand === lastCommand.toLowerCase()
+  
+  // After Z, relative commands become absolute (m→M, s→S, t→T)
+  // This is per SVG spec: after Z, the current point is at the start of the subpath
+  if (afterZ) {
+    return upper
+  }
   
   switch (upper) {
     case 'M':

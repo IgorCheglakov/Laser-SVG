@@ -303,4 +303,29 @@ describe('importFromSVG - basic shapes', () => {
     expect(pointEl.points[0].x).toBe(8.49 * 25)
     expect(pointEl.points[0].y).toBe(12.68 * 25)
   })
+
+  it('should handle Zm (close path then move) correctly', () => {
+    const svg = `<svg width="100mm" height="100mm" viewBox="0 0 32 32">
+      <path d="M0,0 L10,0 L10,10 L0,10 Z m5,5 L20,15 L20,5 L5,15 Z"/>
+    </svg>`
+    const result = importFromSVG(svg)
+    
+    // Zm causes split into multiple subpaths, which become multiple elements
+    expect(result.length).toBe(2)
+    
+    // First element: first square
+    const firstEl = result[0] as PointElement
+    expect(firstEl.points[0].x).toBe(0)
+    expect(firstEl.points[0].y).toBe(0)
+    
+    // Second element: second square starting at (5,5) - should be ABSOLUTE, not relative
+    const secondEl = result[1] as PointElement
+    
+    // Scale factor = 100/32 = 3.125
+    const scale = 100 / 32
+    
+    // After Zm5,5 the new point should be at ABSOLUTE position (5,5)
+    expect(secondEl.points[0].x).toBe(5 * scale)
+    expect(secondEl.points[0].y).toBe(5 * scale)
+  })
 })
