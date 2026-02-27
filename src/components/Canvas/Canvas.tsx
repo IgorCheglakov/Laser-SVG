@@ -2025,18 +2025,21 @@ const CanvasElement: React.FC<CanvasElementProps> = ({ element, isPreview, isSel
       const p2x = seg.p2.x * DEFAULTS.MM_TO_PX
       const p2y = seg.p2.y * DEFAULTS.MM_TO_PX
       
-      if (i === 0) {
+      // If destination point starts a new subpath (isMoveTo), use M instead of L/C
+      if (seg.p2.isMoveTo) {
+        d += ` M ${p2x} ${p2y}`
+      } else if (i === 0) {
         d += `M ${px} ${py}`
-      }
-      
-      if (seg.isCurve) {
-        const cp1x = seg.cp1.x * DEFAULTS.MM_TO_PX
-        const cp1y = seg.cp1.y * DEFAULTS.MM_TO_PX
-        const cp2x = seg.cp2.x * DEFAULTS.MM_TO_PX
-        const cp2y = seg.cp2.y * DEFAULTS.MM_TO_PX
-        d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2x} ${p2y}`
       } else {
-        d += ` L ${p2x} ${p2y}`
+        if (seg.isCurve) {
+          const cp1x = seg.cp1.x * DEFAULTS.MM_TO_PX
+          const cp1y = seg.cp1.y * DEFAULTS.MM_TO_PX
+          const cp2x = seg.cp2.x * DEFAULTS.MM_TO_PX
+          const cp2y = seg.cp2.y * DEFAULTS.MM_TO_PX
+          d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2x} ${p2y}`
+        } else {
+          d += ` L ${p2x} ${p2y}`
+        }
       }
     }
     
