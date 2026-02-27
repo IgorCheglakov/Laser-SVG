@@ -15,6 +15,7 @@ export interface Point {
   vertexType?: VertexType
   prevControlHandle?: { x: number; y: number }  // enters this point (from prev)
   nextControlHandle?: { x: number; y: number }  // exits this point (to next)
+  isMoveTo?: boolean
 }
 
 export function createPoint(x: number, y: number): Point {

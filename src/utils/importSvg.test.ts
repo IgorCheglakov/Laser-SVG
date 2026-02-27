@@ -310,22 +310,24 @@ describe('importFromSVG - basic shapes', () => {
     </svg>`
     const result = importFromSVG(svg)
     
-    // Zm causes split into multiple subpaths, which become multiple elements
-    expect(result.length).toBe(2)
+    // Path is now processed as single element to preserve command context
+    expect(result.length).toBe(1)
     
-    // First element: first square
-    const firstEl = result[0] as PointElement
-    expect(firstEl.points[0].x).toBe(0)
-    expect(firstEl.points[0].y).toBe(0)
-    
-    // Second element: second square starting at (5,5) - should be ABSOLUTE, not relative
-    const secondEl = result[1] as PointElement
+    // The path should contain both subpaths
+    const pointEl = result[0] as PointElement
     
     // Scale factor = 100/32 = 3.125
     const scale = 100 / 32
     
-    // After Zm5,5 the new point should be at ABSOLUTE position (5,5)
-    expect(secondEl.points[0].x).toBe(5 * scale)
-    expect(secondEl.points[0].y).toBe(5 * scale)
+    // First point should be at (0, 0)
+    expect(pointEl.points[0].x).toBe(0)
+    expect(pointEl.points[0].y).toBe(0)
+    
+    // After Zm5,5 the next point should be at ABSOLUTE position (5,5) per SVG spec
+    // Find the point that follows Z (the first point of second subpath)
+    // In single-element approach, we need to check that coordinates are correct
+    const fifthPointIndex = 4 // After M,L,L,L,Z -> M is at index 4
+    expect(pointEl.points[fifthPointIndex].x).toBe(5 * scale)
+    expect(pointEl.points[fifthPointIndex].y).toBe(5 * scale)
   })
 })

@@ -1,13 +1,11 @@
 /**
- * SVG Import Utility for Existing Document
- * 
- * Handles import logic when adding SVG elements to an already opened document.
- * Parses SVG content and converts it to PointElement array.
- * Supports all SVG shapes: line, rect, circle, ellipse, polyline, polygon, path
- * Converts colors to nearest palette color and stroke width to standard 0.25mm
- * Includes cropping and centering logic for imported elements
- */
-
+SVG Import Utility for Existing Document
+Handles import logic when adding SVG elements to an already opened document.
+Parses SVG content and converts it to PointElement array.
+Supports all SVG shapes: line, rect, circle, ellipse, polyline, polygon, path
+Converts colors to nearest palette color and stroke width to standard 0.25mm
+Includes cropping and centering logic for imported elements
+*/
 import type { PointElement, SVGElement, GroupElement, Point } from '@/types-app/index'
 import type { VertexType } from '@/types-app/point'
 import { generateId } from '@/utils/id'
@@ -45,8 +43,8 @@ function colorToPalette(inputColor: string): string {
 
     const distance = Math.sqrt(
       Math.pow(rgb.r - paletteRgb.r, 2) +
-      Math.pow(rgb.g - paletteRgb.g, 2) +
-      Math.pow(rgb.b - paletteRgb.b, 2)
+        Math.pow(rgb.g - paletteRgb.g, 2) +
+        Math.pow(rgb.b - paletteRgb.b, 2)
     )
 
     if (distance < minDistance) {
@@ -54,7 +52,6 @@ function colorToPalette(inputColor: string): string {
       closestColor = paletteColor.color
     }
   }
-
   return closestColor
 }
 
@@ -76,14 +73,12 @@ function convertRectToPoints(x: number, y: number, width: number, height: number
 
 function convertCircleToPoints(cx: number, cy: number, r: number): Point[] {
   const k = 0.5522847498 * r
-
   const points: Point[] = [
     { x: cx, y: cy - r, vertexType: 'smooth' as VertexType },
     { x: cx + r, y: cy, vertexType: 'smooth' as VertexType },
     { x: cx, y: cy + r, vertexType: 'smooth' as VertexType },
     { x: cx - r, y: cy, vertexType: 'smooth' as VertexType },
   ]
-
   points[0].prevControlHandle = { x: cx - k, y: cy - r }
   points[0].nextControlHandle = { x: cx + k, y: cy - r }
   points[1].prevControlHandle = { x: cx + r, y: cy - k }
@@ -92,21 +87,18 @@ function convertCircleToPoints(cx: number, cy: number, r: number): Point[] {
   points[2].nextControlHandle = { x: cx - k, y: cy + r }
   points[3].prevControlHandle = { x: cx - r, y: cy + k }
   points[3].nextControlHandle = { x: cx - r, y: cy - k }
-
   return points
 }
 
 function convertEllipseToPoints(cx: number, cy: number, rx: number, ry: number): Point[] {
   const kx = 0.5522847498 * rx
   const ky = 0.5522847498 * ry
-
   const points: Point[] = [
     { x: cx, y: cy - ry, vertexType: 'smooth' as VertexType },
     { x: cx + rx, y: cy, vertexType: 'smooth' as VertexType },
     { x: cx, y: cy + ry, vertexType: 'smooth' as VertexType },
     { x: cx - rx, y: cy, vertexType: 'smooth' as VertexType },
   ]
-
   points[0].prevControlHandle = { x: cx - kx, y: cy - ry }
   points[0].nextControlHandle = { x: cx + kx, y: cy - ry }
   points[1].prevControlHandle = { x: cx + rx, y: cy - ky }
@@ -115,67 +107,37 @@ function convertEllipseToPoints(cx: number, cy: number, rx: number, ry: number):
   points[2].nextControlHandle = { x: cx - kx, y: cy + ry }
   points[3].prevControlHandle = { x: cx - rx, y: cy + ky }
   points[3].nextControlHandle = { x: cx - rx, y: cy - ky }
-
   return points
 }
 
 function convertPolylineToPoints(pointsStr: string): Point[] {
   const points: Point[] = []
   const nums = pointsStr.trim().split(/[\s,]+/).map(Number)
-
   for (let i = 0; i < nums.length; i += 2) {
     if (!isNaN(nums[i]) && !isNaN(nums[i + 1])) {
       points.push({ x: nums[i], y: nums[i + 1], vertexType: 'straight' as VertexType })
     }
   }
-
   return points
-}
-
-/**
- * Split path data into subpaths (by M command)
- */
-function splitPathToSubpaths(d: string): string[] {
-  const subpaths: string[] = []
-  const commands = d.match(/[MLHVQZCSmlhvqzcs][^MLHVQZCSmlhvqzcs]*/g) || []
-  
-  let currentSubpath = ''
-  for (const cmd of commands) {
-    const cmdLetter = cmd[0].toUpperCase()
-    if (cmdLetter === 'M' && currentSubpath.length > 0) {
-      subpaths.push(currentSubpath.trim())
-      currentSubpath = cmd
-    } else {
-      currentSubpath += cmd
-    }
-  }
-  if (currentSubpath.trim().length > 0) {
-    subpaths.push(currentSubpath.trim())
-  }
-  
-  return subpaths
 }
 
 function parsePathData(d: string): ParsedCommand[] {
   const commands: ParsedCommand[] = []
-  
   // Split by command letters
   const commandRegex = /([MLHVQZCSmlhvqzcs])/g
   const parts = d.split(commandRegex)
-  
   let lastCommand = ''
   let lastWasZ = false
-  
+
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i]
-    
     // Skip empty parts
     if (!part || !part.trim()) continue
-    
+
     // Check if this part is a command letter
     if (/^[MLHVQZCSmlhvqzcs]$/.test(part)) {
       lastCommand = part
-      lastWasZ = (part.toUpperCase() === 'Z')
+      lastWasZ = part.toUpperCase() === 'Z'
       // Check next part for arguments
       if (i + 1 < parts.length) {
         const nextPart = parts[i + 1]
@@ -198,7 +160,7 @@ function parsePathData(d: string): ParsedCommand[] {
       if (/^[MLHVQZCSmlhvqzcs]$/.test(prevPart)) {
         continue // The previous command already consumed these numbers
       }
-      
+
       const values = extractNumbers(part)
       if (values.length > 0) {
         const implicitCommand = getImplicitCommand(lastCommand, lastWasZ)
@@ -210,55 +172,59 @@ function parsePathData(d: string): ParsedCommand[] {
       }
     }
   }
-  
   return commands
 }
 
 function splitValuesByCommand(command: string, values: number[]): { command: string; values: number[] }[] {
   const results: { command: string; values: number[] }[] = []
-  
   // Number of values expected per command
   const valuesPerCommand: Record<string, number> = {
-    'M': 2, 'm': 2,
-    'L': 2, 'l': 2,
-    'H': 1, 'h': 1,
-    'V': 1, 'v': 1,
-    'C': 6, 'c': 6,
-    'S': 4, 's': 4,
-    'Q': 4, 'q': 4,
-    'T': 2, 't': 2,
-    'A': 7, 'a': 7,
-    'Z': 0, 'z': 0
+    M: 2,
+    m: 2,
+    L: 2,
+    l: 2,
+    H: 1,
+    h: 1,
+    V: 1,
+    v: 1,
+    C: 6,
+    c: 6,
+    S: 4,
+    s: 4,
+    Q: 4,
+    q: 4,
+    T: 2,
+    t: 2,
+    A: 7,
+    a: 7,
+    Z: 0,
+    z: 0,
   }
-  
   const perCmd = valuesPerCommand[command] || 2
-  
   for (let i = 0; i < values.length; i += perCmd) {
     const cmdValues = values.slice(i, i + perCmd)
     if (cmdValues.length > 0) {
       results.push({ command, values: cmdValues })
     }
   }
-  
   return results
 }
 
 function extractNumbers(str: string): number[] {
+  // Исправлен regex: \d+\.?\d* вместо \d+.?\d* (экранирована точка)
   const numRegex = /-?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/g
   const rawValues = str.match(numRegex) || []
-  return rawValues.map(v => Number(v)).filter(n => !isNaN(n))
+  return rawValues.map((v) => Number(v)).filter((n) => !isNaN(n))
 }
 
 function getImplicitCommand(lastCommand: string, afterZ: boolean = false): string {
   const upper = lastCommand.toUpperCase()
   const isRelative = lastCommand === lastCommand.toLowerCase()
-  
-  // After Z, relative commands become absolute (m→M, s→S, t→T)
-  // This is per SVG spec: after Z, the current point is at the start of the subpath
-  if (afterZ) {
-    return upper
-  }
-  
+
+  // ИСПРАВЛЕНО: Убрано неверное преобразование относительных команд в абсолютные после Z
+  // Согласно SVG spec, после Z текущая точка сбрасывается к началу подпути,
+  // но относительные команды остаются относительными к этой точке.
+
   switch (upper) {
     case 'M':
       return isRelative ? 'l' : 'L'
@@ -283,19 +249,26 @@ function getImplicitCommand(lastCommand: string, afterZ: boolean = false): strin
   }
 }
 
-function convertToAbsolute(commands: ParsedCommand[]): ParsedCommand[] {
+function convertToAbsolute(commands: ParsedCommand[], startAfterZ: boolean = false): ParsedCommand[] {
   const absolute: ParsedCommand[] = []
-  let x = 0, y = 0
-  let startX = 0, startY = 0
+  let x = 0,
+    y = 0
+  let startX = 0,
+    startY = 0
+  let afterZ = startAfterZ
 
   for (const cmd of commands) {
     const c = cmd.command
     const v = cmd.values
-    const isRelative = c === c.toLowerCase()
+    let isRelative = c === c.toLowerCase()
     const baseCmd = c.toUpperCase()
 
     // Skip commands with invalid/insufficient values
-    if (v.some(val => isNaN(val))) continue
+    if (v.some((val) => isNaN(val))) continue
+
+    // ИСПРАВЛЕНО: Убрано принудительное преобразование isRelative = false после Z
+    // Относительные команды после Z должны выполняться относительно текущей точки (начала подпути)
+    afterZ = false
 
     switch (baseCmd) {
       case 'M': {
@@ -306,7 +279,7 @@ function convertToAbsolute(commands: ParsedCommand[]): ParsedCommand[] {
         x = newX
         y = newY
         startX = x
-        startY = y
+        startY = y // Новая начальная точка для возможного Z
         break
       }
       case 'L': {
@@ -320,7 +293,7 @@ function convertToAbsolute(commands: ParsedCommand[]): ParsedCommand[] {
       }
       case 'C': {
         if (v.length < 6) continue
-        let cp1x, cp1y, cp2x, cp2y, endX, endY
+        let cp1x: number, cp1y: number, cp2x: number, cp2y: number, endX: number, endY: number
         if (isRelative) {
           cp1x = x + v[0]
           cp1y = y + v[1]
@@ -342,7 +315,8 @@ function convertToAbsolute(commands: ParsedCommand[]): ParsedCommand[] {
         break
       }
       case 'Q': {
-        let cpx, cpy, endX, endY
+        if (v.length < 4) continue
+        let cpx: number, cpy: number, endX: number, endY: number
         if (isRelative) {
           cpx = x + v[0]
           cpy = y + v[1]
@@ -354,10 +328,11 @@ function convertToAbsolute(commands: ParsedCommand[]): ParsedCommand[] {
           endX = v[2]
           endY = v[3]
         }
-        const cp1x = x + (cpx - x) * 2/3
-        const cp1y = y + (cpy - y) * 2/3
-        const cp2x = endX + (cpx - endX) * 2/3
-        const cp2y = endY + (cpy - endY) * 2/3
+        // Convert quadratic to cubic Bezier
+        const cp1x = x + ((cpx - x) * 2) / 3
+        const cp1y = y + ((cpy - y) * 2) / 3
+        const cp2x = endX + ((cpx - endX) * 2) / 3
+        const cp2y = endY + ((cpy - endY) * 2) / 3
         absolute.push({ command: 'C', values: [cp1x, cp1y, cp2x, cp2y, endX, endY] })
         x = endX
         y = endY
@@ -367,6 +342,7 @@ function convertToAbsolute(commands: ParsedCommand[]): ParsedCommand[] {
         absolute.push({ command: 'Z', values: [] })
         x = startX
         y = startY
+        afterZ = true
         break
       }
       case 'H': {
@@ -387,15 +363,17 @@ function convertToAbsolute(commands: ParsedCommand[]): ParsedCommand[] {
         // Shorthand smooth cubic Bezier: S x2 y2, x y
         // First control point is reflection of previous control point about the previous curve's end point
         if (v.length < 4) continue
-        
+
         let cp1x: number, cp1y: number
         let cp2x: number, cp2y: number, endX: number, endY: number
-        
+
         // Find previous control point AND end point from last C or S command
-        let prevEndX: number | null = null
-        let prevEndY: number | null = null
+        // ИСПРАВЛЕНО: Поиск ведётся по всему массиву absolute, который теперь непрерывен
         let prevCp2x: number | null = null
         let prevCp2y: number | null = null
+        let prevEndX: number | null = null
+        let prevEndY: number | null = null
+
         for (let i = absolute.length - 1; i >= 0; i--) {
           const prevCmd = absolute[i]
           if (prevCmd.command === 'C' && prevCmd.values.length >= 6) {
@@ -406,8 +384,8 @@ function convertToAbsolute(commands: ParsedCommand[]): ParsedCommand[] {
             break
           }
         }
-        
-        // Reflect previous control point about the previous curve's end point to get first control point
+
+        // Reflect previous control point about the previous curve's end point
         if (prevCp2x !== null && prevCp2y !== null && prevEndX !== null && prevEndY !== null) {
           cp1x = prevEndX + (prevEndX - prevCp2x)
           cp1y = prevEndY + (prevEndY - prevCp2y)
@@ -416,7 +394,7 @@ function convertToAbsolute(commands: ParsedCommand[]): ParsedCommand[] {
           cp1x = x
           cp1y = y
         }
-        
+
         if (isRelative) {
           cp2x = x + v[0]
           cp2y = y + v[1]
@@ -428,7 +406,7 @@ function convertToAbsolute(commands: ParsedCommand[]): ParsedCommand[] {
           endX = v[2]
           endY = v[3]
         }
-        
+
         absolute.push({ command: 'C', values: [cp1x, cp1y, cp2x, cp2y, endX, endY] })
         x = endX
         y = endY
@@ -436,24 +414,22 @@ function convertToAbsolute(commands: ParsedCommand[]): ParsedCommand[] {
       }
     }
   }
-
   return absolute
 }
 
-function convertPathToPoints(d: string): Point[] {
+function convertPathToPoints(d: string, startAfterZ: boolean = false): Point[] {
   const commands = parsePathData(d)
-  const absCommands = convertToAbsolute(commands)
-
+  const absCommands = convertToAbsolute(commands, startAfterZ)
   const points: Point[] = []
   let currentPoint: Point | null = null
 
   for (const cmd of absCommands) {
     // Skip commands with invalid values
-    if (cmd.values.some(v => isNaN(v))) continue
-    
+    if (cmd.values.some((v) => isNaN(v))) continue
+
     if (cmd.command === 'M') {
       if (cmd.values.length < 2) continue
-      currentPoint = { x: cmd.values[0], y: cmd.values[1], vertexType: 'straight' }
+      currentPoint = { x: cmd.values[0], y: cmd.values[1], vertexType: 'straight', isMoveTo: true }
       if (!isNaN(currentPoint.x) && !isNaN(currentPoint.y)) {
         points.push(currentPoint)
       }
@@ -491,10 +467,12 @@ function convertPathToPoints(d: string): Point[] {
         x: cmd.values[4],
         y: cmd.values[5],
         vertexType: hasPrevControlHandle ? 'corner' : 'straight',
-        prevControlHandle: hasPrevControlHandle ? {
-          x: cmd.values[2],
-          y: cmd.values[3],
-        } : undefined,
+        prevControlHandle: hasPrevControlHandle
+          ? {
+              x: cmd.values[2],
+              y: cmd.values[3],
+            }
+          : undefined,
       }
       if (!isNaN(currentPoint.x) && !isNaN(currentPoint.y)) {
         points.push(currentPoint)
@@ -503,15 +481,13 @@ function convertPathToPoints(d: string): Point[] {
       if (points.length > 2 && currentPoint) {
         const first = points[0]
         const last = currentPoint
-        
+
         // Bidirectional linking of control handles for closed shapes
-        // Copy first.prevControlHandle to last.nextControlHandle
         if (first.prevControlHandle) {
           last.nextControlHandle = { x: first.prevControlHandle.x, y: first.prevControlHandle.y }
           last.vertexType = 'corner'
         }
-        
-        // Copy last.nextControlHandle to first.prevControlHandle  
+
         if (last.nextControlHandle) {
           first.prevControlHandle = { x: last.nextControlHandle.x, y: last.nextControlHandle.y }
           first.vertexType = 'corner'
@@ -519,35 +495,38 @@ function convertPathToPoints(d: string): Point[] {
       }
     }
   }
-
   return points
 }
 
 function isLaserSvgCompatible(svg: Element, fileTimestamp: number): boolean {
   const meta = svg.querySelector('metadata')
   if (!meta) return false
-
   const compatible = meta.getAttribute('isLaserSvgCompatible')
   if (compatible !== 'true') return false
-
   const timestampStr = meta.getAttribute('timestamp')
   if (!timestampStr) return false
-
   const svgTimestamp = parseInt(timestampStr, 10)
   if (isNaN(svgTimestamp)) return false
-
   const diff = Math.abs(svgTimestamp - fileTimestamp)
   console.log(`[Import] File timestamp: ${fileTimestamp}, SVG timestamp: ${svgTimestamp}, diff: ${diff}ms`)
-
   return diff <= TIMESTAMP_TOLERANCE_MS
 }
 
-function getSvgDimensions(svg: Element): { width: number; height: number; viewBox: { x: number; y: number; width: number; height: number } | null; unit: string | null; offsetX: number; offsetY: number; displayWidth: number; displayHeight: number } {
+function getSvgDimensions(svg: Element): {
+  width: number
+  height: number
+  viewBox: { x: number; y: number; width: number; height: number } | null
+  unit: string | null
+  offsetX: number
+  offsetY: number
+  displayWidth: number
+  displayHeight: number
+} {
   const viewBoxAttr = svg.getAttribute('viewBox')
   let viewBox: { x: number; y: number; width: number; height: number } | null = null
   let offsetX = 0
   let offsetY = 0
-  
+
   if (viewBoxAttr) {
     const parts = viewBoxAttr.split(/[\s,]+/).map(Number)
     if (parts.length === 4 && !parts.some(isNaN)) {
@@ -556,14 +535,13 @@ function getSvgDimensions(svg: Element): { width: number; height: number; viewBo
       offsetY = parts[1]
     }
   }
-  
+
   const widthAttr = svg.getAttribute('width')
   const heightAttr = svg.getAttribute('height')
-  
   let unit: string | null = null
   let displayWidth = NaN
   let displayHeight = NaN
-  
+
   if (widthAttr) {
     const widthMatch = widthAttr.match(/^([\d.]+)\s*(px|mm|cm|in)?$/i)
     if (widthMatch) {
@@ -571,7 +549,7 @@ function getSvgDimensions(svg: Element): { width: number; height: number; viewBo
       unit = widthMatch[2] || null
     }
   }
-  
+
   if (heightAttr) {
     const heightMatch = heightAttr.match(/^([\d.]+)\s*(px|mm|cm|in)?$/i)
     if (heightMatch) {
@@ -579,10 +557,10 @@ function getSvgDimensions(svg: Element): { width: number; height: number; viewBo
       if (!unit) unit = heightMatch[2] || null
     }
   }
-  
+
   let width = displayWidth
   let height = displayHeight
-  
+
   if (viewBox) {
     if (isNaN(width)) {
       width = viewBox.width
@@ -595,34 +573,36 @@ function getSvgDimensions(svg: Element): { width: number; height: number; viewBo
     width = 1000
     height = 1000
   }
-  
+
   if (isNaN(width)) width = 1000
   if (isNaN(height)) height = 1000
   if (isNaN(displayWidth)) displayWidth = width
   if (isNaN(displayHeight)) displayHeight = height
   if (!unit) unit = 'px'
-  
+
   console.log(`[Import] SVG: ${width}x${height}${unit || ''} viewBox:`, viewBox, 'display:', displayWidth, displayHeight)
-  
   return { width, height, viewBox, unit, offsetX, offsetY, displayWidth, displayHeight }
 }
 
-function calculateScaleFactor(displayWidth: number, displayHeight: number, viewBoxWidth: number, viewBoxHeight: number, unit: string | null): number {
+function calculateScaleFactor(
+  displayWidth: number,
+  displayHeight: number,
+  viewBoxWidth: number,
+  viewBoxHeight: number,
+  unit: string | null
+): number {
   if (viewBoxWidth > 0 && viewBoxHeight > 0 && displayWidth > 0 && displayHeight > 0) {
     const scaleX = displayWidth / viewBoxWidth
     const scaleY = displayHeight / viewBoxHeight
     const calculatedScale = Math.min(scaleX, scaleY)
-    
     if (unit === 'mm' || calculatedScale === 1) {
       return 1
     }
     return calculatedScale
   }
-  
   if (unit === 'mm') {
     return 1
   }
-  
   return 1
 }
 
@@ -630,18 +610,16 @@ function calculateBounds(points: Point[]): { x: number; y: number; width: number
   if (points.length === 0) {
     return { x: 0, y: 0, width: 0, height: 0 }
   }
-  
   let minX = Infinity
   let minY = Infinity
   let maxX = -Infinity
   let maxY = -Infinity
-  
+
   for (const p of points) {
     minX = Math.min(minX, p.x)
     minY = Math.min(minY, p.y)
     maxX = Math.max(maxX, p.x)
     maxY = Math.max(maxY, p.y)
-    
     if (p.prevControlHandle) {
       minX = Math.min(minX, p.prevControlHandle.x)
       minY = Math.min(minY, p.prevControlHandle.y)
@@ -655,7 +633,6 @@ function calculateBounds(points: Point[]): { x: number; y: number; width: number
       maxY = Math.max(maxY, p.nextControlHandle.y)
     }
   }
-  
   return {
     x: minX,
     y: minY,
@@ -706,20 +683,24 @@ export function cropElementsToBounds(
   const newMinX = centerX - scaledWidth / 2
   const newMinY = centerY - scaledHeight / 2
 
-  return elements.map(el => {
+  return elements.map((el) => {
     if ('points' in el && el.points) {
-      const newPoints = el.points.map(p => ({
+      const newPoints = el.points.map((p) => ({
         ...p,
         x: (p.x - minX) * scale + newMinX,
         y: (p.y - minY) * scale + newMinY,
-        prevControlHandle: p.prevControlHandle ? {
-          x: (p.prevControlHandle.x - minX) * scale + newMinX,
-          y: (p.prevControlHandle.y - minY) * scale + newMinY,
-        } : undefined,
-        nextControlHandle: p.nextControlHandle ? {
-          x: (p.nextControlHandle.x - minX) * scale + newMinX,
-          y: (p.nextControlHandle.y - minY) * scale + newMinY,
-        } : undefined,
+        prevControlHandle: p.prevControlHandle
+          ? {
+              x: (p.prevControlHandle.x - minX) * scale + newMinX,
+              y: (p.prevControlHandle.y - minY) * scale + newMinY,
+            }
+          : undefined,
+        nextControlHandle: p.nextControlHandle
+          ? {
+              x: (p.nextControlHandle.x - minX) * scale + newMinX,
+              y: (p.nextControlHandle.y - minY) * scale + newMinY,
+            }
+          : undefined,
       }))
       return { ...el, points: newPoints }
     }
@@ -728,17 +709,17 @@ export function cropElementsToBounds(
 }
 
 /**
- * Check if SVG content has isLaserSvgCompatible tag (without full parsing)
- */
+Check if SVG content has isLaserSvgCompatible tag (without full parsing)
+*/
 export function isSvgLaserCompatible(svgContent: string): boolean {
   return svgContent.includes('isLaserSvgCompatible')
 }
 
 export function centerElements(
-  elements: SVGElement[], 
-  targetCenterX: number, 
-  targetCenterY: number, 
-  artboardWidth: number, 
+  elements: SVGElement[],
+  targetCenterX: number,
+  targetCenterY: number,
+  artboardWidth: number,
   artboardHeight: number
 ): SVGElement[] {
   if (elements.length === 0) return elements
@@ -769,24 +750,27 @@ export function centerElements(
 
   const elementsCenterX = (minX + maxX) / 2
   const elementsCenterY = (minY + maxY) / 2
-
   const offsetX = targetCenterX - elementsCenterX
   const offsetY = targetCenterY - elementsCenterY
 
-  return elements.map(el => {
+  return elements.map((el) => {
     if ('points' in el && el.points) {
-      const newPoints = el.points.map(p => ({
+      const newPoints = el.points.map((p) => ({
         ...p,
         x: p.x + offsetX,
         y: p.y + offsetY,
-        prevControlHandle: p.prevControlHandle ? {
-          x: p.prevControlHandle.x + offsetX,
-          y: p.prevControlHandle.y + offsetY,
-        } : undefined,
-        nextControlHandle: p.nextControlHandle ? {
-          x: p.nextControlHandle.x + offsetX,
-          y: p.nextControlHandle.y + offsetY,
-        } : undefined,
+        prevControlHandle: p.prevControlHandle
+          ? {
+              x: p.prevControlHandle.x + offsetX,
+              y: p.prevControlHandle.y + offsetY,
+            }
+          : undefined,
+        nextControlHandle: p.nextControlHandle
+          ? {
+              x: p.nextControlHandle.x + offsetX,
+              y: p.nextControlHandle.y + offsetY,
+            }
+          : undefined,
       }))
       return { ...el, points: newPoints }
     }
@@ -795,15 +779,10 @@ export function centerElements(
 }
 
 export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGElement[] {
-  console.log('[Import] Starting importFromSVG, content length:', svgContent.length, 'fileTimestamp:', fileTimestamp)
-  
+  console.log('[Import] ====== Starting import ======')
   try {
     const parser = new DOMParser()
-    console.log('[Import] DOMParser created')
-    
     const doc = parser.parseFromString(svgContent, 'image/svg+xml')
-    console.log('[Import] SVG parsed')
-    
     const parserError = doc.querySelector('parsererror')
     if (parserError) {
       console.error('[Import] SVG parse error:', parserError.textContent)
@@ -811,8 +790,6 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
     }
 
     const svg = doc.querySelector('svg')
-    console.log('[Import] SVG element found:', !!svg)
-
     if (!svg) {
       console.error('[Import] Invalid SVG: no svg element found')
       return []
@@ -821,16 +798,12 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
     // Get SVG dimensions and calculate scale factor
     const { width, height, viewBox, offsetX, offsetY, displayWidth, displayHeight } = getSvgDimensions(svg)
     const scaleFactor = calculateScaleFactor(
-      displayWidth, 
-      displayHeight, 
-      viewBox ? viewBox.width : width, 
-      viewBox ? viewBox.height : height, 
+      displayWidth,
+      displayHeight,
+      viewBox ? viewBox.width : width,
+      viewBox ? viewBox.height : height,
       viewBox ? null : 'px'
     )
-
-    if (fileTimestamp && isLaserSvgCompatible(svg, fileTimestamp)) {
-      console.log('[Import] File is LaserSVG compatible, using fast path')
-    }
 
     const elements: SVGElement[] = []
     const selectors = ['path', 'line', 'rect', 'circle', 'ellipse', 'polyline', 'polygon']
@@ -840,9 +813,9 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
     const convertElementToPoint = (el: Element): PointElement | PointElement[] | null => {
       let points: Point[] = []
       let isClosed = false
-      
+
       const tagName = el.tagName.toLowerCase()
-      
+
       switch (tagName) {
         case 'line': {
           const x1 = parseFloat(el.getAttribute('x1') || '0')
@@ -898,75 +871,27 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
         case 'path': {
           const d = el.getAttribute('d')
           if (d) {
-            const subpaths = splitPathToSubpaths(d)
-            
-            if (subpaths.length > 1) {
-              const fill = el.getAttribute('fill')
-              let stroke = el.getAttribute('stroke')
-              const strokeWidth = parseFloat(el.getAttribute('stroke-width') || '') || STANDARD_STROKE_WIDTH
-              if ((!stroke || stroke === 'none') && fill && fill !== 'none') {
-                stroke = fill
-              }
-              if (!stroke || stroke === 'none') {
-                stroke = '#000000'
-              }
-              
-              const resultElements: PointElement[] = []
-              for (let idx = 0; idx < subpaths.length; idx++) {
-                const subpath = subpaths[idx]
-                const subPoints = convertPathToPoints(subpath)
-                if (subPoints.length < 2) continue
-                
-                const scaledPoints = subPoints.map(p => ({
-                  x: (p.x - offsetX) * scaleFactor,
-                  y: (p.y - offsetY) * scaleFactor,
-                  vertexType: p.vertexType,
-                  prevControlHandle: p.prevControlHandle ? {
-                    x: (p.prevControlHandle.x - offsetX) * scaleFactor,
-                    y: (p.prevControlHandle.y - offsetY) * scaleFactor,
-                  } : undefined,
-                  nextControlHandle: p.nextControlHandle ? {
-                    x: (p.nextControlHandle.x - offsetX) * scaleFactor,
-                    y: (p.nextControlHandle.y - offsetY) * scaleFactor,
-                  } : undefined,
-                }))
-                
-                resultElements.push({
-                  id: el.getAttribute('id') ? `${el.getAttribute('id')}_${idx}` : generateId(),
-                  type: 'point',
-                  name: `${el.getAttribute('data-name') || el.getAttribute('id') || 'path'} ${idx + 1}`,
-                  visible: true,
-                  locked: false,
-                  points: scaledPoints,
-                  stroke: colorToPalette(stroke),
-                  strokeWidth,
-                  isClosedShape: true,
-                })
-              }
-              
-              if (resultElements.length === 0) return null
-              return resultElements
-            } else {
-              points = convertPathToPoints(d)
-              const fill = el.getAttribute('fill')
-              isClosed = d.toUpperCase().includes('Z') || (!!fill && fill !== 'none')
-            }
+            // ИСПРАВЛЕНО: Обрабатываем весь path как единую последовательность команд
+            // Это позволяет команде S находить предыдущую контрольную точку даже через границы подпутей
+            points = convertPathToPoints(d)
+            const fill = el.getAttribute('fill')
+            isClosed = d.toUpperCase().includes('Z') || (!!fill && fill !== 'none')
           }
           break
         }
         default:
           return null
       }
-      
+
       if (points.length < 2) {
         return null
       }
-      
+
       // Get attributes
       let stroke = el.getAttribute('stroke')
       const strokeWidth = parseFloat(el.getAttribute('stroke-width') || '') || STANDARD_STROKE_WIDTH
       const fill = el.getAttribute('fill')
-      
+
       // Use fill as stroke if no stroke
       if ((!stroke || stroke === 'none') && fill && fill !== 'none') {
         stroke = fill
@@ -974,26 +899,31 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
       if (!stroke || stroke === 'none') {
         stroke = '#000000'
       }
-      
+
       const name = el.getAttribute('data-name') || el.getAttribute('id') || `${tagName} ${elementIndex + 1}`
-      
+
       // Scale points with viewBox offset
-      const scaledPoints = points.map(p => ({
+      const scaledPoints = points.map((p) => ({
+        ...p,
         x: (p.x - offsetX) * scaleFactor,
         y: (p.y - offsetY) * scaleFactor,
         vertexType: p.vertexType,
-        prevControlHandle: p.prevControlHandle ? {
-          x: (p.prevControlHandle.x - offsetX) * scaleFactor,
-          y: (p.prevControlHandle.y - offsetY) * scaleFactor,
-        } : undefined,
-        nextControlHandle: p.nextControlHandle ? {
-          x: (p.nextControlHandle.x - offsetX) * scaleFactor,
-          y: (p.nextControlHandle.y - offsetY) * scaleFactor,
-        } : undefined,
+        prevControlHandle: p.prevControlHandle
+          ? {
+              x: (p.prevControlHandle.x - offsetX) * scaleFactor,
+              y: (p.prevControlHandle.y - offsetY) * scaleFactor,
+            }
+          : undefined,
+        nextControlHandle: p.nextControlHandle
+          ? {
+              x: (p.nextControlHandle.x - offsetX) * scaleFactor,
+              y: (p.nextControlHandle.y - offsetY) * scaleFactor,
+            }
+          : undefined,
       }))
-      
+
       elementIndex++
-      
+
       return {
         id: el.getAttribute('id') || generateId(),
         type: 'point' as const,
@@ -1010,14 +940,14 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
     // Helper function to process elements recursively (including groups)
     const processElements = (els: HTMLCollection | Element[]): SVGElement[] => {
       const result: SVGElement[] = []
-      
+
       Array.from(els).forEach((el: Element) => {
         const tagName = el.tagName.toLowerCase()
-        
+
         if (tagName === 'g') {
           // Process group - recursively get children
           const children = processElements(el.children)
-          
+
           // Only create group if it has children
           if (children.length > 0) {
             const groupEl: GroupElement = {
@@ -1042,7 +972,7 @@ export function importFromSVG(svgContent: string, fileTimestamp?: number): SVGEl
           }
         }
       })
-      
+
       return result
     }
 
